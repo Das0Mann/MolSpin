@@ -134,7 +134,6 @@ namespace RunSection
 			arma::sp_cx_mat R;
 			R.set_size(size(kron(H,H)));
 			R.zeros();
-			std::cout << "Size of R:" << R.size() << std::endl;
 
 			// Temporary Redfield tensor
 			arma::sp_cx_mat tmp_R;
@@ -144,21 +143,20 @@ namespace RunSection
 			// R Tensor array pointer for parallelization
 			arma::sp_cx_mat ** ptr_R = NULL;
 			int threads;
-
-			#pragma omp parallel 
+		
+			// Get number of threads for tensor pointer arrays
+			#pragma omp parallel
 			{
 				threads = omp_get_num_threads();
 			}
 
 			ptr_R = new arma::sp_cx_mat* [threads];
-
-			#pragma omp for					
+			
 			for (int l = 0; l < threads; l++) 
 			{
    				ptr_R[l] = new arma::sp_cx_mat(tmp_R);
-				*ptr_R[l] *= 0.0;   
+			   *ptr_R[l] *= 0.0;   
 			}
-
 
 			// Spectral density matrix
 			arma::sp_cx_mat SpecDens;
@@ -170,27 +168,30 @@ namespace RunSection
 			one.set_size(size(domega));
 			one.eye();
 
-
+			//Correlation function set ups
 			std::vector<double> tau_c_list;
 			std::vector<double> ampl_list;
-
+			arma::cx_double ampl_combined = 0.0;
 
 			// Defining variables for parameter of user
 			int terms = 0;
-			int define_ampl = 0;
+			int def_g = 0;
+			int def_specdens = 0;
 			int ops = 0;
-			int define_specdens = 0;
+			int coeff = 0;
 
-			// Defining varibales for loops
+			// Defining varibales for loops and storage of operators
 			int num_op;
 			arma::sp_cx_mat ** ptr_Tensors = NULL;
+			//arma::cx_mat ** Tensors_rotating = NULL;
 			int k;
-			int s;	
+			int s;
+			int l;
 
 			// ------------------------------------------------------------------
 			// STARTING WITH RELAXATION MATRIX CONSTRUCTION - GOOD LUCK
 			// ------------------------------------------------------------------
-
+			
 			this->Log() << "Starting with construction of relaxation matrix." << std::endl;
 			for(auto interaction = (*i)->interactions_cbegin(); interaction != (*i)->interactions_cend(); interaction++)
 			{
@@ -203,10 +204,10 @@ namespace RunSection
 							// ------------------------------------------------------------------
 							// Relaxation Matrix Construction for Interactions of Type::SingleSpin
 							// ------------------------------------------------------------------
-							
+						
 							// Get groups with respect to interaction
 							auto group1 = (*interaction)->Group1();
-																	
+
 							// Loop through groups to get all interaction type
 							for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
 							{
@@ -221,8 +222,8 @@ namespace RunSection
 
 									//Spin-Operators
 									arma::sp_cx_mat *Sz = new arma::sp_cx_mat;
-									arma::sp_cx_mat *Sx= new arma::sp_cx_mat;
-									arma::sp_cx_mat *Sy= new arma::sp_cx_mat;
+									arma::sp_cx_mat *Sx = new arma::sp_cx_mat;
+									arma::sp_cx_mat *Sy = new arma::sp_cx_mat;
 
 									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sz() ), *s1, *Sz))			
 									{
@@ -245,13 +246,6 @@ namespace RunSection
 									ptr_Tensors[0] = Sx;
 									ptr_Tensors[1] = Sy;
 									ptr_Tensors[2] = Sz;
-
-									// Rotate tensors in eigenbasis of H0
-									#pragma omp parallel for
-									for(k=0; k < num_op; k++)
-									{
-										*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
-									}
 								}
 								else
 								{
@@ -263,7 +257,7 @@ namespace RunSection
 									// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 									arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
 									arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
-									
+							
 									// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 									arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
 									arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;
@@ -275,52 +269,56 @@ namespace RunSection
 									this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
 
 									arma::vec static_field = (*interaction)->Field();
-									arma::cx_vec complex_conv_static_field;
-									complex_conv_static_field.set_size(size(static_field));
-									
-									complex_conv_static_field[0] = (static_field[0] + (arma::cx_double(0.0, 1.0) * static_field[1]));
-									complex_conv_static_field[1] = (static_field[0] - (arma::cx_double(0.0, 1.0) * static_field[1]));
-									complex_conv_static_field[2] = static_cast<std::complex<double>>(static_field[2]);
-									
-									// Rank 0 tensor with m=0
-									*T0_rank_0 = -(1/sqrt(3.0))*one;
+									arma::cx_vec complex_field;
+																		
+									//Make field complex
+									complex_field = arma::conv_to<arma::cx_vec>::from(static_field);
 
+									// Rank 0 tensor with m=0
+									if(!space.LRk0TensorT0((*s1), complex_field, *T0_rank_0))
+									{
+										this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name()  << " and Field" << "! Skipping." << std::endl;
+										continue;
+									}
+									
 									// Rank 2 tensor with m=0
-									if(!space.LRk2SphericalTensorT0(*s1, complex_conv_static_field, *T0_rank_2))
+									if(!space.LRk2SphericalTensorT0((*s1), complex_field, *T0_rank_2))
 									{
 										this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name()  << " and Field" << "! Skipping." << std::endl;
 										continue;
 									}
 																				
 									// Rank 2 tensor with m=1
-									if(!space.LRk2SphericalTensorTp1(*s1, complex_conv_static_field, *Tp1))
+									if(!space.LRk2SphericalTensorTp1((*s1), complex_field, *Tp1))
 									{
 										this->Log() << "Failed to produce Tp1 spherical tensor between spin " << (*s1)->Name()  << " and Field" << "! Skipping." << std::endl;
 										continue;
 									} 
 
 									// Rank 2 tensor with m=-1
-									if(!space.LRk2SphericalTensorTm1(*s1, complex_conv_static_field, *Tm1))
+									if(!space.LRk2SphericalTensorTm1((*s1), complex_field, *Tm1))
 									{
 										this->Log() << "Failed to produce Tm1 spherical tensor between spin " << (*s1)->Name()  << " and Field" << "! Skipping." << std::endl;
 										continue;
 									}
-										
+
 									// Rank 2 tensor with m=2
-									if(!space.LRk2SphericalTensorTp2(*s1, complex_conv_static_field, *Tp2))
+									if(!space.LRk2SphericalTensorTp2((*s1), complex_field, *Tp2))
 									{
 										this->Log() << "Failed to produce Tp2 spherical tensor between spin " << (*s1)->Name() << " and Field" << "! Skipping." << std::endl;
 										continue;
 									}
 																		
 									// Rank 2 tensor with m=-2
-									if(!space.LRk2SphericalTensorTm2(*s1, complex_conv_static_field, *Tm2))
+									if(!space.LRk2SphericalTensorTm2((*s1), complex_field, *Tm2))
 									{
 										this->Log() << "Failed to produce Tm2 spherical tensor between spin " << (*s1)->Name() << " and Field" << "! Skipping." << std::endl;
 										continue;
 									}
+									
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
+									ptr_Tensors = NULL;
 									ptr_Tensors = new arma::sp_cx_mat* [num_op];							
 									ptr_Tensors[0] = T0_rank_0;
 									ptr_Tensors[1] = T0_rank_2; 
@@ -328,36 +326,84 @@ namespace RunSection
 									ptr_Tensors[3] = Tp1;
 									ptr_Tensors[4] = Tm2;
 									ptr_Tensors[5] = Tp2;
-
-									// Rotate tensors in eigenbasis of H0
-									#pragma omp parallel for
-									for(k=0; k < num_op; k++)
+							
+									// Construct spatial spherical Tensors
+									SpinAPI::Tensor inTensor(0);
+									if((*interaction)->Properties()->Get("tensor",inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
 									{
-										*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+										this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
+										auto ATensor = (*interaction)->CouplingTensor();
+										arma::cx_mat A(3,3); 
+										arma::cx_vec Am(9);
+										
+										A.zeros();
+										A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+										
+										Am(0) =  (1.0/sqrt(3.0))	* (A(0,0) + A(1,1) + A(2,2));
+										Am(1) =  (1.0/sqrt(6.0))	* (3.0 * A(2,2) - (A(0,0) + A(1,1) + A(2,2)));
+										Am(2) =  0.5 				* (A(0,2) + A(2,0) + ((arma::cx_double(0.0, 1.0)) * (A(1,2) + A(2,1))));
+										Am(3) = -0.5 				* (A(0,2) + A(2,0) - ((arma::cx_double(0.0, 1.0)) * (A(1,2) + A(2,1))));
+										Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
+										Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
+
+										//Rank 0																
+										*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
+										//Rank 2
+										*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]); 
 									}
+									else
+									{
+										// Norm
+										*ptr_Tensors[0] = (*ptr_Tensors[0]);
+										*ptr_Tensors[1] = (*ptr_Tensors[1]); 
+										*ptr_Tensors[2] = (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = (*ptr_Tensors[3]);
+										*ptr_Tensors[4] = (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = (*ptr_Tensors[5]);
+									}
+								}
+
+								// Rotate tensors in eigenbasis of H0
+								#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+								for(k=0; k < num_op; k++)
+								{
+									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 								}
 
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
 								if((*interaction)->Properties()->Get("terms", terms ) && terms == 1)
 								{
-									if((*interaction)->Properties()->Get("define_ampl", define_ampl ) && define_ampl == 1)
+									this->Log() << "No cross-relaxation terms are requested" << std::endl;
+
+									if((*interaction)->Properties()->Get("def_g", def_g ) && def_g == 1)
 									{
-										this->Log() << "No cross-relaxation terms are requested" << std::endl;
-										this->Log() << "Setting J up for each operator separatly - define_ampl == 1 " << std::endl;
+										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
 
 										// loop through all operators and construct R tensor in Liouville space
-										#pragma omp parallel for firstprivate(tmp_R, SpecDens) shared(ampl_list,tau_c_list, domega)
+										#pragma omp parallel for num_threads(threads)
+										for (int l=0; l < threads; l++)
+										{ 
+											*ptr_R[l] *= 0.0;
+										}
+
+										#pragma omp parallel for firstprivate(tmp_R, SpecDens, num_op) shared(ampl_list,tau_c_list, domega, interaction, def_specdens, ptr_R, ptr_Tensors) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											// ----------------------------------------------------------------
 											// CONSTRUCTING SPECTRAL DENSITY MATRIX
 											// ----------------------------------------------------------------
-
-											if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+											ampl_combined  = ampl_list[k] * ampl_list[k];
+											
+											if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 											{
 												SpecDens *= 0.0;
-												if(!ConstructSpecDensSpecificSparse(1,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+												
+												if(!ConstructSpecDensSpecificSparse(1,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 												{
 													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 													continue;
@@ -369,7 +415,7 @@ namespace RunSection
 											{
 												SpecDens *= 0.0;
 												
-												if(!ConstructSpecDensSpecificSparse(0,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+												if(!ConstructSpecDensSpecificSparse(0,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 												{
 													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 													continue;
@@ -381,8 +427,8 @@ namespace RunSection
 											// -----------------------------------------------------------------
 											// CONSTRUCTING R MATRIX 
 											// -----------------------------------------------------------------
+
 											tmp_R *= 0.0;
-											*ptr_R[omp_get_thread_num()] *= 0.0;
 
 											if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[k]),SpecDens,tmp_R))
 											{
@@ -391,23 +437,17 @@ namespace RunSection
 											}
 
 											*ptr_R[omp_get_thread_num()] += tmp_R;
-										}
-	
-										#pragma omp for
-										for (int l=0; l < threads; l++)
-										{
-											R += *ptr_R[l];
-										}
-									
+										}									
 									}
 									else
 									{
-										this->Log() << "J is generally constructed for all operators - define_ampl == 0 " << std::endl;
+										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
 										
 										// ----------------------------------------------------------------
 										// CONSTRUCTING SPECTRAL DENSITY MATRIX
 										// ----------------------------------------------------------------	
-										if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+
+										if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 										{
 											SpecDens *= 0.0;
 
@@ -432,39 +472,45 @@ namespace RunSection
 											SpecDens *= (*interaction)->Prefactor();
 										}
 										
-										#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens)
+										#pragma omp parallel for num_threads(threads)
+										for (l=0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+
+										#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{						
 											// -----------------------------------------------------------------
 											// CONSTRUCTING R MATRIX 
 											// -----------------------------------------------------------------
+
 											tmp_R *= 0.0;
-											*ptr_R[omp_get_thread_num()] *= 0.0;
-										
+
 											if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[k]),SpecDens,tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
 												continue;
 											}
-
+											
 											*ptr_R[omp_get_thread_num()] += tmp_R;
-										}
-										
-										#pragma omp for
-										for (int l=0; l < threads; l++)
-										{
-											R += *ptr_R[l];
 										}
 									}
 								}	
 								else
 								{
-									if((*interaction)->Properties()->Get("define_ampl", define_ampl ) && define_ampl == 1)
+									if((*interaction)->Properties()->Get("def_g", def_g ) && def_g == 1)
 									{
-										this->Log() << "Setting J up for each operator separatly - define_ampl == 1 " << std::endl;
+										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
 										
+										#pragma omp parallel for num_threads(threads)
+										for (l=0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+
 										// loop through all operators and construct R tensor in Liouville space	
-										#pragma omp parallel for collapse(2) firstprivate(tmp_R,SpecDens) shared(ampl_list,tau_c_list, domega)
+										#pragma omp parallel for collapse(2) firstprivate(tmp_R,SpecDens, ampl_combined) shared(ampl_list,tau_c_list, domega, num_op, ptr_Tensors, ptr_R, interaction, def_specdens) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											for(s=0; s < num_op; s++)
@@ -472,10 +518,13 @@ namespace RunSection
 												// ----------------------------------------------------------------
 												// CONSTRUCTING SPECTRAL DENSITY MATRIX
 												// ----------------------------------------------------------------
-												if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+
+												ampl_combined  = ampl_list[k] * ampl_list[s];
+
+												if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 												{
 													SpecDens *= 0.0;
-													if(!ConstructSpecDensSpecificSparse(1,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+													if(!ConstructSpecDensSpecificSparse(1,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
@@ -487,7 +536,7 @@ namespace RunSection
 												{
 													SpecDens *= 0.0;
 													
-													if(!ConstructSpecDensSpecificSparse(0,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+													if(!ConstructSpecDensSpecificSparse(0,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
@@ -499,8 +548,8 @@ namespace RunSection
 												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX 
 												// ----------------------------------------------------------------
+
 												tmp_R *= 0.0;
-												*ptr_R[omp_get_thread_num()] *= 0.0;
 
 												if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[s]),SpecDens,tmp_R))
 												{
@@ -524,12 +573,6 @@ namespace RunSection
 												*ptr_R[omp_get_thread_num()] += tmp_R;
 											}
 										}			
-										
-										#pragma omp for
-										for (int l=0; l < threads; l++)
-										{
-											R += *ptr_R[l];
-										}
 									}
 									else
 									{
@@ -537,8 +580,9 @@ namespace RunSection
 										// ----------------------------------------------------------------
 										// CONSTRUCTING SPECTRAL DENSITY MATRIX
 										// ----------------------------------------------------------------
-										this->Log() << "J is generally constructed for all operators - define_ampl == 0 " << std::endl;
-										if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+										
+										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
+										if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 										{
 											SpecDens *= 0.0;
 										
@@ -563,7 +607,13 @@ namespace RunSection
 											SpecDens *= (*interaction)->Prefactor();
 										}
 										
-										#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens)
+										#pragma omp parallel for num_threads(threads)
+										for (l=0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+
+										#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											for(s=0; s < num_op; s++)
@@ -571,15 +621,15 @@ namespace RunSection
 												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX 
 												// ----------------------------------------------------------------
+
 												tmp_R *= 0.0;
-												*ptr_R[omp_get_thread_num()] *= 0.0;
-											
+																							
 												if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[s]),SpecDens,tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
 													continue;
 												}
-
+												
 												*ptr_R[omp_get_thread_num()] += tmp_R;
 
 												if (k != s)
@@ -595,17 +645,20 @@ namespace RunSection
 												
 												*ptr_R[omp_get_thread_num()] += tmp_R;
 											}
-
-										}
-
-										#pragma omp for
-										for (int l=0; l < threads; l++)
-										{
-											R += *ptr_R[l];
-										}
-										
+										}	
 									}
 								}
+						
+								for (l=0; l < threads; l++)
+								{
+									R += *ptr_R[l];
+								}
+								
+								if(ops==0)
+								{
+									R *= -1.00;
+								}
+	
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
 					    }
@@ -628,14 +681,14 @@ namespace RunSection
 										// --------------------------------------------------------
 
 										this->Log() << "Sz, Sx and Sy operator basis was chosen - ops == 1" << std::endl;
-
+										
 										//Spin-Operators
 										arma::sp_cx_mat *Sz1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sx1= new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sy1= new arma::sp_cx_mat;
+										arma::sp_cx_mat *Sx1 = new arma::sp_cx_mat;
+										arma::sp_cx_mat *Sy1 = new arma::sp_cx_mat;
 										arma::sp_cx_mat *Sz2 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sx2= new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sy2= new arma::sp_cx_mat;
+										arma::sp_cx_mat *Sx2 = new arma::sp_cx_mat;
+										arma::sp_cx_mat *Sy2 = new arma::sp_cx_mat;
 
 										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sz() ), *s1, *Sz1))			
 										{
@@ -652,21 +705,21 @@ namespace RunSection
 											return false;
 										}	
 										
-										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sz() ), *s1, *Sz2))			
+										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sz() ), *s2, *Sz2))			
 										{
 											return false;
 										}	
 
-										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sx() ), *s1, *Sx2))			
+										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sx() ), *s2, *Sx2))			
 										{
 											return false;
 										}	
 
-										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sy() ), *s1, *Sy2))			
+										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s2)->Sy() ), *s2, *Sy2))			
 										{
 											return false;
 										}	
-
+										
 										// Put all tensors on pointer array
 										num_op = 6;
 										ptr_Tensors = new arma::sp_cx_mat * [num_op];
@@ -678,12 +731,10 @@ namespace RunSection
 										ptr_Tensors[5] = Sz2;
 
 										// Rotate tensors in eigenbasis of H0
-										#pragma omp parallel for
 										for(k=0; k < num_op; k++)
 										{
-												*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+											*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
 										}
-									
 									}
 									else
 									{
@@ -696,7 +747,11 @@ namespace RunSection
 										// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 										arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
 										arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
-												
+
+										arma::sp_cx_mat *T0_rank_1 = new arma::sp_cx_mat;
+										arma::sp_cx_mat *Tp_rank_1 = new arma::sp_cx_mat;
+										arma::sp_cx_mat *Tm_rank_1 = new arma::sp_cx_mat;
+
 										// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 										arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
 										arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;
@@ -704,22 +759,16 @@ namespace RunSection
 										// Tp2 & Tp2 for rank 2
 										arma::sp_cx_mat *Tp2 = new arma::sp_cx_mat;
 										arma::sp_cx_mat *Tm2 = new arma::sp_cx_mat;
-					
-										// ----------------------------------------------------------------------
-										// TODO: Sometimes the Coupling tensors are included in relaxation
-										// ----------------------------------------------------------------------
-										// auto ATensor = (*interaction)->CouplingTensor();
-										// auto A = ATensor->LabFrame();
-										// a0 = -(A(1,1)+A(2,2)+A(3,3));
-										// Ax = (2.0*A(3,3)-((A(1,1)+A(2,2))));
-										// Rh = (A(1,1)-A(2,2));
-										// ----------------------------------------------------------------------
 
 										// ----------------------------------------------------------------
 										// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
-										// ----------------------------------------------------------------								
-										// Rank 0 tensor with m=0
-										*T0_rank_0 = -(1/sqrt(3.0))*one;
+										// ----------------------------------------------------------------			
+
+										if(!space.BlRk0TensorT0(*s1, *s2, *T0_rank_0))
+										{
+											this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+											continue;
+										}
 
 										// Rank 2 tensor with m=0
 										if(!space.BlRk2SphericalTensorT0(*s1, *s2, *T0_rank_2))
@@ -767,21 +816,68 @@ namespace RunSection
 										ptr_Tensors[4] = Tm2;
 										ptr_Tensors[5] = Tp2;
 
-										// Rotate tensors in eigenbasis of H0
-										#pragma omp parallel for
-										for(k=0; k < num_op; k++)
+										// Construct spatial spherical Tensors
+										SpinAPI::Tensor inTensor(0);
+										if((*interaction)->Properties()->Get("tensor",inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
 										{
-											*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+											this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
+											auto ATensor = (*interaction)->CouplingTensor();
+											arma::cx_mat A(3,3); 
+											arma::cx_vec Am(6);
+											
+											A.zeros();
+											A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+											
+											Am(0) =  (1.0/sqrt(3.0))	* (A(0,0) + A(1,1) + A(2,2));
+											Am(1) =  (1.0/sqrt(6.0))	* (3.0 * A(2,2) - (A(0,0) + A(1,1) + A(2,2)));
+											Am(2) =  0.5 				* (A(0,2) + A(2,0) - ((arma::cx_double(0.0, 1.0)) * (A(1,2) + A(2,1))));
+											Am(3) = -0.5 				* (A(0,2) + A(2,0) + ((arma::cx_double(0.0, 1.0)) * (A(1,2) + A(2,1))));
+											Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
+											Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
+											
+											//Rank 0
+											*ptr_Tensors[0] =  Am(0) 	* (*ptr_Tensors[0]);
+											//Rank 2
+											*ptr_Tensors[1] =  Am(1) 	* (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = -Am(3) 	* (*ptr_Tensors[2]); 
+											*ptr_Tensors[3] = -Am(2) 	* (*ptr_Tensors[3]);
+											*ptr_Tensors[4] =  Am(4) 	* (*ptr_Tensors[4]);
+											*ptr_Tensors[5] =  Am(5)	* (*ptr_Tensors[5]); 
 										}
-									}		
+										else
+										{
+											// Norm
+											*ptr_Tensors[0] = (*ptr_Tensors[0]);
+											*ptr_Tensors[1] = (*ptr_Tensors[1]); 
+											*ptr_Tensors[2] = (*ptr_Tensors[2]); 
+											*ptr_Tensors[3] = (*ptr_Tensors[3]);
+											*ptr_Tensors[4] = (*ptr_Tensors[4]);
+											*ptr_Tensors[5] = (*ptr_Tensors[5]);
+										}
+									}
+
+									// Rotate tensors in eigenbasis of H0
+									#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+										
+									// Rotate tensors in eigenbasis of H0
+									for(k=0; k < num_op; k++)
+									{
+										*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+									}	
 
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
 
-									if((*interaction)->Properties()->Get("define_ampl", define_ampl ) && define_ampl == 1)
+									if((*interaction)->Properties()->Get("def_g", def_g ) && def_g == 1)
 									{
-										this->Log() << "Setting J up for each operator separatly - define_ampl == 1 " << std::endl;
+										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
 
-										#pragma omp parallel for collapse(2) firstprivate(tmp_R,SpecDens) shared(ampl_list,tau_c_list, domega)
+										#pragma omp parallel for num_threads(threads)
+										for (l=0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+
+										#pragma omp parallel for collapse(2) firstprivate(tmp_R,SpecDens,ampl_combined) shared(ampl_list,tau_c_list, domega, num_op, ptr_R, ptr_Tensors, def_specdens, interaction) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											for(s=0; s < num_op; s++)
@@ -789,23 +885,26 @@ namespace RunSection
 												// ----------------------------------------------------------------
 												// CONSTRUCTING SPECTRAL DENSITY MATRIX
 												// ----------------------------------------------------------------
-												if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+
+												ampl_combined  = ampl_list[k] * ampl_list[s];
+
+												if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 												{
 													SpecDens *= 0.0;
-													if(!ConstructSpecDensSpecificSparse(1,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+
+													if(!ConstructSpecDensSpecificSparse(1,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
 													}
 
 													SpecDens *= (*interaction)->Prefactor();
-
 												}
 												else
 												{
 													SpecDens *= 0.0;
 															
-													if(!ConstructSpecDensSpecificSparse(0,static_cast<std::complex<double>> (ampl_list[k]), static_cast<std::complex<double>>(tau_c_list[k]), domega, SpecDens))
+													if(!ConstructSpecDensSpecificSparse(0,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
@@ -814,11 +913,13 @@ namespace RunSection
 													SpecDens *= (*interaction)->Prefactor();
 												}
 
+												ampl_combined *= 0.0;
+												
 												// -----------------------------------------------------------------------------------------
 												// CONSTRUCTING R MATRIX 
 												// -----------------------------------------------------------------------------------------
+												
 												tmp_R *= 0.0;
-												*ptr_R[omp_get_thread_num()] *= 0.0;
 
 												if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[s]),SpecDens,tmp_R))
 												{
@@ -847,8 +948,8 @@ namespace RunSection
 										// ----------------------------------------------------------------
 										// CONSTRUCTING SPECTRAL DENSITY MATRIX
 										// ----------------------------------------------------------------
-
-										if((*interaction)->Properties()->Get("define_specdens", define_specdens) && define_specdens == 1)
+										
+										if((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 										{
 											SpecDens *= 0.0;
 
@@ -872,8 +973,14 @@ namespace RunSection
 
 											SpecDens *= (*interaction)->Prefactor();
 										}
-
-										#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens)
+										
+										#pragma omp parallel for num_threads(threads)
+										for (l=0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+										
+										#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list,tau_c_list, domega, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											for(s=0; s < num_op; s++)
@@ -882,7 +989,6 @@ namespace RunSection
 												// CONSTRUCTING R MATRIX 
 												// -----------------------------------------------------------------------------------------
 												tmp_R *= 0.0;
-												*ptr_R[omp_get_thread_num()] *= 0.0;
 
 												if(!RedfieldtensorSparse((*ptr_Tensors[k]),(*ptr_Tensors[s]),SpecDens,tmp_R))
 												{
@@ -907,12 +1013,11 @@ namespace RunSection
 										}
 									}
 									
-									#pragma omp for
-									for (int l=0; l < threads; l++)
+									for (l=0; l < threads; l++)
 									{
 										R += *ptr_R[l];
 									}
-
+		
 									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
@@ -928,14 +1033,15 @@ namespace RunSection
 				std::fill(tau_c_list.begin(), tau_c_list.end(), 0);
 				terms *= 0.0;
 				SpecDens *=0.0;
-				delete ptr_Tensors;
 			}
-
+			
+			delete ptr_Tensors;
 			delete ptr_R;
+			
 			// ---------------------------------------------------------------
 
 			// Add 1/(planck bar)²
-			R *= 8.794e+1;
+			//R *= 8.794e+1;
 
 			// ---------------------------------------------------------------
 			// SETUP COMPLETE HAMILTONIAN

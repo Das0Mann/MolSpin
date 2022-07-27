@@ -276,7 +276,7 @@ namespace RunSection
 									arma::cx_vec complex_field;
 																		
 									//Make field complex
-									complex_field = arma::conv_to<arma::cx_mat>::from(static_field);
+									complex_field = arma::conv_to<arma::cx_vec>::from(static_field);
 
 									// Rank 0 tensor with m=0
 									if(!space.LRk0TensorT0((*s1), complex_field, *T0_rank_0))
