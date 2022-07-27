@@ -26,7 +26,7 @@
 #include "TaskStaticSSRedfield.h"
 #include "TaskStaticSSRedfieldSparse.h"
 #include "TaskStaticSSRedfieldTimeEvo.h"
-#include "TaskActionSpectrumHistogram.h"
+#include "TaskStaticSSRedfieldTimeEvoSparse.h"
 //#include "TaskActionSpectrumHistogramRPOnlyDec.h"
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
@@ -52,11 +52,9 @@ namespace RunSection
 		//NEW (Added by Luca Gerhards): Including BWR-Relaxation Theory Task Class [TaskStaticSSRedfield.cpp] as CreateTask member.
 		
 		else if(_tasktype.compare("redfield-relaxation") ==0 || _tasktype.compare("Redfield-Relaxation") == 0) {task = std::make_shared<TaskStaticSSRedfield>(_obj, *this);}
-		else if(_tasktype.compare("sparse-redfield-relaxation") ==0 || _tasktype.compare("Sparse-Redfield-Relaxation") == 0) {task = std::make_shared<TaskStaticSSRedfieldSparse>(_obj, *this);}
+		else if(_tasktype.compare("redfield-relaxation-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldSparse>(_obj, *this);}
 		else if(_tasktype.compare("redfield-relaxation-timeevolution") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvo>(_obj, *this);}
-		else if(_tasktype.compare("action-spectrum-histogram") ==0 || _tasktype.compare("Action-Spectrum-Histogram") == 0) {task = std::make_shared<TaskActionSpectrumHistogram>(_obj, *this);}
-		//else if(_tasktype.compare("action-spectrum-histogram-uncoupled") ==0 || _tasktype.compare("Action-Spectrum-Histogram-Uncoupled") == 0) {task = std::make_shared<TaskActionSpectrumHistogramRPOnlyDec>(_obj, *this);}
-		
+		else if(_tasktype.compare("redfield-relaxation-timeevolution-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvoSparse>(_obj, *this);}	
 		// NOTE: To add a new task class, just add another "else if" here...
 		// The string used in the "compare" method is the "type" to be specified in the MolSpin input file
 	
