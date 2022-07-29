@@ -14,6 +14,9 @@
 #include "MSDParser.h"
 #include "RunSection.h"
 #include "FileReader.h"
+#include <fstream>
+#include <unistd.h>
+
 //////////////////////////////////////////////////////////////////////////////
 // NOTE: Comment out this line, and the use of openblas_set_num_threads below
 // if you are NOT using OpenBLAS.
@@ -87,7 +90,7 @@ int main(int argc,char** argv)
 		std::cout << "    molspin -r <step number> -c <task name> -a myfile.msd" << std::endl;
 		return 0;
 	}
-	
+
 	std::cout << hline << std::endl;
 	std::cout << "# 	        &&&&&&&                                                                                                                " << std::endl;
 	std::cout << "#      &&&&&&(      *&&&&&&                                                                                                          " << std::endl;
@@ -514,7 +517,8 @@ int main(int argc,char** argv)
 		std::cout << hline << std::endl;
 		std::cout << "# Shutting down without doing calculations." << std::endl;
 	}
-	
+
 	return 0;
 }
+
 //////////////////////////////////////////////////////////////////////////////

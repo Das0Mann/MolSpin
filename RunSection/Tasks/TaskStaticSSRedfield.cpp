@@ -130,6 +130,8 @@ namespace RunSection
 			R.set_size(size(kron(H,H)));
 			R.zeros();
 
+			std::cout << R.size() << std::endl;
+
 			// Temporary Redfield tensor
 			arma::cx_mat tmp_R;
 			tmp_R.set_size(size(kron(H,H)));
