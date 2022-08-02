@@ -20,7 +20,7 @@
 # Note that this line should be added to LFLAGS only.
 # --------------------------------------------------------------------------
 # Compile using Armadillo, here assuming OpenBLAS and Lapack is used
-ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp
+ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp 
 # For an installation in a non-standard location, use:
 #ARMADILLO = -I/path/to/armadillo/installdir/include/ -DARMA_DONT_USE_WRAPPER
 # --------------------------------------------------------------------------
@@ -68,7 +68,7 @@ OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUN
 CC = g++ -std=c++14		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
 LFLAGS = -Wall -O2		# Linker Flags
-CFLAGS = -g -Wall -c -fopenmp 	# Compile flags to .o
+CFLAGS = -g -Wall -c	# Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------

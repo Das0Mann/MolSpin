@@ -122,10 +122,6 @@ namespace RunSection
 						domega(k,s) = eigen_val(k) - eigen_val(s);
 				}
 			}
-
-			// ---------------------------------------------------------------
-			// SETUP RELAXATION OPERATOR
-			// ---------------------------------------------------------------
 			
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -183,6 +179,31 @@ namespace RunSection
 			// Defining varibales for loops and storage of operators
 			int num_op;
 			arma::sp_cx_mat ** ptr_Tensors = NULL;
+
+			//Spin-Operators
+			arma::sp_cx_mat *Sz1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Sx1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Sy1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Sz2 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Sx2 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Sy2 = new arma::sp_cx_mat;
+			
+			// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+			arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
+
+			arma::sp_cx_mat *T0_rank_1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Tp_rank_1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Tm_rank_1 = new arma::sp_cx_mat;
+
+			// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+			arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;
+
+			// Tp2 & Tp2 for rank 2
+			arma::sp_cx_mat *Tp2 = new arma::sp_cx_mat;
+			arma::sp_cx_mat *Tm2 = new arma::sp_cx_mat;
+
 			//arma::cx_mat ** Tensors_rotating = NULL;
 			int k;
 			int s;
@@ -220,32 +241,28 @@ namespace RunSection
 
 									this->Log() << "Sz, Sx and Sy operator basis was chosen - ops == 1" << std::endl;
 
-									//Spin-Operators
-									arma::sp_cx_mat *Sz = new arma::sp_cx_mat;
-									arma::sp_cx_mat *Sx = new arma::sp_cx_mat;
-									arma::sp_cx_mat *Sy = new arma::sp_cx_mat;
-
-									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sz() ), *s1, *Sz))			
+									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sz() ), *s1, *Sz1))			
 									{
 										return false;
 									}	
 
-									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sx() ), *s1, *Sx))			
+									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sx() ), *s1, *Sx1))			
 									{
 										return false;
 									}	
 
-									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sy() ), *s1, *Sy))			
+									if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sy() ), *s1, *Sy1))			
 									{
 										return false;
 									}	
 							
 									// Put all tensors on pointer array
 									num_op = 3;
+									delete ptr_Tensors;
 									ptr_Tensors = new arma::sp_cx_mat * [num_op];
-									ptr_Tensors[0] = Sx;
-									ptr_Tensors[1] = Sy;
-									ptr_Tensors[2] = Sz;
+									ptr_Tensors[0] = Sx1;
+									ptr_Tensors[1] = Sy1;
+									ptr_Tensors[2] = Sz1;
 								}
 								else
 								{
@@ -254,17 +271,6 @@ namespace RunSection
 									// ----------------------------------------------------------------		
 
 									this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-									// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-									arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
-									arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
-							
-									// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-									arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
-									arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;
-
-									// Tp2 & Tp2 for rank 2
-									arma::sp_cx_mat *Tp2 = new arma::sp_cx_mat;
-									arma::sp_cx_mat *Tm2 = new arma::sp_cx_mat;
 
 									this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
 
@@ -318,7 +324,7 @@ namespace RunSection
 									
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
-									ptr_Tensors = NULL;
+									delete ptr_Tensors;
 									ptr_Tensors = new arma::sp_cx_mat* [num_op];							
 									ptr_Tensors[0] = T0_rank_0;
 									ptr_Tensors[1] = T0_rank_2; 
@@ -346,14 +352,14 @@ namespace RunSection
 										Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 										Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 
-										//Rank 0																
-										*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
+										//Rank 0
+										*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
 										//Rank 2
-										*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]); 
-										*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]); 
+										*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
+										*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 
 									}
 									else
 									{
@@ -659,6 +665,11 @@ namespace RunSection
 									R *= -1.00;
 								}
 	
+								for (int l = 0; l < num_op; l++) 
+								{
+   									delete ptr_Tensors[l];  
+								}
+
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
 					    }
@@ -682,13 +693,6 @@ namespace RunSection
 
 										this->Log() << "Sz, Sx and Sy operator basis was chosen - ops == 1" << std::endl;
 										
-										//Spin-Operators
-										arma::sp_cx_mat *Sz1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sx1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sy1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sz2 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sx2 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Sy2 = new arma::sp_cx_mat;
 
 										if(!space.CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( (*s1)->Sz() ), *s1, *Sz1))			
 										{
@@ -722,6 +726,7 @@ namespace RunSection
 										
 										// Put all tensors on pointer array
 										num_op = 6;
+										delete ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat * [num_op];
 										ptr_Tensors[0] = Sx1;
 										ptr_Tensors[1] = Sy1;
@@ -743,23 +748,7 @@ namespace RunSection
 										// -------------------------------------------------------------------
 
 										this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-										
-										// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-										arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
-
-										arma::sp_cx_mat *T0_rank_1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Tp_rank_1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Tm_rank_1 = new arma::sp_cx_mat;
-
-										// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-										arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;
-
-										// Tp2 & Tp2 for rank 2
-										arma::sp_cx_mat *Tp2 = new arma::sp_cx_mat;
-										arma::sp_cx_mat *Tm2 = new arma::sp_cx_mat;
-
+									
 										// ----------------------------------------------------------------
 										// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
 										// ----------------------------------------------------------------			
@@ -807,7 +796,7 @@ namespace RunSection
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;						
-
+										delete ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat* [num_op];
 										ptr_Tensors[0] = T0_rank_0;
 										ptr_Tensors[1] = T0_rank_2; 
@@ -835,14 +824,14 @@ namespace RunSection
 											Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 											Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 											
-											//Rank 0
-											*ptr_Tensors[0] =  Am(0) 	* (*ptr_Tensors[0]);
-											//Rank 2
-											*ptr_Tensors[1] =  Am(1) 	* (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -Am(3) 	* (*ptr_Tensors[2]); 
-											*ptr_Tensors[3] = -Am(2) 	* (*ptr_Tensors[3]);
-											*ptr_Tensors[4] =  Am(4) 	* (*ptr_Tensors[4]);
-											*ptr_Tensors[5] =  Am(5)	* (*ptr_Tensors[5]); 
+										//Rank 0
+										*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
+										//Rank 2
+										*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
+										*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]);
 										}
 										else
 										{
@@ -1018,6 +1007,11 @@ namespace RunSection
 										R += *ptr_R[l];
 									}
 		
+									for (int l = 0; l < num_op; l++) 
+									{
+   										delete ptr_Tensors[l];  
+									}
+
 									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
@@ -1035,8 +1029,13 @@ namespace RunSection
 				SpecDens *=0.0;
 			}
 			
-			delete ptr_Tensors;
-			delete ptr_R;
+			for (int l = 0; l < threads; l++) 
+			{
+   				delete ptr_R[l];
+			}
+			
+			delete [] ptr_R;
+			delete [] ptr_Tensors;
 			
 			// ---------------------------------------------------------------
 

@@ -40,13 +40,13 @@ namespace RunSection
 	{
 		#pragma omp single
 		{
-		this->Log() << "Running method StaticSSRedfield." << std::endl;
+			this->Log() << "Running method StaticSSRedfield." << std::endl;
 
-		// If this is the first step, write first part of header to the data file
-		if(this->RunSettings()->CurrentStep() == 1)
-		{
-			this->WriteHeader(this->Data());
-		}
+			// If this is the first step, write first part of header to the data file
+			if(this->RunSettings()->CurrentStep() == 1)
+			{
+				this->WriteHeader(this->Data());
+			}
 		}
 		// ----------------------------------------------------------------
 		// SETTING UP SPIN SYSTEM AND GETTING DENSITY OPERATOR
@@ -130,8 +130,6 @@ namespace RunSection
 			R.set_size(size(kron(H,H)));
 			R.zeros();
 
-			std::cout << R.size() << std::endl;
-
 			// Temporary Redfield tensor
 			arma::cx_mat tmp_R;
 			tmp_R.set_size(size(kron(H,H)));
@@ -180,6 +178,31 @@ namespace RunSection
 			// Defining varibales for loops and storage of operators
 			int num_op;
 			arma::cx_mat ** ptr_Tensors = NULL;
+
+			//Spin-Operators
+			arma::cx_mat *Sz1 = new arma::cx_mat;
+			arma::cx_mat *Sx1 = new arma::cx_mat;
+			arma::cx_mat *Sy1 = new arma::cx_mat;
+			arma::cx_mat *Sz2 = new arma::cx_mat;
+			arma::cx_mat *Sx2 = new arma::cx_mat;
+			arma::cx_mat *Sy2 = new arma::cx_mat;
+
+			// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+			arma::cx_mat *T0_rank_0 = new arma::cx_mat;
+			arma::cx_mat *T0_rank_2 = new arma::cx_mat;
+
+			arma::cx_mat *T0_rank_1 = new arma::cx_mat;
+			arma::cx_mat *Tp_rank_1 = new arma::cx_mat;
+			arma::cx_mat *Tm_rank_1 = new arma::cx_mat;
+
+			// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+			arma::cx_mat *Tp1 = new arma::cx_mat;
+			arma::cx_mat *Tm1 = new arma::cx_mat;
+
+			// Tp2 & Tp2 for rank 2
+			arma::cx_mat *Tp2 = new arma::cx_mat;
+			arma::cx_mat *Tm2 = new arma::cx_mat;
+
 			//arma::cx_mat ** Tensors_rotating = NULL;
 			int k;
 			int s;
@@ -217,32 +240,28 @@ namespace RunSection
 
 									this->Log() << "Sz, Sx and Sy operator basis was chosen - ops == 1" << std::endl;
 
-									//Spin-Operators
-									arma::cx_mat *Sz = new arma::cx_mat;
-									arma::cx_mat *Sx = new arma::cx_mat;
-									arma::cx_mat *Sy = new arma::cx_mat;
-
-									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sz() ), *s1, *Sz))			
+									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sz() ), *s1, *Sz1))			
 									{
 										return false;
 									}	
 
-									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sx() ), *s1, *Sx))			
+									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sx() ), *s1, *Sx1))			
 									{
 										return false;
 									}	
 
-									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sy() ), *s1, *Sy))			
+									if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sy() ), *s1, *Sy1))			
 									{
 										return false;
 									}	
 							
 									// Put all tensors on pointer array
 									num_op = 3;
+									delete ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat * [num_op];
-									ptr_Tensors[0] = Sx;
-									ptr_Tensors[1] = Sy;
-									ptr_Tensors[2] = Sz;
+									ptr_Tensors[0] = Sx1;
+									ptr_Tensors[1] = Sy1;
+									ptr_Tensors[2] = Sz1;
 								}
 								else
 								{
@@ -251,17 +270,6 @@ namespace RunSection
 									// ----------------------------------------------------------------		
 
 									this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-									// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-									arma::cx_mat *T0_rank_0 = new arma::cx_mat;
-									arma::cx_mat *T0_rank_2 = new arma::cx_mat;
-							
-									// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-									arma::cx_mat *Tp1 = new arma::cx_mat;
-									arma::cx_mat *Tm1 = new arma::cx_mat;
-
-									// Tp2 & Tp2 for rank 2
-									arma::cx_mat *Tp2 = new arma::cx_mat;
-									arma::cx_mat *Tm2 = new arma::cx_mat;
 
 									this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
 
@@ -315,7 +323,7 @@ namespace RunSection
 									
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
-									ptr_Tensors = NULL;
+									delete ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat* [num_op];							
 									ptr_Tensors[0] = T0_rank_0;
 									ptr_Tensors[1] = T0_rank_2; 
@@ -343,14 +351,14 @@ namespace RunSection
 										Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 										Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 
-										//Rank 0																
-										*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
-										//Rank 2
-										*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]); 
-										*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]); 
+											//Rank 0
+											*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
+											//Rank 2
+											*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
+											*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
+											*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
+											*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 	
 									}
 									else
 									{
@@ -651,11 +659,16 @@ namespace RunSection
 									R += *ptr_R[l];
 								}
 						
-                                                                if(ops==0)
-                                                                {
-                                                                        R *= -1.00;
-                                                                }
-	
+                                if(ops==0)
+                                {
+                                   R *= -1.00;
+                            	}
+								
+								for (int l = 0; l < num_op; l++) 
+								{
+   									delete ptr_Tensors[l];  
+								}
+								
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
 					    }
@@ -679,14 +692,6 @@ namespace RunSection
 
 										this->Log() << "Sz, Sx and Sy operator basis was chosen - ops == 1" << std::endl;
 										
-										//Spin-Operators
-										arma::cx_mat *Sz1 = new arma::cx_mat;
-										arma::cx_mat *Sx1 = new arma::cx_mat;
-										arma::cx_mat *Sy1 = new arma::cx_mat;
-										arma::cx_mat *Sz2 = new arma::cx_mat;
-										arma::cx_mat *Sx2 = new arma::cx_mat;
-										arma::cx_mat *Sy2 = new arma::cx_mat;
-
 										if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*s1)->Sz() ), *s1, *Sz1))			
 										{
 											return false;
@@ -719,6 +724,7 @@ namespace RunSection
 										
 										// Put all tensors on pointer array
 										num_op = 6;
+										delete ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat * [num_op];
 										ptr_Tensors[0] = Sx1;
 										ptr_Tensors[1] = Sy1;
@@ -741,22 +747,6 @@ namespace RunSection
 
 										this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
 										
-										// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-										arma::cx_mat *T0_rank_0 = new arma::cx_mat;
-										arma::cx_mat *T0_rank_2 = new arma::cx_mat;
-
-										arma::cx_mat *T0_rank_1 = new arma::cx_mat;
-										arma::cx_mat *Tp_rank_1 = new arma::cx_mat;
-										arma::cx_mat *Tm_rank_1 = new arma::cx_mat;
-
-										// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-										arma::cx_mat *Tp1 = new arma::cx_mat;
-										arma::cx_mat *Tm1 = new arma::cx_mat;
-
-										// Tp2 & Tp2 for rank 2
-										arma::cx_mat *Tp2 = new arma::cx_mat;
-										arma::cx_mat *Tm2 = new arma::cx_mat;
-
 										// ----------------------------------------------------------------
 										// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
 										// ----------------------------------------------------------------			
@@ -804,7 +794,7 @@ namespace RunSection
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;						
-
+										delete ptr_Tensors;									
 										ptr_Tensors = new arma::cx_mat* [num_op];
 										ptr_Tensors[0] = T0_rank_0;
 										ptr_Tensors[1] = T0_rank_2; 
@@ -833,13 +823,13 @@ namespace RunSection
 											Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 											
 											//Rank 0
-											*ptr_Tensors[0] =  Am(0) 	* (*ptr_Tensors[0]);
+											*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
 											//Rank 2
-											*ptr_Tensors[1] =  Am(1) 	* (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -Am(3) 	* (*ptr_Tensors[2]); 
-											*ptr_Tensors[3] = -Am(2) 	* (*ptr_Tensors[3]);
-											*ptr_Tensors[4] =  Am(4) 	* (*ptr_Tensors[4]);
-											*ptr_Tensors[5] =  Am(5)	* (*ptr_Tensors[5]); 
+											*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
+											*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
+											*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
+											*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 
 										}
 										else
 										{
@@ -1012,7 +1002,12 @@ namespace RunSection
 									{
 										R += *ptr_R[l];
 									}
-		
+
+									for (int l = 0; l < num_op; l++) 
+									{
+   										delete ptr_Tensors[l];  
+									}
+
 									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
@@ -1029,9 +1024,18 @@ namespace RunSection
 				terms *= 0.0;
 				SpecDens *=0.0;
 			}
+
+			for (int l = 0; l < threads; l++) 
+			{
+   				delete ptr_R[l];
+			}
 			
-			delete ptr_Tensors;
-			delete ptr_R;
+			delete [] ptr_R;
+			delete [] ptr_Tensors;
+
+			//delete Sx1,Sy1,Sz1,Sx2,Sy2,Sz2;
+			//delete T0_rank_0, T0_rank_2, Tm1, Tp1, Tm2, Tp2;
+			
 			// ---------------------------------------------------------------
 			
 			// Multiply by common prefactor (bohr magneton / hbar)
@@ -1121,80 +1125,80 @@ namespace RunSection
 
 			#pragma omp single
 			{
-			arma::cx_mat P;
-			double sum_yield;
-			sum_yield = 0.0;
+				arma::cx_mat P;
+				double sum_yield;
+				sum_yield = 0.0;
 
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-			this->WriteStandardOutput(this->Data());
-			
-			// There are two result modes - either write results per transition or for each defined state
-			if(this->productYieldsOnly)
-			{
-				// Loop through all defind transitions
-				auto transitions = (*i)->Transitions();
-				for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
+				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				this->WriteStandardOutput(this->Data());
+				
+				// There are two result modes - either write results per transition or for each defined state
+				if(this->productYieldsOnly)
 				{
-					// Make sure that there is a state object
-					if((*j)->SourceState() == nullptr)
-						continue;
-					
-					if(!space.GetState((*j)->SourceState(), P))
+					// Loop through all defind transitions
+					auto transitions = (*i)->Transitions();
+					for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
 					{
-						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-						continue;
-					}
-					
-					// Rotate projection operator in eigenbasis of H0
-					P = (eigen_vec.t() * P * eigen_vec);
+						// Make sure that there is a state object
+						if((*j)->SourceState() == nullptr)
+							continue;
+						
+						if(!space.GetState((*j)->SourceState(), P))
+						{
+							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+							continue;
+						}
+						
+						// Rotate projection operator in eigenbasis of H0
+						P = (eigen_vec.t() * P * eigen_vec);
 
-					// Return the yield for this transition
-					this->Data() << (*j)->Rate() * std::abs(arma::trace(P * rho0)) << " ";
-					sum_yield += ((*j)->Rate() * std::abs(arma::trace(P * rho0)));
+						// Return the yield for this transition
+						this->Data() << (*j)->Rate() * std::abs(arma::trace(P * rho0)) << " ";
+						sum_yield += ((*j)->Rate() * std::abs(arma::trace(P * rho0)));
+					}
+					this->Data() << sum_yield << " ";
+					sum_yield *= 0.0;
+					P *= 0.0;
 				}
-				this->Data() << sum_yield << " ";
-				sum_yield *= 0.0;
-				P *= 0.0;
-			}
-			else
-			{
-				// Loop through all states
-				auto states = (*i)->States();
-				for(auto j = states.cbegin(); j != states.cend(); j++)
+				else
 				{
-					if(!space.GetState((*j), P))
+					// Loop through all states
+					auto states = (*i)->States();
+					for(auto j = states.cbegin(); j != states.cend(); j++)
 					{
-						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-						continue;
+						if(!space.GetState((*j), P))
+						{
+							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+							continue;
+						}
+						
+						// Rotate projection operator in eigenbasis of H0
+						P = (eigen_vec.t() * P * eigen_vec);
+
+						// Return the yield for this state - note that no reaction rates are included here.
+						this->Data() << std::abs(arma::trace(P * rho0)) << " ";
+						sum_yield += (std::abs(arma::trace(P * rho0)));
 					}
-					
-					// Rotate projection operator in eigenbasis of H0
-					P = (eigen_vec.t() * P * eigen_vec);
-
-					// Return the yield for this state - note that no reaction rates are included here.
-					this->Data() << std::abs(arma::trace(P * rho0)) << " ";
-					sum_yield += (std::abs(arma::trace(P * rho0)));
+				
+					this->Data() << sum_yield << " ";
+					sum_yield *= 0.0;
+					P *= 0.0;
 				}
-			
-				this->Data() << sum_yield << " ";
-				sum_yield *= 0.0;
-				P *= 0.0;
-			}
-			
-			this->Log() << "\nDone with SpinSystem \"" << (*i)->Name() << "\"" << std::endl;
+				
+				this->Log() << "\nDone with SpinSystem \"" << (*i)->Name() << "\"" << std::endl;
 
-			// Clean every variable just to be sure
-			R *= 0.0;
-			A *= 0.0;
-			H *= 0.0;
-			P *= 0.0;
-			domega *= 0.0;
-			H_SS *= 0.0;
-			K_SS *= 0.0;
-			eig_val_mat *= 0.0;
-			eigen_val *= 0.0;
-			eigen_vec *= 0.0;
-			SpecDens *= 0.0;
+				// Clean every variable just to be sure
+				R *= 0.0;
+				A *= 0.0;
+				H *= 0.0;
+				P *= 0.0;
+				domega *= 0.0;
+				H_SS *= 0.0;
+				K_SS *= 0.0;
+				eig_val_mat *= 0.0;
+				eigen_val *= 0.0;
+				eigen_vec *= 0.0;
+				SpecDens *= 0.0;
 			}
 		}
 		
