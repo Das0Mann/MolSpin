@@ -353,21 +353,21 @@ namespace RunSection
 										Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 
 										//Rank 0
-										*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
+										*ptr_Tensors[0] =  Am(0) 	* (*ptr_Tensors[0]);
 										//Rank 2
-										*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
-										*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 
+										*ptr_Tensors[1] =  Am(1) 	* (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = -Am(3) 	* (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = -Am(2) 	* (*ptr_Tensors[3]);
+										*ptr_Tensors[4] =  Am(4) 	* (*ptr_Tensors[4]);
+										*ptr_Tensors[5] =  Am(5)	* (*ptr_Tensors[5]); 
 									}
 									else
 									{
 										// Norm
 										*ptr_Tensors[0] = (*ptr_Tensors[0]);
 										*ptr_Tensors[1] = (*ptr_Tensors[1]); 
-										*ptr_Tensors[2] = (*ptr_Tensors[2]); 
-										*ptr_Tensors[3] = (*ptr_Tensors[3]);
+										*ptr_Tensors[2] = -(*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = -(*ptr_Tensors[3]);
 										*ptr_Tensors[4] = (*ptr_Tensors[4]);
 										*ptr_Tensors[5] = (*ptr_Tensors[5]);
 									}
@@ -814,14 +814,14 @@ namespace RunSection
 											Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 											Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 											
-										//Rank 0
-										*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
-										//Rank 2
-										*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
-										*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]);
+											//Rank 0
+											*ptr_Tensors[0] =  Am(0) 	* (*ptr_Tensors[0]);
+											//Rank 2
+											*ptr_Tensors[1] =  Am(1) 	* (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = -Am(3) 	* (*ptr_Tensors[2]); 
+											*ptr_Tensors[3] = -Am(2) 	* (*ptr_Tensors[3]);
+											*ptr_Tensors[4] =  Am(4) 	* (*ptr_Tensors[4]);
+											*ptr_Tensors[5] =  Am(5)	* (*ptr_Tensors[5]); 
 										}
 										else
 										{
@@ -1076,7 +1076,7 @@ namespace RunSection
 			A -= K_SS;
 
 			// Adding R tensor to whole hamiltonian
-			A -= R;
+			A += R;
 
 			// Rotate density operator in eigenbasis of H0
 			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
