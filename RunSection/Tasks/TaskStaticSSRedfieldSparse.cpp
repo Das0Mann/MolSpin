@@ -258,7 +258,7 @@ namespace RunSection
 							
 									// Put all tensors on pointer array
 									num_op = 3;
-									delete ptr_Tensors;
+									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::sp_cx_mat * [num_op];
 									ptr_Tensors[0] = Sx1;
 									ptr_Tensors[1] = Sy1;
@@ -324,7 +324,7 @@ namespace RunSection
 									
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
-									delete ptr_Tensors;
+									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::sp_cx_mat* [num_op];							
 									ptr_Tensors[0] = T0_rank_0;
 									ptr_Tensors[1] = T0_rank_2; 
@@ -660,16 +660,6 @@ namespace RunSection
 									R += *ptr_R[l];
 								}
 								
-								if(ops==0)
-								{
-									R *= -1.00;
-								}
-	
-								for (int l = 0; l < num_op; l++) 
-								{
-   									delete ptr_Tensors[l];  
-								}
-
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
 					    }
@@ -726,7 +716,7 @@ namespace RunSection
 										
 										// Put all tensors on pointer array
 										num_op = 6;
-										delete ptr_Tensors;
+										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat * [num_op];
 										ptr_Tensors[0] = Sx1;
 										ptr_Tensors[1] = Sy1;
@@ -796,7 +786,7 @@ namespace RunSection
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;						
-										delete ptr_Tensors;
+										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat* [num_op];
 										ptr_Tensors[0] = T0_rank_0;
 										ptr_Tensors[1] = T0_rank_2; 
@@ -1006,11 +996,6 @@ namespace RunSection
 									{
 										R += *ptr_R[l];
 									}
-		
-									for (int l = 0; l < num_op; l++) 
-									{
-   										delete ptr_Tensors[l];  
-									}
 
 									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
@@ -1032,11 +1017,14 @@ namespace RunSection
 			for (int l = 0; l < threads; l++) 
 			{
    				delete ptr_R[l];
-			}
-			
+			}		
 			delete [] ptr_R;
+						
+			for (int l = 0; l < num_op; l++) 
+			{
+   				delete ptr_Tensors[l];
+			}
 			delete [] ptr_Tensors;
-			
 			// ---------------------------------------------------------------
 
 			// Add 1/(planck bar)²
@@ -1088,7 +1076,7 @@ namespace RunSection
 			A -= K_SS;
 
 			// Adding R tensor to whole hamiltonian
-			A += R;
+			A -= R;
 
 			// Rotate density operator in eigenbasis of H0
 			rho0 = (eigen_vec.t() * rho0 * eigen_vec);

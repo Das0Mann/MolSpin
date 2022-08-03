@@ -136,7 +136,7 @@ namespace RunSection
 			tmp_R.zeros();
 			
 			// R Tensor array pointer for parallelization
-			arma::cx_mat ** ptr_R = NULL;
+			arma::cx_mat ** ptr_R=NULL;
 			int threads;
 		
 			// Get number of threads for tensor pointer arrays
@@ -177,7 +177,7 @@ namespace RunSection
 
 			// Defining varibales for loops and storage of operators
 			int num_op;
-			arma::cx_mat ** ptr_Tensors = NULL;
+			arma::cx_mat ** ptr_Tensors=NULL;
 
 			//Spin-Operators
 			arma::cx_mat *Sz1 = new arma::cx_mat;
@@ -257,7 +257,7 @@ namespace RunSection
 							
 									// Put all tensors on pointer array
 									num_op = 3;
-									delete ptr_Tensors;
+									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat * [num_op];
 									ptr_Tensors[0] = Sx1;
 									ptr_Tensors[1] = Sy1;
@@ -285,7 +285,7 @@ namespace RunSection
 										this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name()  << " and Field" << "! Skipping." << std::endl;
 										continue;
 									}
-									
+
 									// Rank 2 tensor with m=0
 									if(!space.LRk2SphericalTensorT0((*s1), complex_field, *T0_rank_2))
 									{
@@ -323,7 +323,7 @@ namespace RunSection
 									
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
-									delete ptr_Tensors;
+									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat* [num_op];							
 									ptr_Tensors[0] = T0_rank_0;
 									ptr_Tensors[1] = T0_rank_2; 
@@ -351,14 +351,14 @@ namespace RunSection
 										Am(4) =  0.5 				* (A(0,0) - A(1,1) - ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 										Am(5) =  0.5 				* (A(0,0) - A(1,1) + ((arma::cx_double(0.0, 1.0)) * (A(0,1) + A(1,0))));
 
-											//Rank 0
-											*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
-											//Rank 2
-											*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
-											*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
-											*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
-											*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 	
+										//Rank 0
+										*ptr_Tensors[0] = 8.794e+1 *  Am(0) 	* (*ptr_Tensors[0]);
+										//Rank 2
+										*ptr_Tensors[1] = 8.794e+1 *  Am(1) 	* (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = 8.794e+1 * -Am(3) 	* (*ptr_Tensors[2]); 
+										*ptr_Tensors[3] = 8.794e+1 * -Am(2) 	* (*ptr_Tensors[3]);
+										*ptr_Tensors[4] = 8.794e+1 *  Am(4) 	* (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = 8.794e+1 *  Am(5)		* (*ptr_Tensors[5]); 	
 									}
 									else
 									{
@@ -658,17 +658,7 @@ namespace RunSection
 								{
 									R += *ptr_R[l];
 								}
-						
-                                if(ops==0)
-                                {
-                                   R *= -1.00;
-                            	}
-								
-								for (int l = 0; l < num_op; l++) 
-								{
-   									delete ptr_Tensors[l];  
-								}
-								
+							
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
 					    }
@@ -724,7 +714,7 @@ namespace RunSection
 										
 										// Put all tensors on pointer array
 										num_op = 6;
-										delete ptr_Tensors;
+										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat * [num_op];
 										ptr_Tensors[0] = Sx1;
 										ptr_Tensors[1] = Sy1;
@@ -793,8 +783,8 @@ namespace RunSection
 										}
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
-										num_op = 6;						
-										delete ptr_Tensors;									
+										num_op = 6;				
+										delete[] ptr_Tensors;									
 										ptr_Tensors = new arma::cx_mat* [num_op];
 										ptr_Tensors[0] = T0_rank_0;
 										ptr_Tensors[1] = T0_rank_2; 
@@ -1003,11 +993,6 @@ namespace RunSection
 										R += *ptr_R[l];
 									}
 
-									for (int l = 0; l < num_op; l++) 
-									{
-   										delete ptr_Tensors[l];  
-									}
-
 									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
@@ -1028,18 +1013,14 @@ namespace RunSection
 			for (int l = 0; l < threads; l++) 
 			{
    				delete ptr_R[l];
-			}
-			
+			}		
 			delete [] ptr_R;
+						
+			for (int l = 0; l < num_op; l++) 
+			{
+   				delete ptr_Tensors[l];
+			}
 			delete [] ptr_Tensors;
-
-			//delete Sx1,Sy1,Sz1,Sx2,Sy2,Sz2;
-			//delete T0_rank_0, T0_rank_2, Tm1, Tp1, Tm2, Tp2;
-			
-			// ---------------------------------------------------------------
-			
-			// Multiply by common prefactor (bohr magneton / hbar)
-			//R *= 8.794e+1;
 			
 			// ---------------------------------------------------------------
 			// SETUP COMPLETE HAMILTONIAN
@@ -1086,7 +1067,7 @@ namespace RunSection
 			A -= K_SS;
 
 			// Adding R tensor to whole hamiltonian
-			A += R;
+			A -= R;
 
 			// Rotate density operator in eigenbasis of H0
 			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
