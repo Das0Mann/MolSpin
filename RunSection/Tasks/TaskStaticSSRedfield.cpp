@@ -434,7 +434,8 @@ namespace RunSection
 											// -----------------------------------------------------------------
 
 											tmp_R *= 0.0;
-
+											std::cout << *ptr_Tensors[k] << std::endl;
+											std::cout << SpecDens << std::endl;
 											if(!Redfieldtensor((*ptr_Tensors[k]),(*ptr_Tensors[k]),SpecDens,tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
@@ -1009,7 +1010,7 @@ namespace RunSection
 				terms *= 0.0;
 				SpecDens *=0.0;
 			}
-
+			
 			for (int l = 0; l < threads; l++) 
 			{
    				delete ptr_R[l];
@@ -1021,7 +1022,7 @@ namespace RunSection
    				delete ptr_Tensors[l];
 			}
 			delete [] ptr_Tensors;
-			
+
 			// ---------------------------------------------------------------
 			// SETUP COMPLETE HAMILTONIAN
 			// ---------------------------------------------------------------
