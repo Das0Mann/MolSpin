@@ -103,6 +103,7 @@ namespace RunSection
 			// ----------------------------------------------------------------
 			arma::cx_mat eigen_vec;		// To hold eigenvectors
 			arma::vec eigen_val;	    // To hold eigenvalues
+			arma::cx_mat eig_val_mat;
 			
 			this->Log() << "Starting diagonalization..." << std::endl;
 			arma::eig_sym(eigen_val,eigen_vec,H);
@@ -120,6 +121,13 @@ namespace RunSection
 					domega(k,s) = eigen_val(k) - eigen_val(s);
 				}
 			}
+
+			// Constructing diagonal matrix with eigenvalues of H0
+			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
+
+			// Rotate density operator in eigenbasis of H0
+			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
+			rho0 = rho0/trace(rho0);
 
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -174,6 +182,7 @@ namespace RunSection
 			int def_specdens = 0;
 			int ops = 0;
 			int coeff = 0;
+			int slip = 0;
 
 			// Defining varibales for loops and storage of operators
 			int num_op;
@@ -191,10 +200,6 @@ namespace RunSection
 			arma::cx_mat *T0_rank_0 = new arma::cx_mat;
 			arma::cx_mat *T0_rank_2 = new arma::cx_mat;
 
-			arma::cx_mat *T0_rank_1 = new arma::cx_mat;
-			arma::cx_mat *Tp_rank_1 = new arma::cx_mat;
-			arma::cx_mat *Tm_rank_1 = new arma::cx_mat;
-
 			// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 			arma::cx_mat *Tp1 = new arma::cx_mat;
 			arma::cx_mat *Tm1 = new arma::cx_mat;
@@ -207,7 +212,7 @@ namespace RunSection
 			int k;
 			int s;
 			int l;	
-	
+			
 			// ------------------------------------------------------------------
 			// STARTING WITH RELAXATION MATRIX CONSTRUCTION - GOOD LUCK
 			// ------------------------------------------------------------------
@@ -377,6 +382,23 @@ namespace RunSection
 								for(k=0; k < num_op; k++)
 								{
 									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
+								}
+
+								if((*interaction)->Properties()->Get("slip", slip ) && slip == 1)
+								{
+									this->Log() << "Calculating slippage of inital condition for interaction" << std::endl;
+									arma::cx_mat rho0_new;
+									rho0_new.set_size(size(rho0));
+									rho0_new.zeros();
+
+									if(!Slippage(ptr_Tensors, num_op, eig_val_mat, domega, rho0, static_cast<std::complex<double>>(tau_c_list[0]), rho0_new))
+									{
+										this->Log() << "There are problems with the construction of the intial condition for slippage - Please check your input." << std::endl;
+										continue;
+									}
+
+									rho0 = rho0_new;
+									rho0_new *= 0.0;
 								}
 
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
@@ -841,6 +863,24 @@ namespace RunSection
 										*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
 									}	
 
+									// Calculated Slippage of inital condition if required
+									if((*interaction)->Properties()->Get("slip", slip ) && slip == 1)
+									{
+										this->Log() << "Calculating slippage of inital condition for interaction" << std::endl;
+										arma::cx_mat rho0_new;
+										rho0_new.set_size(size(rho0));
+										rho0_new.zeros();
+
+										if(!Slippage(ptr_Tensors, num_op, eig_val_mat, domega, rho0, static_cast<std::complex<double>>(tau_c_list[0]), rho0_new))
+										{
+											this->Log() << "There are problems with the construction of the intial condition for slippage - Please check your input." << std::endl;
+											continue;
+										}
+
+										rho0 = rho0_new;
+										rho0_new *= 0.0;
+									}
+
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
 
 									if((*interaction)->Properties()->Get("def_g", def_g ) && def_g == 1)
@@ -1029,11 +1069,7 @@ namespace RunSection
 			// Transform  H0 into superspace
 			arma::cx_mat lhs;
 			arma::cx_mat rhs;
-			arma::cx_mat eig_val_mat;
 			arma::cx_mat H_SS;
-
-			// Constructing diagonal matrix with eigenvalues of H0
-			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
 			// Transforming into superspace
 			space.SuperoperatorFromLeftOperator(eig_val_mat, lhs);
@@ -1069,11 +1105,6 @@ namespace RunSection
 
 			// Adding R tensor to whole hamiltonian
 			A += R;
-
-			// Rotate density operator in eigenbasis of H0
-			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
-
-			rho0 = rho0/trace(rho0);
 
 			// Transform density operator into superspace
 			arma::cx_vec rho0vec;
@@ -1287,6 +1318,99 @@ namespace RunSection
 			// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
 			_specdens = _ampl / ((arma::cx_double(1.00, 0.00)/_tau_c) - (arma::cx_double(0.0, 1.0) * _domega));
 		}
+
+		return true;
+	}
+
+	bool TaskStaticSSRedfield::Slippage(arma::cx_mat ** _ptr_Tensors, const int& _num_op, const arma::cx_mat& _eig_val_mat, const arma::cx_mat& _domega, const arma::cx_mat& _rho0, const std::complex<double>& _tau_c, arma::cx_mat& _rho0_new)
+	{
+		// Condition of Space: Hilbert
+		// Input: 
+			// Pointer array of Tensors already in eigenbasis of HS: _ptr_Tensors
+			// Number of Tensors for R tensor: _num_op
+			// Eigenvalue diagonal matrix for HS: _eig_val_mat
+			// Transition matrix omega for J's: _domega
+			// Inital density matrix: rho0
+			// Correlation time: _tau_c
+		// Output:
+			//Modified density matrix: rho0_new
+
+
+		// Construct J with rank k
+		arma::cx_mat Jk1, Jk2;
+		
+		// J^(k=1) = 1/ (i * domega + 1/tau_c)^(2)
+		Jk1 = 1.0 / ((arma::cx_double(0.0, 1.0) * _domega + (1.0/_tau_c)) * (arma::cx_double(0.0, 1.0) * _domega + (1.0/_tau_c)));
+		//J^(k=2) = 1/ (i * domega + 1/tau_c)^(3)
+		Jk2 = 1.0 / ((arma::cx_double(0.0, 1.0) * _domega + (1.0/_tau_c)) * (arma::cx_double(0.0, 1.0) * _domega + (1.0/_tau_c)) * (arma::cx_double(0.0, 1.0) * _domega + (1.0/_tau_c)));
+		
+		// Temporary matrix for summation
+		arma::cx_mat tmp;
+		tmp.set_size(size(Jk1));
+		tmp.zeros();
+
+		// Pointer arrays to store T_alpha operators
+		arma::cx_mat* Tk1 = NULL;
+		Tk1 = new arma::cx_mat [_num_op];
+		arma::cx_mat* Tk2 = NULL;
+		Tk2 = new arma::cx_mat [_num_op];
+
+		// Contruct T_alpha operators
+
+		for (int alpha = 0; alpha < _num_op; alpha++)
+		{
+			tmp *= 0.0;
+			for (int beta = 0; beta < _num_op; beta++)
+			{
+				tmp += (Jk1 * (*_ptr_Tensors[beta]));
+			}
+			
+			Tk1[alpha] = tmp;
+		}
+		
+		for (int alpha = 0; alpha < _num_op; alpha++)
+		{
+			tmp *= 0.0;
+			for (int beta = 0; beta < _num_op; beta++)
+			{
+				tmp += (Jk2 * (*_ptr_Tensors[beta]));
+			}
+			
+			Tk2[alpha] = tmp;
+		}
+		
+		// Construct Slippage operator
+		arma::cx_mat slip_op;
+		slip_op.set_size(size(Jk1));
+		slip_op.zeros();
+
+		for (int alpha = 0; alpha < _num_op; alpha++)
+		{
+			// T_alpha(k=1)
+			slip_op += (*_ptr_Tensors[alpha]) * (Tk1[alpha]) * _rho0 - (Tk1[alpha]) * _rho0 * (*_ptr_Tensors[alpha]);
+
+			//T_alpha(k=2)
+			slip_op += (*_ptr_Tensors[alpha]) * (Tk2[alpha]) * _rho0 * (arma::cx_double(0.0, 1.0)) * _eig_val_mat - (*_ptr_Tensors[alpha]) * (Tk2[alpha]) * (arma::cx_double(0.0, 1.0)) * _eig_val_mat * _rho0;
+			slip_op += -(Tk2[alpha]) * _rho0 * (arma::cx_double(0.0, 1.0)) * _eig_val_mat * (*_ptr_Tensors[alpha]) + (Tk2[alpha]) * (arma::cx_double(0.0, 1.0)) * _eig_val_mat * _rho0 * (*_ptr_Tensors[alpha]);
+			slip_op += -(*_ptr_Tensors[alpha]) * (Tk2[alpha]) * _rho0 * (arma::cx_double(0.0, 1.0)) * _eig_val_mat + (Tk2[alpha]) * _rho0 * (*_ptr_Tensors[alpha]) * (arma::cx_double(0.0, 1.0)) * _eig_val_mat;
+			slip_op += (arma::cx_double(0.0, 1.0)) * _eig_val_mat * (*_ptr_Tensors[alpha]) * (Tk2[alpha]) * _rho0 - (arma::cx_double(0.0, 1.0)) * _eig_val_mat * (Tk2[alpha]) * _rho0 * (*_ptr_Tensors[alpha]);
+
+			// Hermitian conjugated (h.c.) -> .t() hermitian conjugated matrix
+			slip_op += (*_ptr_Tensors[alpha]).t() * (Tk1[alpha]).t() * _rho0.t() - (Tk1[alpha]).t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+
+			slip_op += (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() - (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * _rho0.t();
+			slip_op += -Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() + Tk2[alpha].t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+			slip_op += -(*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() + Tk2[alpha].t() * _rho0.t() * (*_ptr_Tensors[alpha]).t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t();
+			slip_op += (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() - (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * Tk2[alpha].t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+		}
+		
+		// Update initial density matrix
+		_rho0_new = _rho0 - slip_op;
+
+		// Delete pointer arrays
+
+		delete [] Tk1;
+		delete [] Tk2; 
 
 		return true;
 	}

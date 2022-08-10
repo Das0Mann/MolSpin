@@ -3,10 +3,10 @@
 // -------------------------------------------------------------
 SpinSystem RPSystem1
 {
-// Spins
-Spin FADN5 {tensor = anisotropic("0.087 0.100 1.757");spin = 1;}
-Spin TRP {tensor = anisotropic("0 0 1");spin = 1;}
-Spin RPElectron1 {type = electron;tensor = isotropic(2);spin = 1/2;}
+ // Spins
+ Spin FADN5 {tensor = anisotropic("0.087 0.100 1.757");spin = 1;}
+ Spin TRP {tensor = anisotropic("0 0 1");spin = 1;}
+ Spin RPElectron1 {type = electron;tensor = isotropic(2);spin = 1/2;}
  Spin RPElectron2 {type = electron;tensor = isotropic(2);spin = 1/2;}
 
  // Interactions
@@ -29,7 +29,6 @@ Spin RPElectron1 {type = electron;tensor = isotropic(2);spin = 1/2;}
  State S0p {spins(RPElectron1,RPElectron2) = |1/2,-1/2> - |-1/2,1/2>;spin(FADN5) = |0>;spin(TRP) = |1>;}
  State S00 {spins(RPElectron1,RPElectron2) = |1/2,-1/2> - |-1/2,1/2>;spin(FADN5) = |0>;spin(TRP) = |0>;}
  State S0m {spins(RPElectron1,RPElectron2) = |1/2,-1/2> - |-1/2,1/2>;spin(FADN5) = |0>;spin(TRP) = |-1>;}
-
 
  State Smp {spins(RPElectron1,RPElectron2) = |1/2,-1/2> - |-1/2,1/2>;spin(FADN5) = |-1>;spin(TRP) = |1>;}
  State Sm0 {spins(RPElectron1,RPElectron2) = |1/2,-1/2> - |-1/2,1/2>;spin(FADN5) = |-1>;spin(TRP) = |0>;}
@@ -580,7 +579,7 @@ Spin RPElectron1 {type = electron;tensor = isotropic(2);spin = 1/2;}
  Task main
  {
  timestep = 1e-2;
- totaltime = 100;
+ totaltime = 500;
  datafile = "results.dat";
  type = multistaticss-redfield-timeevolution;
 
