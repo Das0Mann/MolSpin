@@ -37,8 +37,8 @@ SpinSystem system1
 		type = Zeeman;
 		field = "0 0 0";	      // 0.05 mT along the z-axis
 		spins = electron1,electron2;
-                tau_c = 1e-8;   // Correlation time
-                g = 100;                        // Correlation function amplitude
+                tau_c = 0.001;   // Correlation time
+                g = 1;                        // Correlation function amplitude
 	}
 	
 	// -------------------------
@@ -51,8 +51,8 @@ SpinSystem system1
 		group1 = electron1;	                        // Spins in group1 interact with spins in group2
 		group2 = nucleus1;
 		tensor = isotropic(1) + anisotropic("0.5 0.5 2");	// Isotropic hyperfine tensor of 0.5 mT
-		tau_c = 1e-8;		                        // Correlation time
-		g = 100;			                        // Correlation function amplitude
+		tau_c = 0.001;		                        // Correlation time
+		g = 1;			                        // Correlation function amplitude
 	}
 
 	        Interaction HF2
@@ -62,8 +62,8 @@ SpinSystem system1
                 group1 = electron1;                             // Spins in group1 interact with spins in group2
                 group2 = nucleus2;
                 tensor = isotropic(1) + anisotropic("0.5 0.5 2");       // Isotropic hyperfine tensor of 0.5 mT
-                tau_c = 1e-8;                                   // Correlation time
-                g = 100;                                                // Correlation function amplitude
+                tau_c = 0.001;                                   // Correlation time
+                g = 1;                                                // Correlation function amplitude
         }
 
 
