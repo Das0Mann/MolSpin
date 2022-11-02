@@ -519,13 +519,14 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
+		
 		S1x *= 2.0;
 		S1y *= 2.0;
 		S1z *= 2.0;
 
 		// Create the spherical tensor
-		_out = (1.00/sqrt(6.0)) * ((3* S1z * _field(2))-(S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
+		_out = (1.00/sqrt(6.0)) * ((3 * S1z * _field(2))-(S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
+
 		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
 		return true;
 	}

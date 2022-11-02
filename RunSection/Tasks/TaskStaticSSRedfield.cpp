@@ -418,7 +418,7 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-										#pragma omp parallel for firstprivate(tmp_R, SpecDens, num_op) shared(ampl_list,tau_c_list, domega, interaction, def_specdens, ptr_R, ptr_Tensors) num_threads(threads)
+										#pragma omp parallel for firstprivate(tmp_R,SpecDens, ampl_combined) shared(ampl_list,tau_c_list, domega, num_op, ptr_Tensors, ptr_R, interaction, def_specdens) num_threads(threads)
 										for(k=0; k < num_op;  k++)
 										{
 											// ----------------------------------------------------------------
@@ -430,12 +430,12 @@ namespace RunSection
 											{
 												SpecDens *= 0.0;
 												
-												if(!ConstructSpecDensSpecific(1,ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
+												if(!ConstructSpecDensSpecific(1,static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 												{
 													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 													continue;
 												}
-
+										
 												SpecDens *= (*interaction)->Prefactor();
 											}
 											else
@@ -451,13 +451,13 @@ namespace RunSection
 												SpecDens *= (*interaction)->Prefactor();
 											}
 
+
 											// -----------------------------------------------------------------
 											// CONSTRUCTING R MATRIX 
 											// -----------------------------------------------------------------
 
 											tmp_R *= 0.0;
-											std::cout << *ptr_Tensors[k] << std::endl;
-											std::cout << SpecDens << std::endl;
+
 											if(!Redfieldtensor((*ptr_Tensors[k]),(*ptr_Tensors[k]),SpecDens,tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
@@ -572,7 +572,7 @@ namespace RunSection
 													
 													SpecDens *= (*interaction)->Prefactor();
 												}
-												
+
 												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX 
 												// ----------------------------------------------------------------
@@ -1268,13 +1268,20 @@ namespace RunSection
 
 		_redfieldtensor*=0.0;
 
+		_redfieldtensor += arma::kron((_op1).t(), arma::conj((_op2).t()%(_specdens).st()));
+		_redfieldtensor += arma::kron(((_op2).t()%(_specdens).st()),(_op1).st());
+		_redfieldtensor -= arma::kron(_op1*((_op2).t()%(_specdens).st()),one);
+		_redfieldtensor -= arma::kron(one, arma::conj(_op1*(_op2.t()%_specdens.st())));
+
+		//old - version
+
 		// r = A1[a,c] * A2[d,b] * (S[c,a] + S[b,d])
-		_redfieldtensor += arma::kron(((_op1)%_specdens.st()),(_op2).st());
-		_redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
+		//_redfieldtensor += arma::kron(((_op1)%_specdens.st()),(_op2).st());
+		//_redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
 	    // if b == d: r -= sum(A1[a,:] * A2[:,c] * S[c,:])
-		_redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
+		//_redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
 		// if a == c: r -= sum(A1[d,:] * S[:,d] * A2[:,b])
-		_redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
+		//_redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
 
 		return true;
 	}
@@ -1308,9 +1315,12 @@ namespace RunSection
 	{
 		if(_spectral_function == 1)
 		{
+			arma::cx_mat omeega = _domega;
+
+			omeega.zeros();
+
 			// Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
 			_specdens = (static_cast<std::complex<double>>(_ampl) * (static_cast<std::complex<double>>(_tau_c) / (arma::cx_double(1.00,0.00) + (pow(_domega,2) * (pow(static_cast<std::complex<double>>(_tau_c),2)))))); 
-
 		}
 
 		if(_spectral_function == 0)

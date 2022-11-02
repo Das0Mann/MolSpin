@@ -138,7 +138,7 @@ namespace SpinAPI
 		// Multiply by common prefactor (bohr magneton / hbar)
 		if(_interaction->AddCommonPrefactor())
 			tmp *= 8.794e+1;
-		
+
 		// Check whether we want a superspace or Hilbert space result
 		if(this->useSuperspace)
 		{

@@ -1268,26 +1268,21 @@ namespace RunSection
 
 		_redfieldtensor*=0.0;
 
+		_redfieldtensor += arma::kron((_op1).t(), arma::conj((_op2).t()%(_specdens).st()));
+		_redfieldtensor += arma::kron(((_op2).t()%(_specdens).st()),(_op1).st());
+		_redfieldtensor -= arma::kron(_op1*((_op2).t()%(_specdens).st()),one);
+		_redfieldtensor -= arma::kron(one, arma::conj(_op1*(_op2.t()%_specdens.st())));
+
+		// old version
+
 		// r = A1[a,c] * A2[d,b] * (S[c,a] + S[b,d])
-		_redfieldtensor += arma::kron((_op1)%_specdens.st(),(_op2).st());
-		_redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
+		// _redfieldtensor += arma::kron((_op1)%_specdens.st(),(_op2).st());
+		// _redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
 	    // if b == d: r -= sum(A1[a,:] * A2[:,c] * S[c,:])
-		_redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
+		// _redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
 		// if a == c: r -= sum(A1[d,:] * S[:,d] * A2[:,b])
-		_redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
+		// _redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
 
-		// --------------------------------------------------------------------------------------------
-		// Algorithm provided by Dr. Daniel Kattnig, University of Exeter, UK
-		// r = A1[a,c] * A2[d,b] * (S[c,a] + S[b,d])
-		// R  = kron((*ptr_Tensors[k])%SpecDens.st(),(*ptr_Tensors[s]).st());
-		// R += kron((*ptr_Tensors[k]),((*ptr_Tensors[s]).st()%SpecDens)); // (A2 * S.T).T = A2.T * S
-		// if b == d: r -= sum(A1[a,:] * A2[:,c] * S[c,:])
-		// R -= kron((*ptr_Tensors[k])*((*ptr_Tensors[s])%SpecDens.st()),one);
-		// if a == c: r -= sum(A1[d,:] * S[:,d] * A2[:,b])
-		// R -= kron(one,(((*ptr_Tensors[k])%SpecDens.st())*(*ptr_Tensors[s])).st());	
-
-		//if(k!=s){same routine but switch indices k and s in equation} 
-		// --------------------------------------------------------------------------------------------
 		return true;
 	}
 
