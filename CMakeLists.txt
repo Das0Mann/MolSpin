@@ -118,6 +118,7 @@ set(SOURCES_MODULE_RUNSECTION_TASKS
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSS.h
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSTimeEvo.cpp
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSTimeEvo.h
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSSpectra.h
 	# TODO: Add custom tasks here
 	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.h
 	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.cpp
