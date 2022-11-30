@@ -119,25 +119,40 @@ set(SOURCES_MODULE_RUNSECTION_TASKS
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSTimeEvo.cpp
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSTimeEvo.h
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSSpectra.h
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfield.h
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfield.cpp
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldSparse.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldSparse.cpp
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldTimeEvo.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldTimeEvo.cpp
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldTimeEvoSparse.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSRedfieldTimeEvoSparse.cpp
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSSpectra.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSSpectra.cpp
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSCIDNP.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSCIDNP.cpp
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskMultiStaticSSRedfieldTimeEvo.h
+        ${PATH_SOURCE_RUNSECTION}/Tasks/TaskMultiStaticSSRedfieldTimeEvo.cpp
+
 	# TODO: Add custom tasks here
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskDensityTimeEvo.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskDensityTimeEvo.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskInformation.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskInformation.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskOCTGPM.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskOCTGPM.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskPMPLambda.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskPMPLambda.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT2.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT2.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRedfield.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRedfield.cpp
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRelaxation.h
-	${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRelaxation.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskDensityTimeEvo.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskDensityTimeEvo.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskInformation.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskInformation.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskOCTGPM.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskOCTGPM.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskPMPLambda.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskPMPLambda.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT2.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT2.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskRPOCT.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRedfield.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRedfield.cpp
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRelaxation.h
+	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskStaticSSRelaxation.cpp
 )
 # -------------------------------------------------
 # Sources for targets

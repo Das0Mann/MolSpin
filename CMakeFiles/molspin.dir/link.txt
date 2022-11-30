@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/molspin.dir/main.cpp.o  -o molspin  libmolspin_core.a -larmadillo -lopenblas -llapack -fopenmp 
