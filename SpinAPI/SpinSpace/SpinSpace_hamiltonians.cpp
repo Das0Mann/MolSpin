@@ -311,7 +311,7 @@ namespace SpinAPI
 		arma::cx_mat result;
 		if(!this->InteractionOperator((*i), result))
 			return false;
-		
+
 		// We have already used the first interaction
 		i++;
 		

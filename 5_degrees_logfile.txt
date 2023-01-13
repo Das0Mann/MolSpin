@@ -1,0 +1,39 @@
+--- Running task "main" ---
+Running method StaticRP-Symmetric/uncoupled.
+
+No tolerance was specified, using default value instead: 1e-10
+
+Starting with SpinSystem "rpsystem".
+Using rate constant from first transition object ("product1") in the SpinSystem "rpsystem"!
+Found rate constant value: 0.001
+---------------------------------------
+Found radical 1 with 2 spins:
+ - Unpaired Electron: rpelectron2
+ - Subspace dimensions: 4
+ - Other spins:
+   - whb1
+
+Found radical 2 with 2 spins:
+ - Unpaired Electron: rpelectron1
+ - Subspace dimensions: 4
+ - Other spins:
+   - fh1p
+
+Spins not included in radicals: 0 / 4
+---------------------------------------
+Spins that are not included in the radicals are not considered in the calculations.
+Starting with construction of relaxation matrix.
+No relaxation matrix term requested for interaction zeeman1.
+No relaxation matrix term requested for interaction zeeman2.
+Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0
+Calculating R tensor for:radical1hyperfine for spin rpelectron1 and spin fh1p
+Added relaxation matrix term for interaction radical1hyperfine between spins rpelectron1 and fh1p.
+No relaxation matrix term requested for interaction radical2hyperfine.
+Starting with construction of relaxation matrix.
+No relaxation matrix term requested for interaction zeeman1.
+No relaxation matrix term requested for interaction zeeman2.
+Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0
+Calculating R tensor for:radical1hyperfine for spin rpelectron1 and spin fh1p
+Added relaxation matrix term for interaction radical1hyperfine between spins rpelectron1 and fh1p.
+No relaxation matrix term requested for interaction radical2hyperfine.
+Produce ps(t) and time steps for numerical integration.

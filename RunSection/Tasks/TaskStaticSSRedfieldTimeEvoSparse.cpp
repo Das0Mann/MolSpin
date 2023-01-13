@@ -201,10 +201,6 @@ namespace RunSection
 			arma::sp_cx_mat *T0_rank_0 = new arma::sp_cx_mat;
 			arma::sp_cx_mat *T0_rank_2 = new arma::sp_cx_mat;
 
-			arma::sp_cx_mat *T0_rank_1 = new arma::sp_cx_mat;
-			arma::sp_cx_mat *Tp_rank_1 = new arma::sp_cx_mat;
-			arma::sp_cx_mat *Tm_rank_1 = new arma::sp_cx_mat;
-
 			// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
 			arma::sp_cx_mat *Tp1 = new arma::sp_cx_mat;
 			arma::sp_cx_mat *Tm1 = new arma::sp_cx_mat;

@@ -1,24 +1,17 @@
---- Running task "method3" ---
+--- Running task "method2" ---
 Running method StaticSSRedfield.
 
-Starting with SpinSystem "system1".
+Starting with SpinSystem "rpsystem".
 Starting diagonalization...
-Diagonalization done! Eigenvalues: 8, eigenvectors: 8
+Diagonalization done! Eigenvalues: 16, eigenvectors: 16
 Starting with construction of relaxation matrix.
+No relaxation matrix term requested for interaction zeeman1.
+No relaxation matrix term requested for interaction zeeman2.
 Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0
-Using magentic field to construct SingleSpin irreducible tensors.
-Calculating R tensor for:zeeman1 for spin electron1
-J is generally constructed for all operators - def_g == 0 
-Added relaxation matrix term for interaction zeeman1 of spin electron1.
-Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0
-Using magentic field to construct SingleSpin irreducible tensors.
-Calculating R tensor for:zeeman1 for spin electron2
-J is generally constructed for all operators - def_g == 0 
-Added relaxation matrix term for interaction zeeman1 of spin electron2.
-Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0
-Calculating R tensor for:hf1 for spin electron1 and spin nucleus1
-Added relaxation matrix term for interaction hf1 between spins electron1 and nucleus1.
+Calculating R tensor for:radical1hyperfine for spin rpelectron1 and spin fh1p
+Added relaxation matrix term for interaction radical1hyperfine between spins rpelectron1 and fh1p.
+No relaxation matrix term requested for interaction radical2hyperfine.
 Ready to perform calculation.
 Done with calculation.
 
-Done with SpinSystem "system1"
+Done with SpinSystem "rpsystem"

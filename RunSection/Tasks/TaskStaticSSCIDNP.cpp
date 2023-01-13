@@ -151,6 +151,8 @@ namespace RunSection
 								return false;
 							}
 						
+							std::cout << Sproj << std::endl;
+
 							// Obtain the results
 							arma::cx_mat P;
 							double sum_yield;
