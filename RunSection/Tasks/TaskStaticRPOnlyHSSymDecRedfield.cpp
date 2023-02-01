@@ -73,7 +73,7 @@ namespace RunSection
 
 		// Loop through all SpinSystems
 		auto systems = this->SpinSystems();
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			this->Log() << "\nStarting with SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 			
@@ -112,9 +112,9 @@ namespace RunSection
 			std::vector<SpinAPI::spin_ptr> subspace2;
 			
 			// Find two subspaces with an electron
-			for(auto j = subspaces.cbegin(); j != subspaces.cend(); j++)
+			for(auto j = subspaces.cbegin(); j < subspaces.cend(); j++)
 			{
-				for(auto k = j->cbegin(); k != j->cend(); k++)
+				for(auto k = j->cbegin(); k < j->cend(); k++)
 				{
 					if((*k)->Type() == SpinAPI::SpinType::Electron)
 					{
@@ -157,7 +157,7 @@ namespace RunSection
 			if(subspace1.size() > 1)
 			{
 				this->Log() << " - Other spins:" << std::endl;
-				for(auto j = subspace1.cbegin(); j != subspace1.cend(); j++)
+				for(auto j = subspace1.cbegin(); j < subspace1.cend(); j++)
 					if((*j) != radical[0])
 						this->Log() << "   - " << (*j)->Name() << std::endl;
 			}
@@ -173,7 +173,7 @@ namespace RunSection
 			if(subspace2.size() > 1)
 			{
 				this->Log() << " - Other spins:" << std::endl;
-				for(auto j = subspace2.cbegin(); j != subspace2.cend(); j++)
+				for(auto j = subspace2.cbegin(); j < subspace2.cend(); j++)
 					if((*j) != radical[1])
 						this->Log() << "   - " << (*j)->Name() << std::endl;
 			}
@@ -318,7 +318,7 @@ namespace RunSection
 				// ------------------------------------------------------------------
 
 				this->Log() << "Starting with construction of relaxation matrix." << std::endl;
-				for(auto interaction = (*i)->interactions_cbegin(); interaction != (*i)->interactions_cend(); interaction++)
+				for(auto interaction = (*i)->interactions_cbegin(); interaction < (*i)->interactions_cend(); interaction++)
 				{
 					//std::cout << spaces[r].Contains((*interaction)) << std::endl;
 					//std::cout << (*interaction)->Name() << std::endl;
@@ -338,7 +338,7 @@ namespace RunSection
 								auto group1 = (*interaction)->Group1();
 
 								// Loop through groups to get all interaction type
-								for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+								for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 								{
 									// Which operator basis was chosen:						
 									if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
@@ -778,9 +778,9 @@ namespace RunSection
 								auto group2 = (*interaction)->Group2();
 
 								// Loop through groups to get all interaction [group1 = electrons, group2 = particles electrons interact with, commonly nuclei]
-								for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+								for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 								{
-									for(auto s2 = group2.cbegin(); s2 != group2.cend(); s2++)
+									for(auto s2 = group2.cbegin(); s2 < group2.cend(); s2++)
 									{
 										if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
 										{
@@ -1339,7 +1339,7 @@ namespace RunSection
 
                 if(this->productYieldsOnly)
                 {
-                        for(auto j = _transitions.cbegin(); j != _transitions.cend(); j++)
+                        for(auto j = _transitions.cbegin(); j < _transitions.cend(); j++)
                         {
                                 // Make sure that there is a state object
                                 if((*j)->SourceState() == nullptr)
@@ -1357,7 +1357,7 @@ namespace RunSection
                 else
                 {
                         // Get yields using state projections
-                        for(auto j = _states.cbegin(); j != _states.cend(); j++)
+                        for(auto j = _states.cbegin(); j < _states.cend(); j++)
                         {
                                 if(!_space.GetState((*j), PState))
                                 {
@@ -1385,7 +1385,7 @@ namespace RunSection
                 if(this->productYieldsOnly)
                 {
                         // Loop through all defind transitions
-                        for(auto j = _transitions.cbegin(); j != _transitions.cend(); j++)
+                        for(auto j = _transitions.cbegin(); j < _transitions.cend(); j++)
                         {
                                 // Make sure that there is a state object
                                 if((*j)->SourceState() == nullptr)
@@ -1398,7 +1398,7 @@ namespace RunSection
                 else
                 {
                         // Loop through all states
-                        for(auto j = _states.cbegin(); j != _states.cend(); j++)
+                        for(auto j = _states.cbegin(); j < _states.cend(); j++)
                         {
                                 arma::vec yields = _yields[(*j)->Name()];
                                 this->Data() << (arma::trapz(X,yields).max()) << " ";
@@ -1421,21 +1421,21 @@ namespace RunSection
 
                 // Get header for each spin system
                 auto systems = this->SpinSystems();
-                for(auto i = systems.cbegin(); i != systems.cend(); i++)
+                for(auto i = systems.cbegin(); i < systems.cend(); i++)
                 {
                         // Should yields be written per transition or per defined state?
                         if(this->productYieldsOnly)
                         {
                                 // Write each transition name
                                 auto transitions = (*i)->Transitions();
-                                for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
+                                for(auto j = transitions.cbegin(); j < transitions.cend(); j++)
                                         _stream << (*i)->Name() << "." << (*j)->Name() << ".yield ";
                         }
                         else
                         {
                                 // Write each state name
                                 auto states = (*i)->States();
-                                for(auto j = states.cbegin(); j != states.cend(); j++)
+                                for(auto j = states.cbegin(); j < states.cend(); j++)
                                         _stream << (*i)->Name() << "." << (*j)->Name() << " ";
                         }
                 }
@@ -1476,7 +1476,7 @@ namespace RunSection
 		{
 			// Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 			{
 			   	_specdens += (static_cast<std::complex<double>>(_ampl_list[ii]) * (static_cast<std::complex<double>>(_tau_c_list[ii]) / (arma::cx_double(1.00,0.00) + (pow(_domega,2) * (pow(static_cast<std::complex<double>>(_tau_c_list[ii]),2)))))); 
 			}
@@ -1486,7 +1486,7 @@ namespace RunSection
 		{
 			// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 				{
 					_specdens +=  (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00/static_cast<std::complex<double>>(_tau_c_list[ii]) - (arma::cx_double(0.0, 1.0)*_domega)));
 				}	

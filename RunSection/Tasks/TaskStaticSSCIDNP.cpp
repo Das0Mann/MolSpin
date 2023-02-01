@@ -49,6 +49,7 @@ namespace RunSection
 		auto systems = this->SpinSystems();
 		for(auto i = systems.cbegin(); i != systems.cend(); i++)
 		{
+
 			// Make sure we have an initial state
 			auto initial_states = (*i)->InitialState();
 			if(initial_states.size() < 1)
@@ -143,21 +144,29 @@ namespace RunSection
 				{
 					for(m=0; m < nuclei_list.size(); m++)
 					{
-						if ((*l)->Name() == nuclei_list[m])
+						std::string spintype;
+						(*l)->Properties()->Get("type", spintype);
+
+						if(spintype != "electron")
 						{
+							std::cout << spintype << std::endl;
+						}
+
+						if ((*l)->Name() == nuclei_list[m])
+						{		
 							std::cout << (*l)->Name() << std::endl;
 							if(!space.CreateOperator(arma::conv_to<arma::cx_mat>::from( (*l)->Sz() ), (*l), Sproj))			
 							{
 								return false;
 							}
 						
-							std::cout << Sproj << std::endl;
+						//	std::cout << Sproj << std::endl;
 
 							// Obtain the results
 							arma::cx_mat P;
-							double sum_yield;
+							//double sum_yield;
 
-							sum_yield = 0.0;
+							//sum_yield = 0.0;
 
 							this->Data() << this->RunSettings()->CurrentStep() << " ";
 							this->WriteStandardOutput(this->Data());
@@ -182,7 +191,7 @@ namespace RunSection
 									//std::cout << P << std::endl;
 									//std::cout << Sproj << std::endl;
 
-									sum_yield += std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0));
+								//	sum_yield += std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0));
 
 									std::cout << std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0)) << std::endl;
 
@@ -190,9 +199,9 @@ namespace RunSection
 									this->Data() << std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0)) << " ";
 								}
 
-								this->Data() << sum_yield << " ";
+								//this->Data() << sum_yield << " ";
 							
-								sum_yield *= 0.0;
+								//sum_yield *= 0.0;
 							}
 							else
 							{
@@ -206,15 +215,15 @@ namespace RunSection
 										continue;
 									}
 								
-									sum_yield += std::real(arma::trace(Sproj * P * rho0));
+								//	sum_yield += std::real(arma::trace(Sproj * P * rho0));
 
 									// Return the yield for this state - note that no reaction rates are included here.
 									this->Data() << std::abs(arma::trace(P * rho0)) << " ";
 								}
 							
-								this->Data() << sum_yield << " ";
+								//this->Data() << sum_yield << " ";
 							
-								sum_yield *= 0.0;
+								//sum_yield *= 0.0;
 							}	
 
 						}

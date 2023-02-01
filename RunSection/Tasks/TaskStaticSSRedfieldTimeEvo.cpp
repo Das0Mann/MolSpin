@@ -63,7 +63,7 @@ namespace RunSection
 		
 		// Loop through all SpinSystems
 		int ic = 0;	// System counter
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			// Make sure we have an initial state
 			auto initial_states = (*i)->InitialState();
@@ -80,7 +80,7 @@ namespace RunSection
 			spaces[ic] = space;
 			
 			// Get the initial state
-			for(auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+			for(auto j = initial_states.cbegin(); j < initial_states.cend(); j++)
 			{
 				arma::cx_mat tmp_rho0;
 				if(!space.GetState(*j, tmp_rho0))
@@ -227,7 +227,7 @@ namespace RunSection
 			// ------------------------------------------------------------------
 
 			this->Log() << "Starting with construction of relaxation matrix." << std::endl;
-			for(auto interaction = (*i)->interactions_cbegin(); interaction != (*i)->interactions_cend(); interaction++)
+			for(auto interaction = (*i)->interactions_cbegin(); interaction < (*i)->interactions_cend(); interaction++)
 			{
 				if((*interaction)->Properties()->GetList("tau_c", tau_c_list))
 				{ 
@@ -243,7 +243,7 @@ namespace RunSection
 							auto group1 = (*interaction)->Group1();
 
 							// Loop through groups to get all interaction type
-							for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+							for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 							{
 								// Which operator basis was chosen:						
 								if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
@@ -701,9 +701,9 @@ namespace RunSection
 							auto group2 = (*interaction)->Group2();
 
 							// Loop through groups to get all interaction [group1 = electrons, group2 = particles electrons interact with, commonly nuclei]
-							for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+							for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 							{
-								for(auto s2 = group2.cbegin(); s2 != group2.cend(); s2++)
+								for(auto s2 = group2.cbegin(); s2 < group2.cend(); s2++)
 								{
 									if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
 									{
@@ -1139,12 +1139,12 @@ namespace RunSection
 		this->Data() << this->RunSettings()->CurrentStep() << " 0 ";	// "0" refers to the time
 		this->WriteStandardOutput(this->Data());
 		ic = 0;
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			arma::cx_mat PState;
 			auto states = (*i)->States();
 
-			for(auto j = states.cbegin(); j != states.cend(); j++)
+			for(auto j = states.cbegin(); j < states.cend(); j++)
 			{
 				if(!spaces[ic].GetState((*j), PState))
 				{
@@ -1173,7 +1173,7 @@ namespace RunSection
 			
 			// Loop through the systems again and progress a step
 			ic = 0;
-			for(auto i = systems.cbegin(); i != systems.cend(); i++)
+			for(auto i = systems.cbegin(); i < systems.cend(); i++)
 			{
 				// Take a step "first" is propagator and "second" is current state
 				rho0vec = P[ic].first * P[ic].second;
@@ -1190,7 +1190,7 @@ namespace RunSection
 				// Obtain the results
 				arma::cx_mat PState;
 				auto states = (*i)->States();
-				for(auto j = states.cbegin(); j != states.cend(); j++)
+				for(auto j = states.cbegin(); j < states.cend(); j++)
 				{
 					if(!spaces[ic].GetState((*j), PState))
 					{
@@ -1277,11 +1277,11 @@ namespace RunSection
 		
 		// Get header for each spin system
 		auto systems = this->SpinSystems();
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			// Write each state name
 			auto states = (*i)->States();
-			for(auto j = states.cbegin(); j != states.cend(); j++)
+			for(auto j = states.cbegin(); j < states.cend(); j++)
 				_stream << (*i)->Name() << "." << (*j)->Name() << " ";
 		}
 		_stream << std::endl;
@@ -1320,7 +1320,7 @@ namespace RunSection
 		{
 			// Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 			{
 			   	_specdens += (static_cast<std::complex<double>>(_ampl_list[ii]) * (static_cast<std::complex<double>>(_tau_c_list[ii]) / (arma::cx_double(1.00,0.00) + (pow(_domega,2) * (pow(static_cast<std::complex<double>>(_tau_c_list[ii]),2)))))); 
 			}
@@ -1330,7 +1330,7 @@ namespace RunSection
 		{
 			// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 				{
 					_specdens +=  (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00/static_cast<std::complex<double>>(_tau_c_list[ii]) - (arma::cx_double(0.0, 1.0)*_domega)));
 				}	

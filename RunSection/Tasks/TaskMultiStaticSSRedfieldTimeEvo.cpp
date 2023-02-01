@@ -58,7 +58,7 @@ namespace RunSection
 		auto systems = this->SpinSystems();
 		std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>> spaces;
 		unsigned int dimensions = 0;
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			auto space = std::make_shared<SpinAPI::SpinSpace>(*(*i));
 			
@@ -77,7 +77,7 @@ namespace RunSection
 		unsigned int nextDimension = 0;	// Keeps track of the dimension where the next spin space starts
 		
 		// Loop through the systems again to fill this matrix and vector
-		for(auto i = spaces.cbegin(); i != spaces.cend(); i++)
+		for(auto i = spaces.cbegin(); i < spaces.cend(); i++)
 		{
 			// Make sure we have an initial state
 			auto initial_states = i->first->InitialState();
@@ -90,7 +90,7 @@ namespace RunSection
 			else
 			{
 				// Get the initial state for the current system
-				for(auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				for(auto j = initial_states.cbegin(); j < initial_states.cend(); j++)
 				{
 					arma::cx_mat tmp_rho0;
 					if(!i->second->GetState(*j, tmp_rho0))
@@ -246,7 +246,7 @@ namespace RunSection
 				// ------------------------------------------------------------------
 
 				this->Log() << "Starting with construction of relaxation matrix." << std::endl;
-				for(auto interaction = (i->first->interactions_cbegin()); interaction != (i->first->interactions_cend()); interaction++)
+				for(auto interaction = (i->first->interactions_cbegin()); interaction < (i->first->interactions_cend()); interaction++)
 				{
 					if((*interaction)->Properties()->GetList("tau_c", tau_c_list))
 					{ 
@@ -262,7 +262,7 @@ namespace RunSection
 								auto group1 = (*interaction)->Group1();
 
 								// Loop through groups to get all interaction type
-								for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+								for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 								{
 									// Which operator basis was chosen:						
 									if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
@@ -703,9 +703,9 @@ namespace RunSection
 								auto group2 = (*interaction)->Group2();
 
 								// Loop through groups to get all interaction [group1 = electrons, group2 = particles electrons interact with, commonly nuclei]
-								for(auto s1 = group1.cbegin(); s1 != group1.cend(); s1++)
+								for(auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 								{
-									for(auto s2 = group2.cbegin(); s2 != group2.cend(); s2++)
+									for(auto s2 = group2.cbegin(); s2 < group2.cend(); s2++)
 									{
 										if((*interaction)->Properties()->Get("ops", ops) && ops == 1)
 										{
@@ -1109,13 +1109,13 @@ namespace RunSection
 			
 			// Obtain the creation operators - note that we need to loop through the other SpinSystems again to find transitions leading into the current SpinSystem
 			unsigned int nextCDimension = 0;	// Similar to nextDimension, but to keep track of first dimension for this other SpinSystem
-			for(auto j = spaces.cbegin(); j != spaces.cend(); j++)
+			for(auto j = spaces.cbegin(); j < spaces.cend(); j++)
 			{
 				// Creation operators are off-diagonal elements
 				if(j != i)
 				{
 					// Check all transitions whether they should produce a creation operator
-					for(auto t = j->first->transitions_cbegin(); t != j->first->transitions_cend(); t++)
+					for(auto t = j->first->transitions_cbegin(); t < j->first->transitions_cend(); t++)
 					{
 						// Does the Transition lead into the current spin space?
 						if((*t)->Target() == i->first)
@@ -1149,7 +1149,7 @@ namespace RunSection
 		this->WriteStandardOutput(this->Data());
 		nextDimension = 0;
 		
-		for(auto i = spaces.cbegin(); i != spaces.cend(); i++)
+		for(auto i = spaces.cbegin(); i < spaces.cend(); i++)
 		{
 			// Get the superspace result vector and convert it back to the native Hilbert space
 			arma::cx_mat rho_result;
@@ -1191,7 +1191,7 @@ namespace RunSection
 			
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
-			for(auto i = spaces.cbegin(); i != spaces.cend(); i++)
+			for(auto i = spaces.cbegin(); i < spaces.cend(); i++)
 			{
 				// Get the superspace result vector and convert it back to the native Hilbert space
 				arma::cx_mat rho_result;
@@ -1225,7 +1225,7 @@ namespace RunSection
 		// Loop through all states
 		arma::cx_mat P;
 		auto states = _system.States();
-		for(auto j = states.cbegin(); j != states.cend(); j++)
+		for(auto j = states.cbegin(); j < states.cend(); j++)
 		{
 			if(!_space.GetState((*j), P))
 			{
@@ -1247,11 +1247,11 @@ namespace RunSection
 		
 		// Get header for each spin system
 		auto systems = this->SpinSystems();
-		for(auto i = systems.cbegin(); i != systems.cend(); i++)
+		for(auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			// Write each state name
 			auto states = (*i)->States();
-			for(auto j = states.cbegin(); j != states.cend(); j++)
+			for(auto j = states.cbegin(); j < states.cend(); j++)
 				_stream << (*i)->Name() << "." << (*j)->Name() << " ";
 		}
 		_stream << std::endl;
@@ -1339,7 +1339,7 @@ namespace RunSection
 		{
 			// Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 			{
 			   	_specdens += (static_cast<std::complex<double>>(_ampl_list[ii]) * (static_cast<std::complex<double>>(_tau_c_list[ii]) / (arma::cx_double(1.00,0.00) + (pow(_domega,2) * (pow(static_cast<std::complex<double>>(_tau_c_list[ii]),2)))))); 
 			}
@@ -1349,7 +1349,7 @@ namespace RunSection
 		{
 			// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
 			#pragma omp for
-			for (auto ii = 0; ii != _tau_c_list.size(); ii++)
+			for (auto ii = 0; ii < _tau_c_list.size(); ii++)
 				{
 					_specdens +=  (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00/static_cast<std::complex<double>>(_tau_c_list[ii]) - (arma::cx_double(0.0, 1.0)*_domega)));
 				}	
