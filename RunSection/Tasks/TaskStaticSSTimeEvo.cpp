@@ -249,7 +249,7 @@ namespace RunSection
 			}
 		}
 		
-		// Get the reaction operator type
+		// Get the reacton operator type
 		std::string str;
 		if(this->Properties()->Get("reactionoperators", str))
 		{

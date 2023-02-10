@@ -20,9 +20,9 @@
 # Note that this line should be added to LFLAGS only.
 # --------------------------------------------------------------------------
 # Compile using Armadillo, here assuming OpenBLAS and Lapack is used
-ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
+ARMADILLO = -larmadillo -lopenblas -llapack
 # For an installation in a non-standard location, use:
-#ARMADILLO = -I/path/to/armadillo/installdir/include/ -DARMA_DONT_USE_WRAPPER -fopenmp
+#ARMADILLO = -I/path/to/armadillo/installdir/include/ -DARMA_DONT_USE_WRAPPER
 # --------------------------------------------------------------------------
 # If you have different versions of gcc or the C++ stdlib installed,
 # adding the following to LFLAGS may help:
@@ -50,7 +50,7 @@ DEP_RUNSECTION_CUSTOMTASKS =
 # ---
 # RunSection tasks
 PATH_RUNSECTION_TASKS = ./RunSection/Tasks
-OBJS_RUNSECTION_TASKS = $(PATH_RUNSECTION_TASKS)/TaskStaticSS.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSSymmetricDecay.o $(PATH_RUNSECTION_TASKS)/TaskHamiltonianEigenvalues.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskGammaCompute.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskMultiDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfield.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldSparse.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvoSparse.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSSpectra.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSCIDNP.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDecRedfield.o $(OBJS_RUNSECTION_CUSTOMTASKS) 
+OBJS_RUNSECTION_TASKS = $(PATH_RUNSECTION_TASKS)/TaskStaticSS.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSSymmetricDecay.o $(PATH_RUNSECTION_TASKS)/TaskHamiltonianEigenvalues.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskGammaCompute.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskMultiDynamicHSTimeEvo.o $(OBJS_RUNSECTION_CUSTOMTASKS)
 DEP_RUNSECTION_TASKS = $(DEP_RUNSECTION_CUSTOMTASKS)
 # ---
 # RunSection actions
@@ -68,7 +68,7 @@ OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUN
 CC = g++ -std=c++14		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
 LFLAGS = -Wall -O2		# Linker Flags
-CFLAGS = -g -Wall -c	# Compile flags to .o
+CFLAGS = -Wall -c -O2	# Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------

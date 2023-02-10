@@ -112,7 +112,6 @@ namespace SpinAPI
 						tmp += S1x * S2x * A(0,0) + S1x * S2y * A(0,1) + S1x * S2z * A(0,2);
 						tmp += S1y * S2x * A(1,0) + S1y * S2y * A(1,1) + S1y * S2z * A(1,2);
 						tmp += S1z * S2x * A(2,0) + S1z * S2y * A(2,1) + S1z * S2z * A(2,2);
-						
 					}
 					else
 					{
@@ -138,7 +137,7 @@ namespace SpinAPI
 		// Multiply by common prefactor (bohr magneton / hbar)
 		if(_interaction->AddCommonPrefactor())
 			tmp *= 8.794e+1;
-
+		
 		// Check whether we want a superspace or Hilbert space result
 		if(this->useSuperspace)
 		{
@@ -288,7 +287,7 @@ namespace SpinAPI
 		}
 		else
 		{
-			// We already have the result in the dense matrix to the Hamiltonian at the given time or trajectorye Hilbert space
+			// We already have the result in the Hilbert space
 			_out = tmp;
 		}
 		
@@ -311,7 +310,7 @@ namespace SpinAPI
 		arma::cx_mat result;
 		if(!this->InteractionOperator((*i), result))
 			return false;
-
+		
 		// We have already used the first interaction
 		i++;
 		

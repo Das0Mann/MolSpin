@@ -22,15 +22,6 @@
 #include "TaskGammaCompute.h"
 #include "TaskMultiStaticSSTimeEvo.h"
 #include "TaskMultiDynamicHSTimeEvo.h"
-
-#include "TaskStaticSSRedfield.h"
-#include "TaskStaticSSRedfieldSparse.h"
-#include "TaskStaticSSRedfieldTimeEvo.h"
-#include "TaskStaticSSRedfieldTimeEvoSparse.h"
-#include "TaskMultiStaticSSRedfieldTimeEvo.h"
-#include "TaskStaticSSSpectra.h"
-#include "TaskStaticSSCIDNP.h"
-//#include "TaskStaticRPOnlyHSSymDecRedfield.h"
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
 {
@@ -52,16 +43,6 @@ namespace RunSection
 		else if(_tasktype.compare("multistaticss-timeevolution") == 0 || _tasktype.compare("staticss-multisystem") == 0) {task = std::make_shared<TaskMultiStaticSSTimeEvo>(_obj, *this);}
 		else if(_tasktype.compare("multidynamichs-timeevolution") == 0 || _tasktype.compare("dynamichs-multisystem") == 0) {task = std::make_shared<TaskMultiDynamicHSTimeEvo>(_obj, *this);}
 		
-		//NEW (Added by Luca Gerhards): Including BWR-Relaxation Theory Task Class [TaskStaticSSRedfield.cpp] as CreateTask member.
-		
-		else if(_tasktype.compare("redfield-relaxation") ==0 || _tasktype.compare("Redfield-Relaxation") == 0) {task = std::make_shared<TaskStaticSSRedfield>(_obj, *this);}
-		else if(_tasktype.compare("redfield-relaxation-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldSparse>(_obj, *this);}
-		else if(_tasktype.compare("redfield-relaxation-timeevolution") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvo>(_obj, *this);}
-		else if(_tasktype.compare("redfield-relaxation-timeevolution-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvoSparse>(_obj, *this);}
-		else if(_tasktype.compare("multistaticss-redfield-timeevolution") ==0 || _tasktype.compare("staticss-multisystem-redfield-timeevolution") == 0) {task = std::make_shared<TaskMultiStaticSSRedfieldTimeEvo>(_obj, *this);}
-		//else if(_tasktype.compare("RP-Symmetricuncoupled-Redfield") ==0 || _tasktype.compare("rp-symmetricuncoupled-redfield") == 0) {task = std::make_shared<TaskStaticRPOnlyHSSymDecRedfield>(_obj, *this);}
-		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0) {task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);}
-		else if(_tasktype.compare("staticss-cidnp") ==0 || _tasktype.compare("StaticSS-CIDNP") == 0) {task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);}	
 		// NOTE: To add a new task class, just add another "else if" here...
 		// The string used in the "compare" method is the "type" to be specified in the MolSpin input file
 	

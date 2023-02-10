@@ -1,5 +1,0 @@
-/users/student/pegu0756/molspin/build/CMakeFiles/rebuild_cache.dir
-/users/student/pegu0756/molspin/build/CMakeFiles/edit_cache.dir
-/users/student/pegu0756/molspin/build/CMakeFiles/molspin.dir
-/users/student/pegu0756/molspin/build/CMakeFiles/tests.dir
-/users/student/pegu0756/molspin/build/CMakeFiles/molspin_core.dir

@@ -1,1 +1,10 @@
-CMakeLists.txt.user
+# Ignore the executable
+/molspin
+/Tests/molspintest
+
+# Ignore all binaries
+*.o
+
+# Ignore output data and logfiles
+*.dat
+*.log

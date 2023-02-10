@@ -95,7 +95,6 @@ namespace RunSection
 				continue;
 			}
 			
-
 			// Get a matrix to collect all the terms (the total Liouvillian)
 			arma::sp_cx_mat A = arma::cx_double(0.0, -1.0) * H;
 			
@@ -106,7 +105,7 @@ namespace RunSection
 				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
 			}
 			A -= K;
-
+			
 			// Get the relaxation terms, assuming that they can just be added to the Liouvillian superoperator
 			arma::sp_cx_mat R;
 			for(auto j = (*i)->operators_cbegin(); j != (*i)->operators_cend(); j++)
@@ -117,7 +116,7 @@ namespace RunSection
 					this->Log() << "Added relaxation operator \"" << (*j)->Name() << "\" to the Liouvillian.\n";
 				}
 			}
-
+			
 			// Perform the calculation
 			this->Log() << "Ready to perform calculation." << std::endl;
 			arma::cx_vec result = solve(arma::conv_to<arma::cx_mat>::from(A), rho0vec);
@@ -129,11 +128,9 @@ namespace RunSection
 				this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
 				continue;
 			}
-
+			
 			// Obtain the results
 			arma::cx_mat P;
-			double sum_yield;
-
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			this->WriteStandardOutput(this->Data());
 			
@@ -153,12 +150,10 @@ namespace RunSection
 						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 						continue;
 					}
-					sum_yield += (*j)->Rate() * std::abs(arma::trace(P * rho0));
+					
 					// Return the yield for this transition
 					this->Data() << (*j)->Rate() * std::abs(arma::trace(P * rho0)) << " ";
 				}
-			    this->Data()<< sum_yield << " ";
-				sum_yield *= 0.0;
 			}
 			else
 			{

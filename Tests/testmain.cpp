@@ -42,9 +42,9 @@ int main(int argc,char** argv)
 	std::cout << "# -------------------------------------------------------" << std::endl;
 	std::cout << "# Molecular Spin Dynamics" << std::endl;
 	std::cout << "# " << std::endl;
-	std::cout << "# Developed 2017-2019 by Claus Nielsen and 2021-2022 by Luca Gerhards." << std::endl;
+	std::cout << "# Developed 2017-2019 by Claus Nielsen." << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
-	std::cout << "# Carl von Ossietzky University of Oldenburg." << std::endl;
+	std::cout << "# University of Southern Denmark." << std::endl;
 	std::cout << "# For more information see www.molspin.eu" << std::endl;
 	std::cout << "# -------------------------------------------------------" << std::endl;
 	std::cout << "# Unit Testing Module" << std::endl;

@@ -529,7 +529,7 @@ namespace SpinAPI
 			for(unsigned int i = 0; i < _s; i++)
 			{
 				double m = s - static_cast<double>(i);
-				(*tempmat)(i+1,i) = sqrt( s*(s + 1.0) - m*(m - 1.0) );	// S-|s,m> = hbar * sqrt(s(s+1) - m(m-1))|s,m-1>
+				(*tempmat)(i+1,i) = sqrt( s*(s + 1.0) - m*(m - 1.0) );	// S+|s,m> = hbar * sqrt(s(s+1) - m(m-1))|s,m-1>
 			}
 			
 			// Put the matrix into the collection

@@ -48,9 +48,6 @@ namespace RunSection
 			std::shared_ptr<BasicTask> CreateTask(const std::string&, const MSDParser::ObjectParser&);
 		
 		public:
-			// public variables
-
-
 			// Constructors / Destructors
 			RunSection();							// Normal constructor
 			RunSection(const RunSection&) = delete;	// Disable Copy-constructor
@@ -88,15 +85,6 @@ namespace RunSection
 			bool WriteOutputHeader(std::ostream&) const;	// Writes the headers for the output columns
 			bool WriteOutput(std::ostream&) const;			// Writes standard output (information about action targets)
 			
-			//void SetThreads(int value)
-    		//{
-      	  	//	threads = value;
-    		//}
-			
-			//int GetThreads()
-    		//{
-        	//	return threads;
-   			//}
 			// BasicTask can access SpinSystems and Settings to pass on to child task classes
 			friend class BasicTask;
 	};

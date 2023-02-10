@@ -104,7 +104,7 @@ namespace MSDParser
 			tmp = std::stod(str);
 		}
 		catch(const std::exception&) {return false;}
-		//vector<double>
+		
 		_out = tmp;
 		return true;
 	}
@@ -208,7 +208,6 @@ namespace MSDParser
 		// If the keyword was found
 		if(i != this->fields.end())
 		{
-			
 			// Get all the values separated by the delimiter
 			std::istringstream stream(i->second);
 			for(std::string s; std::getline(stream, s, _delimiter); )

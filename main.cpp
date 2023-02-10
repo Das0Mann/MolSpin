@@ -6,27 +6,21 @@
 // See LICENSE.txt for license information.
 //////////////////////////////////////////////////////////////////////////////
 // Adjust this number to fit your system
-#define MAX_THREADS 48
+#define MAX_THREADS 56
 //////////////////////////////////////////////////////////////////////////////
 #include <iostream>
-#include <omp.h>
 #include "Settings.h"
 #include "MSDParser.h"
 #include "RunSection.h"
 #include "FileReader.h"
-#include <fstream>
-#include <unistd.h>
-
 //////////////////////////////////////////////////////////////////////////////
 // NOTE: Comment out this line, and the use of openblas_set_num_threads below
 // if you are NOT using OpenBLAS.
 extern "C" void openblas_set_num_threads(int);
-extern "C" void omp_set_num_threads(int);
 //////////////////////////////////////////////////////////////////////////////
-
 int main(int argc,char** argv)
 {
-	const std::string MolSpin_version = "v2.0";
+	const std::string MolSpin_version = "v0.9";
 	const std::string hline = "# ---------------------------------------------------------------------------------";
 	
 	// Check for proper input
@@ -90,26 +84,13 @@ int main(int argc,char** argv)
 		std::cout << "    molspin -r <step number> -c <task name> -a myfile.msd" << std::endl;
 		return 0;
 	}
-
-	std::cout << hline << std::endl;
-	std::cout << "# 	        &&&&&&&                                                                                                                " << std::endl;
-	std::cout << "#      &&&&&&(      *&&&&&&                                                                                                          " << std::endl;
-	std::cout << "#      &&&(            ,&&&      &&&&           &&&&                    &&&#      &&&&&&&/                        &&&                " << std::endl;
-	std::cout << "#        &&&&&&&&&&&&&&&&        &&&&&&       &&&&&&                    &&&#   /&&&&& &&&&&&                      &&&                " << std::endl;
-	std::cout << "#           &&&    &&&#          &&&&&&&    #&&&&&&&       &&&&&.       &&&#   &&&/             &&&&&&&&&&&%             &&  &&&&&   " << std::endl;
-	std::cout << "#    ,&&&&&&  &&&&&&  &&&&&&&    &&&  &&&& &&&& &&&&    &&&&&%&&&&&&    &&&#   &&&&&&&          &&&&&&&#&&&&&%    &&&    &&&&&&&&&&&&" << std::endl;
-	std::cout << "# &&&.                       &&& &&&    &&&&&   &&&&   &&&        &&&   &&&#      (&&&&&&&&&    &&&&       &&&&   &&&    &&&      &&&" << std::endl;
-	std::cout << "#    &&&&&&&&&&&&&&&&&&&&&&&&/   &&&     &&     &&&&  &&&&        &&&   &&&#             %&&&   &&&        &&&&   &&&    &&&      &&&" << std::endl;
-	std::cout << "#        &&&&      &&&&          &&&            &&&&   &&&&      &&&&   &&&#   &&&       &&&&   &&&&      &&&&    &&&    &&&      &&&" << std::endl;
-	std::cout << "#       &&&            &&&,      &&&            &&&&     &&&&&&&&&&     &&&#    &&&&&&&&&&&&    &&& &&&&&&&&&     &&&    &&&      &&&" << std::endl;
-	std::cout << "#      &&/               &&&                                                                    &&&                                  " << std::endl;
-	std::cout << "#        &&&&&&&&&&&&&&&&                                                                       &&&      							   " << std::endl;
+	
 	std::cout << hline << std::endl;
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;
-	std::cout << "# Developed 2017-2019 by Claus Nielsen and 2021-2022 by Luca Gerhards." << std::endl;
+	std::cout << "# Developed 2017-2019 by Claus Nielsen." << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
-	std::cout << "# Carl von Ossietzky University of Oldenburg." << std::endl;
+	std::cout << "# University of Southern Denmark." << std::endl;
 	std::cout << "# For more information see www.molspin.eu" << std::endl;
 	std::cout << hline << std::endl;
 	
@@ -126,15 +107,11 @@ int main(int argc,char** argv)
 	unsigned int firstStep = 1;
 	unsigned int stepLimit = 0;
 	std::string checkpoint = "";
-	openblas_set_num_threads(1);
-	omp_set_num_threads(1);
-	
 	
 	// -----------------------------------------------------
 	// START Parsing of commandline options
 	// -----------------------------------------------------
 	// If some options are provided
-
 	std::cout << "# Recognized commandline options will be listed in this section." << std::endl;
 	if(argc > 2)
 	{
@@ -164,7 +141,6 @@ int main(int argc,char** argv)
 					{
 						std::cout << "# - Number of threads set to " << threads << "." << std::endl;
 						openblas_set_num_threads(threads);
-						omp_set_num_threads(threads);
 					}
 					else
 					{
@@ -228,7 +204,6 @@ int main(int argc,char** argv)
 						
 						// Add the definition
 						MSDParser::FileReader::AddDefinition(defineName, defineValue);
-						
 					}
 				}
 			}
@@ -376,8 +351,7 @@ int main(int argc,char** argv)
 	RunSection::RunSection rs;
 	rs.SetOverruleAppend(appendMode);
 	rs.SetNoCalculationsMode(noCalculations);
-	//rs.SetThreads(threads);
-
+	
 	arma::wall_clock timer;
 	timer.tic();
 	
@@ -391,6 +365,7 @@ int main(int argc,char** argv)
 		
 		std::string strargv(argv[argc-1]);
 		MSDParser::MSDParser parser(strargv);
+		
 		// Attempt to load the input file
 		if(!parser.Load())
 		{
@@ -517,8 +492,7 @@ int main(int argc,char** argv)
 		std::cout << hline << std::endl;
 		std::cout << "# Shutting down without doing calculations." << std::endl;
 	}
-
+	
 	return 0;
 }
-
 //////////////////////////////////////////////////////////////////////////////

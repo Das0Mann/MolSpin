@@ -145,42 +145,17 @@ namespace SpinAPI
 			bool ReorderBasis(arma::sp_cx_mat&, const std::vector<spin_ptr>&, const std::vector<spin_ptr>&) const;
 			bool ReorderingOperator(arma::sp_cx_mat&, const std::vector<spin_ptr>&, const std::vector<spin_ptr>&) const;	// Returns the reordering operator itself, used by the previous methods
 			
-			// ------------------------------------------------
-			// Spherical tensors (SpinSpace_operators.cpp)
-			// ------------------------------------------------
-
-			// Rank 1			
-			bool Rk1SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const;
-			bool Rk1SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const;
-			bool Rk1SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const;
-			
-			//Linear interactions rank 0 & 2
-			bool LRk0TensorT0(const spin_ptr& _spin1,const arma::cx_vec& _field, arma::cx_mat& _out) const;
-			bool LRk0TensorT0(const spin_ptr& _spin1,const arma::cx_vec& _field, arma::sp_cx_mat& _out) const;
-			bool LRk2SphericalTensorT0(const spin_ptr&, const arma::cx_vec& _field, arma::cx_mat&) const;		// T(m=0)
-			bool LRk2SphericalTensorT0(const spin_ptr&, const arma::cx_vec& _field, arma::sp_cx_mat&) const;	// T(m=0), sparse
-			bool LRk2SphericalTensorTp1(const spin_ptr&, const arma::cx_vec& _field, arma::cx_mat&) const;		// T(m=+1)
-			bool LRk2SphericalTensorTp1(const spin_ptr&, const arma::cx_vec& _field, arma::sp_cx_mat&) const;	// T(m=+1), sparse
-			bool LRk2SphericalTensorTm1(const spin_ptr&, const arma::cx_vec& _field, arma::cx_mat&) const;		// T(m=-1)
-			bool LRk2SphericalTensorTm1(const spin_ptr&, const arma::cx_vec& _field, arma::sp_cx_mat&) const;	// T(m=-1), sparse
-			bool LRk2SphericalTensorTp2(const spin_ptr&, const arma::cx_vec& _field, arma::cx_mat&) const;		// T(m=+2)
-			bool LRk2SphericalTensorTp2(const spin_ptr&, const arma::cx_vec& _field, arma::sp_cx_mat&) const;	// T(m=+2), sparse
-			bool LRk2SphericalTensorTm2(const spin_ptr&, const arma::cx_vec& _field, arma::cx_mat&) const;		// T(m=-2)
-			bool LRk2SphericalTensorTm2(const spin_ptr&, const arma::cx_vec& _field, arma::sp_cx_mat&) const;	// T(m=-2), sparse
-
-			//Bilinear interactions rank 0 & 2
-			bool BlRk0TensorT0(const spin_ptr& _spin1,const spin_ptr& _spin2 , arma::cx_mat& _out) const;
-			bool BlRk0TensorT0(const spin_ptr& _spin1,const spin_ptr& _spin2 , arma::sp_cx_mat& _out) const;
-			bool BlRk2SphericalTensorT0(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=0)
-			bool BlRk2SphericalTensorT0(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=0), sparse
-			bool BlRk2SphericalTensorTp1(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=+1)
-			bool BlRk2SphericalTensorTp1(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=+1), sparse
-			bool BlRk2SphericalTensorTm1(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=-1)
-			bool BlRk2SphericalTensorTm1(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=-1), sparse
-			bool BlRk2SphericalTensorTp2(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=+2)
-			bool BlRk2SphericalTensorTp2(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=+2), sparse
-			bool BlRk2SphericalTensorTm2(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=-2)
-			bool BlRk2SphericalTensorTm2(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=-2), sparse
+			// Spherical tensors
+			bool SphericalTensorT0(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=0)
+			bool SphericalTensorT0(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=0), sparse
+			bool SphericalTensorTp1(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=+1)
+			bool SphericalTensorTp1(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=+1), sparse
+			bool SphericalTensorTm1(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=-1)
+			bool SphericalTensorTm1(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=-1), sparse
+			bool SphericalTensorTp2(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=+2)
+			bool SphericalTensorTp2(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=+2), sparse
+			bool SphericalTensorTm2(const spin_ptr&, const spin_ptr&, arma::cx_mat&) const;		// T(m=-2)
+			bool SphericalTensorTm2(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=-2), sparse
 			
 			// ------------------------------------------------
 			// Hamiltonian representations in the space (SpinSpace_hamiltonians.cpp)

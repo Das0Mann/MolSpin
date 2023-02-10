@@ -13,6 +13,7 @@
 #define MOD_RunSection_ActionTarget
 
 #include <armadillo>
+
 namespace RunSection
 {
 	template <class T>

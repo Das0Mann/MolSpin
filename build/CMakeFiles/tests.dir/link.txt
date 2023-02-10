@@ -1,1 +1,0 @@
-/usr/bin/g++  -g   CMakeFiles/tests.dir/Tests/testmain.cpp.o  -o tests  libmolspin_core.a -larmadillo -lopenblas -llapack -fopenmp 

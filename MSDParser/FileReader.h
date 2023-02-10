@@ -64,7 +64,7 @@ namespace MSDParser
 			explicit FileReader(const std::string&);	// Normal constructor
 			FileReader(const FileReader&) = delete;		// Do not allow use of the copy constructor
 			~FileReader();								// Destructor
-
+			
 			// Operators
 			FileReader& operator=(const FileReader&) = delete;	// Do not allow use of copy-assignment
 			

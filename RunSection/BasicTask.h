@@ -82,14 +82,13 @@ namespace RunSection
 			bool Run();
 			bool IsValid();
 			std::string Name();
-
+			
 			// Method to provide BasicTask with access to ActionTargets
 			void SetActionTargets(const std::map<std::string, ActionScalar>&, const std::map<std::string, ActionVector>&);
 			
 			// Methods to change the Log and Data stream
 			bool SetLogStream(std::ostream&);
 			bool SetDataStream(std::ostream&);
-
 	};
 }
 

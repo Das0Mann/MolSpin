@@ -124,10 +124,6 @@ namespace SpinAPI
 	{
 		_out = arma::cx_mat(_in);
 		_out.reshape(sqrt(_in.size()),sqrt(_in.size()));
-		
-		// Change by Luca Gerhards -- Needs to be done if matrix is not fully symmetric due to the filling of rows in c++
-		_out = _out.st();
-		
 		return true;
 	}
 	
@@ -345,827 +341,215 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Spherical tensors
 	// -----------------------------------------------------
-	
-
-	//-----------------------------------------------------------------
-	//-----------------RANK 1 TENSORS - BILINEAR-----------------------
-	//-----------------------------------------------------------------
-
-	// Rank 1 spherical tensors with m=0
-	bool SpinSpace::Rk1SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2x;
-		arma::cx_mat S2y;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = -1.0 * (arma::cx_double(0.0, 1.0) / sqrt(2.0)) * ((S1x * S2y) - (S1y * S2x));	
-		return true;
-	}
-
-	//Rank 1 spherical tensors with m=+1
-	bool SpinSpace::Rk1SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2x;
-		arma::cx_mat S2y;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = -0.5 * (S1z * S2x - S1x * S2y + (arma::cx_double(0.0,1.0) * (S1z * S2y - S1y * S2z)));
-		
-		return true;
-	}
-
-	//Rank 1 spherical tensors with m=-1
-	bool SpinSpace::Rk1SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2x;
-		arma::cx_mat S2y;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = -0.5 * (S1z * S2x - S1x * S2y + (arma::cx_double(0.0,1.0) * (S1z * S2y - S1y * S2z)));
-		
-		return true;
-	}
-
-	//-----------------------------------------------------------------
-	//---------------------LINEAR RANK 2 TENSORS---------------------
-	//-----------------------------------------------------------------
-
-	// Rank 0 spherical tensor
-	bool SpinSpace::LRk0TensorT0(const spin_ptr& _spin1,const arma::cx_vec& _field, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
-		// Create the spherical tensor
-		_out = (1.0/sqrt(3.0)) * (S1x * _field(0) + S1y * _field(1) + S1z * _field(2));
-		return true;
-	}
-
-	// Rank 0 spherical tensor
-	bool SpinSpace::LRk0TensorT0(const spin_ptr& _spin1,const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S1z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
-		// Create the spherical tensor
-		_out = (1.0/sqrt(3.0)) * (S1x * _field(0) + S1y * _field(1) + S1z * _field(2));
-		return true;
-	}
-
 	// Rank 2 spherical tensor with m=0
-	bool SpinSpace::LRk2SphericalTensorT0(const spin_ptr& _spin1,const arma::cx_vec& _field, arma::cx_mat& _out) const
+	bool SpinSpace::SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
 	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
+		arma::cx_mat S1p;
+		arma::cx_mat S2p;
+		arma::cx_mat S1m;
+		arma::cx_mat S2m;
 		arma::cx_mat S1z;
+		arma::cx_mat S2z;
 		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sp() ), _spin1, S1p)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sm() ), _spin1, S1m)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sp() ), _spin2, S2p)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sm() ), _spin2, S2m)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = (1.00/sqrt(6.0)) * ((3 * S1z * _field(2))-(S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
-
-		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
+		_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
 		return true;
 	}
-
-
+	
 	// Rank 2 spherical tensor with m=0, sparse version
-	bool SpinSpace::LRk2SphericalTensorT0(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
+	bool SpinSpace::SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
 	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
+		arma::sp_cx_mat S1p;
+		arma::sp_cx_mat S2p;
+		arma::sp_cx_mat S1m;
+		arma::sp_cx_mat S2m;
 		arma::sp_cx_mat S1z;
+		arma::sp_cx_mat S2z;
 		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(_spin1->Sp(), _spin1, S1p)
+			|| !this->CreateOperator(_spin1->Sm(), _spin1, S1m)
+			|| !this->CreateOperator(_spin1->Sz(), _spin1, S1z)
+			|| !this->CreateOperator(_spin2->Sp(), _spin2, S2p)
+			|| !this->CreateOperator(_spin2->Sm(), _spin2, S2m)
+			|| !this->CreateOperator(_spin2->Sz(), _spin2, S2z))
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
+		
 		// Create the spherical tensor
-		_out = (1.00/sqrt(6.0)) * ((3* S1z * _field(2))-(S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
-		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
+		_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=+1
-	bool SpinSpace::LRk2SphericalTensorTp1(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
 	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
+		arma::cx_mat S1p;
+		arma::cx_mat S2p;
 		arma::cx_mat S1z;
-
+		arma::cx_mat S2z;
 		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sp() ), _spin1, S1p)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sp() ), _spin2, S2p)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = -0.5 * (S1x * _field(2) + S1z * _field(0) + (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
+		_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=+1, sparse version
-	bool SpinSpace::LRk2SphericalTensorTp1(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
 	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
+		arma::sp_cx_mat S1p;
+		arma::sp_cx_mat S2p;
 		arma::sp_cx_mat S1z;
-
+		arma::sp_cx_mat S2z;
 		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(_spin1->Sp(), _spin1, S1p)
+			|| !this->CreateOperator(_spin1->Sz(), _spin1, S1z)
+			|| !this->CreateOperator(_spin2->Sp(), _spin2, S2p)
+			|| !this->CreateOperator(_spin2->Sz(), _spin2, S2z))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = -0.5 * (S1x * _field(2) + S1z * _field(0) + (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
+		_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=-1
-	bool SpinSpace::LRk2SphericalTensorTm1(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
 	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
+		arma::cx_mat S1m;
+		arma::cx_mat S2m;
 		arma::cx_mat S1z;
-
+		arma::cx_mat S2z;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sm() ), _spin1, S1m)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sm() ), _spin2, S2m)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(2) + S1z * _field(0) - (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
-		//_out = (S1m*S2z + S1z*S2m) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
+		_out = (S1m*S2z + S1z*S2m) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=-1, sparse version
-	bool SpinSpace::LRk2SphericalTensorTm1(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
 	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
+		arma::sp_cx_mat S1m;
+		arma::sp_cx_mat S2m;
 		arma::sp_cx_mat S1z;
-
+		arma::sp_cx_mat S2z;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(_spin1->Sm(), _spin1, S1m)
+			|| !this->CreateOperator(_spin1->Sz(), _spin1, S1z)
+			|| !this->CreateOperator(_spin2->Sm(), _spin2, S2m)
+			|| !this->CreateOperator(_spin2->Sz(), _spin2, S2z))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(2) + S1z * _field(0) - (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
-		//_out = (S1m*S2z + S1z*S2m) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
+		_out = (S1m*S2z + S1z*S2m) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=+2
-	bool SpinSpace::LRk2SphericalTensorTp2(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTp2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
 	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-
+		arma::cx_mat S1p;
+		arma::cx_mat S2p;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sp() ), _spin1, S1p)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sp() ), _spin2, S2p))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) + (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
-		//_out = S1p*S2p;
+		_out = S1p*S2p;
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=+2, sparse version
-	bool SpinSpace::LRk2SphericalTensorTp2(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTp2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
 	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S1z;
-
+		arma::sp_cx_mat S1p;
+		arma::sp_cx_mat S2p;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(_spin1->Sp(), _spin1, S1p)
+			|| !this->CreateOperator(_spin2->Sp(), _spin2, S2p))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) + (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
-		//_out = S1p*S2p;
+		_out = S1p*S2p;
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=-2
-	bool SpinSpace::LRk2SphericalTensorTm2(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTm2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
 	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-
+		arma::cx_mat S1m;
+		arma::cx_mat S2m;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sm() ), _spin1, S1m)
+			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sm() ), _spin2, S2m))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) - (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
-		//_out = S1m*S2m;
+		_out = S1m*S2m;
 		return true;
 	}
 	
 	// Rank 2 spherical tensor with m=-2, sparse version
-	bool SpinSpace::LRk2SphericalTensorTm2(const spin_ptr& _spin1, const arma::cx_vec& _field, arma::sp_cx_mat& _out) const
+	bool SpinSpace::SphericalTensorTm2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
 	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S1z;
-
+		arma::sp_cx_mat S1m;
+		arma::sp_cx_mat S2m;
+		
 		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z))
+		if(!this->CreateOperator(_spin1->Sm(), _spin1, S1m)
+			|| !this->CreateOperator(_spin2->Sm(), _spin2, S2m))
 		{
 			return false;
 		}
 		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
-		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) - (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
-		//_out = S1m*S2m;
-		return true;
-	}
-
-	//-----------------------------------------------------------------
-	//---------------------BILINEAR RANK 2 TENSORS---------------------
-	//-----------------------------------------------------------------
-	
-	// Rank 0 spherical tensor
-	bool SpinSpace::BlRk0TensorT0(const spin_ptr& _spin1,const spin_ptr& _spin2 , arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S1y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2x;
-		arma::cx_mat S2y;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out =  (1.0/sqrt(3.0)) * (S1x * S2x + S1y * S2y + S1z * S2z );
-		return true;
-	}
-
-	// Rank 0 spherical tensor, sparse version
-	bool SpinSpace::BlRk0TensorT0(const spin_ptr& _spin1,const spin_ptr& _spin2 , arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out =  (1.0/sqrt(3.0)) * (S1x * S2x + S1y * S2y + S1z * S2z );
-		return true;
-	}
-
-	// Rank 2 spherical tensor with m=0
-	bool SpinSpace::BlRk2SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S2x;
-		arma::cx_mat S1y;
-		arma::cx_mat S2y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = (1.00/sqrt(6.00)) * (3.00 * S1z * S2z - (S1x * S2x + S1y * S2y + S1z * S2z));
-		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
-		return true;
-	}
-
-
-	// Rank 2 spherical tensor with m=0, sparse version
-	bool SpinSpace::BlRk2SphericalTensorT0(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = (1.00/sqrt(6.00)) * (3.00 * S1z * S2z - (S1x * S2x + S1y * S2y + S1z * S2z));
-		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=+1
-	bool SpinSpace::BlRk2SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S2x;
-		arma::cx_mat S1y;
-		arma::cx_mat S2y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-		// Create the spherical tensor
-		_out = -0.5 * (S1x * S2z + S1z * S2x + (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=+1, sparse version
-	bool SpinSpace::BlRk2SphericalTensorTp1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = -0.5 * (S1x * S2z + S1z * S2x + (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=-1
-	bool SpinSpace::BlRk2SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S2x;
-		arma::cx_mat S1y;
-		arma::cx_mat S2y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x * S2z + S1z * S2x - (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=-1, sparse version
-	bool SpinSpace::BlRk2SphericalTensorTm1(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x * S2z + S1z * S2x - (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=+2
-	bool SpinSpace::BlRk2SphericalTensorTp2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-	    arma::cx_mat S1x;
-		arma::cx_mat S2x;
-		arma::cx_mat S1y;
-		arma::cx_mat S2y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x *S2x - S1y *S2y + (arma::cx_double(0.0,1.0) * (S1x * S2y + S1y * S2x)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=+2, sparse version
-	bool SpinSpace::BlRk2SphericalTensorTp2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x *S2x - S1y *S2y + (arma::cx_double(0.0,1.0) * (S1x * S2y + S1y * S2x)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=-2
-	bool SpinSpace::BlRk2SphericalTensorTm2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::cx_mat& _out) const
-	{
-		arma::cx_mat S1x;
-		arma::cx_mat S2x;
-		arma::cx_mat S1y;
-		arma::cx_mat S2y;
-		arma::cx_mat S1z;
-		arma::cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x * S2x - S1y *S2y - (arma::cx_double(0.0,1.0) * (S1x * S2y + S1y * S2x)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
-		return true;
-	}
-	
-	// Rank 2 spherical tensor with m=-2, sparse version
-	bool SpinSpace::BlRk2SphericalTensorTm2(const spin_ptr& _spin1, const spin_ptr& _spin2, arma::sp_cx_mat& _out) const
-	{
-		arma::sp_cx_mat S1x;
-		arma::sp_cx_mat S2x;
-		arma::sp_cx_mat S1y;
-		arma::sp_cx_mat S2y;
-		arma::sp_cx_mat S1z;
-		arma::sp_cx_mat S2z;
-		
-		// We need all of these operators
-		if(!this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sx() ), _spin1, S1x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sy() ), _spin1, S1y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin1->Sz() ), _spin1, S1z)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sx() ), _spin2, S2x)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sy() ), _spin2, S2y)
-			|| !this->CreateOperator(arma::conv_to<arma::sp_cx_mat>::from( _spin2->Sz() ), _spin2, S2z))
-		{
-			return false;
-		}
-		
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
-		// Create the spherical tensor
-		_out = 0.5 * (S1x *S2x - S1y *S2y - (arma::cx_double(0.0,1.0) * (S1x * S2y + S1y * S2x)));
-		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
+		_out = S1m*S2m;
 		return true;
 	}
 }
