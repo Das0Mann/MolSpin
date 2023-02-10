@@ -9,7 +9,6 @@
 #define MAX_THREADS 48
 //////////////////////////////////////////////////////////////////////////////
 #include <iostream>
-#include <omp.h>
 #include "Settings.h"
 #include "MSDParser.h"
 #include "RunSection.h"
@@ -18,12 +17,13 @@
 #include <unistd.h>
 
 //////////////////////////////////////////////////////////////////////////////
-// NOTE: Comment out this line, and the use of openblas_set_num_threads below
-// if you are NOT using OpenBLAS.
+#ifdef USE_OPENBLAS
 extern "C" void openblas_set_num_threads(int);
+#endif
+#ifdef USE_OPENMP
 extern "C" void omp_set_num_threads(int);
+#endif
 //////////////////////////////////////////////////////////////////////////////
-
 int main(int argc,char** argv)
 {
 	const std::string MolSpin_version = "v2.0";
@@ -107,9 +107,10 @@ int main(int argc,char** argv)
 	std::cout << hline << std::endl;
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;
-	std::cout << "# Developed 2017-2019 by Claus Nielsen and 2021-2022 by Luca Gerhards." << std::endl;
+	std::cout << "# Developed 2017-2019 by Claus Nielsen* and 2021-2022 by Luca Gerhards**." << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
-	std::cout << "# Carl von Ossietzky University of Oldenburg." << std::endl;
+	std::cout << "# *:  University of Southern Denmark." << std::endl;
+	std::cout << "# **: Carl von Ossietzky University of Oldenburg." << std::endl;
 	std::cout << "# For more information see www.molspin.eu" << std::endl;
 	std::cout << hline << std::endl;
 	
@@ -126,8 +127,6 @@ int main(int argc,char** argv)
 	unsigned int firstStep = 1;
 	unsigned int stepLimit = 0;
 	std::string checkpoint = "";
-	openblas_set_num_threads(1);
-	omp_set_num_threads(1);
 	
 	
 	// -----------------------------------------------------
@@ -163,8 +162,12 @@ int main(int argc,char** argv)
 					if(threads >= 1 && threads <= MAX_THREADS)
 					{
 						std::cout << "# - Number of threads set to " << threads << "." << std::endl;
+#ifdef USE_OPENBLAS
 						openblas_set_num_threads(threads);
+#endif
+#ifdef USE_OPENMP
 						omp_set_num_threads(threads);
+#endif
 					}
 					else
 					{
@@ -228,7 +231,6 @@ int main(int argc,char** argv)
 						
 						// Add the definition
 						MSDParser::FileReader::AddDefinition(defineName, defineValue);
-						
 					}
 				}
 			}
@@ -391,6 +393,7 @@ int main(int argc,char** argv)
 		
 		std::string strargv(argv[argc-1]);
 		MSDParser::MSDParser parser(strargv);
+		
 		// Attempt to load the input file
 		if(!parser.Load())
 		{
