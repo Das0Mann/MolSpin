@@ -17,9 +17,19 @@ namespace RunSection
 	// -----------------------------------------------------
 	// Settings Constructors and Destructor
 	// -----------------------------------------------------
-	Settings::Settings()	: steps( DefaultSteps ), currentStep( 1 ), dataDelimiter( ' ' ), notificationLevel(DefaultNotificationLevel), time(DefaultTime), trajectoryStep(DefaultTrajectoryStep),
-								setTrajectoryStepBeforeTime(true)
+	Settings::Settings() :
+		steps(1),
+		currentStep(1),
+		dataDelimiter(' '),
+		notificationLevel(DefaultNotificationLevel),
+		time(0),
+		trajectoryStep(0),
+		setTrajectoryStepBeforeTime(true)
 	{
+		// Note: These cannot be initialized in the initializer list as the default values are initialized after the fields (unless header file is reordered)
+		steps = DefaultSteps;
+		time = DefaultTime;
+		trajectoryStep = DefaultTrajectoryStep;
 	}
 	
 	Settings::Settings(const Settings& _settings)	: steps( _settings.steps ), currentStep( _settings.currentStep ), dataDelimiter( _settings.dataDelimiter ), notificationLevel( _settings.notificationLevel ),
@@ -148,6 +158,9 @@ namespace RunSection
 		// Prepare vectors for the created ActionTargets
 		std::vector<NamedActionScalar> scalars;
 		//std::vector<NamedActionVector> vectors;
+
+		// Suppress warning about unused parameter. Remove if _vectors is getting used.
+		(void)_vectors;
 		
 		// Create ActionScalars
 		ActionScalar settingsTimeScalar = ActionScalar(this->time, &CheckActionScalarSettingsTime, false);
