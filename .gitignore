@@ -1,1 +1,16 @@
+# Ignore the executable (not be necessary with out-of-source build)
+/molspin
+/Tests/molspintest
+
+# Ignore all binaries
+*.o
+
+# Ignore output data and logfiles
+*.dat
+*.log
+
+# Ignore user-specific settings
 CMakeLists.txt.user
+build
+.idea
+.vscode
