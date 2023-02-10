@@ -13,8 +13,12 @@
 #define MOD_RunSection_ActionTarget
 
 #include <armadillo>
+
 namespace RunSection
 {
+	template <class T>
+	using CheckFunction = bool (*)(const T&);
+
 	template <class T>
 	class ActionTarget
 	{
@@ -31,7 +35,7 @@ namespace RunSection
 		
 		public:
 			// Constructors / Destructors
-			ActionTarget<T>(T& _data, auto _check, bool _readonly = false)	: data(&_data), readonly(_readonly), initialValue(_data), check(_check) {};	// Normal constructor
+			ActionTarget<T>(T& _data, CheckFunction<T> _check, bool _readonly = false)	: data(&_data), readonly(_readonly), initialValue(_data), check(_check) {};	// Normal constructor
 			ActionTarget<T>(const ActionTarget<T>& _at)	: data(_at.data), readonly(_at.readonly), initialValue(_at.initialValue), check(_at.check) {};	// Copy-constructor
 			~ActionTarget<T>() {};																														// Destructor
 			
