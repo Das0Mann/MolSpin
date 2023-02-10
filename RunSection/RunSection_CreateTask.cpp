@@ -30,7 +30,7 @@
 #include "TaskMultiStaticSSRedfieldTimeEvo.h"
 #include "TaskStaticSSSpectra.h"
 #include "TaskStaticSSCIDNP.h"
-#include "TaskStaticRPOnlyHSSymDecRedfield.h"
+//#include "TaskStaticRPOnlyHSSymDecRedfield.h"
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
 {
@@ -59,7 +59,7 @@ namespace RunSection
 		else if(_tasktype.compare("redfield-relaxation-timeevolution") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvo>(_obj, *this);}
 		else if(_tasktype.compare("redfield-relaxation-timeevolution-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvoSparse>(_obj, *this);}
 		else if(_tasktype.compare("multistaticss-redfield-timeevolution") ==0 || _tasktype.compare("staticss-multisystem-redfield-timeevolution") == 0) {task = std::make_shared<TaskMultiStaticSSRedfieldTimeEvo>(_obj, *this);}
-    	else if(_tasktype.compare("RP-Symmetricuncoupled-Redfield") ==0 || _tasktype.compare("rp-symmetricuncoupled-redfield") == 0) {task = std::make_shared<TaskStaticRPOnlyHSSymDecRedfield>(_obj, *this);}	
+		//else if(_tasktype.compare("RP-Symmetricuncoupled-Redfield") ==0 || _tasktype.compare("rp-symmetricuncoupled-redfield") == 0) {task = std::make_shared<TaskStaticRPOnlyHSSymDecRedfield>(_obj, *this);}
 		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0) {task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);}
 		else if(_tasktype.compare("staticss-cidnp") ==0 || _tasktype.compare("StaticSS-CIDNP") == 0) {task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);}	
 		// NOTE: To add a new task class, just add another "else if" here...
