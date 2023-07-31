@@ -69,9 +69,13 @@ namespace SpinAPI
 					this->type = InteractionType::SingleSpin;
 				}
 			}
-			else if(str.compare("twospin") == 0 || str.compare("doublespin") == 0 || str.compare("hyperfine") == 0 || str.compare("dipole") == 0 || str.compare("exchange") == 0)
+			else if(str.compare("twospin") == 0 || str.compare("doublespin") == 0 || str.compare("hyperfine") == 0 || str.compare("dipole") == 0)
 			{
 				this->type = InteractionType::DoubleSpin;
+			}
+			else if(str.compare("twospin") == 0 || str.compare("exchange") == 0)
+			{
+				this->type = InteractionType::Exchange;
 			}
 		}
 		
@@ -191,6 +195,8 @@ namespace SpinAPI
 		if(this->type == InteractionType::SingleSpin && !this->group1.empty())
 			return true;
 		else if(this->type == InteractionType::DoubleSpin && !this->group1.empty() && !this->group2.empty())
+			return true;
+		else if(this->type == InteractionType::Exchange && !this->group1.empty() && !this->group2.empty())
 			return true;
 		
 		return false;
@@ -355,7 +361,7 @@ namespace SpinAPI
 			
 			createdSpinLists = this->AddSpinList(str, _spinlist, this->group1);
 		}
-		else if(this->type == InteractionType::DoubleSpin)
+		else if(this->type == InteractionType::DoubleSpin || this->type == InteractionType::Exchange)
 		{
 			// Attempt to get a list of spins from the input file
 			std::string str1;
@@ -434,6 +440,14 @@ namespace SpinAPI
 			result.insert(result.begin(), this->group1.cbegin(), this->group1.cend());	// Insert at the beginning of the vector
 			result.insert(result.end(), this->group2.cbegin(), this->group2.cend());	// Insert after the previously inserted spins
 		}
+		else if(this->type == InteractionType::Exchange &&
+			(std::find(this->group1.cbegin(), this->group1.cend(), _spin) != this->group1.cend()
+			|| std::find(this->group2.cbegin(), this->group2.cend(), _spin) != this->group2.cend()))
+		{
+			result.reserve(this->group1.size() + this->group2.size());					// Reserve space for both groups to avoid more than 1 reallocation
+			result.insert(result.begin(), this->group1.cbegin(), this->group1.cend());	// Insert at the beginning of the vector
+			result.insert(result.end(), this->group2.cbegin(), this->group2.cend());	// Insert after the previously inserted spins
+		}
 		else
 		{
 			// If the spin is not in either group, the spin itself forms a complete set with respect to the current interaction object
@@ -450,7 +464,7 @@ namespace SpinAPI
 		bool was_extended = false;
 		
 		// Only the DoubleSpin interaction type couples spins
-		if(this->type == InteractionType::DoubleSpin)
+		if(this->type == InteractionType::DoubleSpin || this->type == InteractionType::Exchange) 
 		{
 			bool containsInteractingSpins = false;
 			

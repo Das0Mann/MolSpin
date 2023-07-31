@@ -122,6 +122,67 @@ namespace SpinAPI
 				}
 			}
 		}
+		else if(_interaction->Type() == InteractionType::Exchange)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spins1 = _interaction->Group1();
+			auto spins2 = _interaction->Group2();
+			arma::cx_mat S1x;
+			arma::cx_mat S1y;
+			arma::cx_mat S1z;
+			arma::cx_mat S2x;
+			arma::cx_mat S2y;
+			arma::cx_mat S2z;
+			
+			// Fill the matrix with the sum of all the interactions
+			for(auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			{
+				for(auto j = spins2.cbegin(); j != spins2.cend(); j++)
+				{
+					// Obtain the magnetic moment operators within the Hilbert space
+					if(_interaction->IgnoreTensors())
+					{
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), S1x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), S1y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), S1z);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sx()), (*j), S2x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sy()), (*j), S2y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sz()), (*j), S2z);
+					}
+					else
+					{
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), S1x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), S1y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), S1z);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tx()), (*j), S2x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), S2y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), S2z);
+					}
+					
+					if(ATensor != nullptr && !IsIsotropic(*ATensor))
+					{
+						// Use the tensor to calculate the product S_1 * A * S_2
+						auto A = ATensor->LabFrame();
+						tmp += 2.0 * (S1x * S2x * A(0,0) + S1x * S2y * A(0,1) + S1x * S2z * A(0,2));
+						tmp += 2.0 * (S1y * S2x * A(1,0) + S1y * S2y * A(1,1) + S1y * S2z * A(1,2));
+						tmp += 2.0 * (S1z * S2x * A(2,0) + S1z * S2y * A(2,1) + S1z * S2z * A(2,2));
+
+						arma::cx_mat half = 0.5 * arma::eye<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+						tmp += half;
+						
+					}
+					else
+					{
+						// If there is no interaction tensor or if the tensor is isotropic, just take the dot product
+						tmp += 2.0 * (S1x * S2x + S1y * S2y + S1z * S2z);
+						arma::cx_mat half = 0.5 * arma::eye<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+						tmp += half;
+					}
+				}
+			}
+		}
 		else
 		{
 			// The interaction type was not recognized
@@ -173,6 +234,7 @@ namespace SpinAPI
 		// Get the interaction tensor
 		auto ATensor = _interaction->CouplingTensor();
 		
+
 		if(_interaction->Type() == InteractionType::SingleSpin)
 		{
 			// Get the field at the current time or trajectory step
@@ -227,20 +289,35 @@ namespace SpinAPI
 			arma::sp_cx_mat S2x;
 			arma::sp_cx_mat S2y;
 			arma::sp_cx_mat S2z;
-			
+
 			// Fill the matrix with the sum of all the interactions
 			for(auto i = spins1.cbegin(); i != spins1.cend(); i++)
 			{
 				for(auto j = spins2.cbegin(); j != spins2.cend(); j++)
 				{
-					// Obtain the magnetic moment operators within the Hilbert space
-					this->CreateOperator((*i)->Tx(), (*i), S1x);
-					this->CreateOperator((*i)->Ty(), (*i), S1y);
-					this->CreateOperator((*i)->Tz(), (*i), S1z);
-					this->CreateOperator((*j)->Tx(), (*j), S2x);
-					this->CreateOperator((*j)->Ty(), (*j), S2y);
-					this->CreateOperator((*j)->Tz(), (*j), S2z);
+                    // Obtain the magnetic moment operators within the Hilbert space
+	                if(_interaction->IgnoreTensors())
+        	        {
 					
+					    this->CreateOperator((*i)->Sx(), (*i), S1x);
+                        this->CreateOperator((*i)->Sy(), (*i), S1y);
+                        this->CreateOperator((*i)->Sz(), (*i), S1z);
+                        this->CreateOperator((*j)->Sx(), (*j), S2x);
+                        this->CreateOperator((*j)->Sy(), (*j), S2y);
+                        this->CreateOperator((*j)->Sz(), (*j), S2z);
+
+					}
+                			else
+					{
+
+		            	this->CreateOperator((*i)->Tx(), (*i), S1x);
+                        this->CreateOperator((*i)->Ty(), (*i), S1y);
+                        this->CreateOperator((*i)->Tz(), (*i), S1z);
+                        this->CreateOperator((*j)->Tx(), (*j), S2x);
+                        this->CreateOperator((*j)->Ty(), (*j), S2y);
+                        this->CreateOperator((*j)->Tz(), (*j), S2z);
+					}
+
 					if(ATensor != nullptr && !IsIsotropic(*ATensor))
 					{
 						// Use the tensor to calculate the product S_1 * A * S_2
@@ -253,6 +330,67 @@ namespace SpinAPI
 					{
 						// If there is no interaction tensor or if the tensor is isotropic, just take the dot product
 						tmp += S1x * S2x + S1y * S2y + S1z * S2z;
+					}
+				}
+			}
+		}
+		else if(_interaction->Type() == InteractionType::Exchange)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spins1 = _interaction->Group1();
+			auto spins2 = _interaction->Group2();
+			arma::cx_mat S1x;
+			arma::cx_mat S1y;
+			arma::cx_mat S1z;
+			arma::cx_mat S2x;
+			arma::cx_mat S2y;
+			arma::cx_mat S2z;
+			
+			// Fill the matrix with the sum of all the interactions
+			for(auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			{
+				for(auto j = spins2.cbegin(); j != spins2.cend(); j++)
+				{
+					// Obtain the magnetic moment operators within the Hilbert space
+					if(_interaction->IgnoreTensors())
+					{
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), S1x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), S1y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), S1z);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sx()), (*j), S2x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sy()), (*j), S2y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sz()), (*j), S2z);
+					}
+					else
+					{
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), S1x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), S1y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), S1z);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tx()), (*j), S2x);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), S2y);
+						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), S2z);
+					}
+					
+					if(ATensor != nullptr && !IsIsotropic(*ATensor))
+					{
+						// Use the tensor to calculate the product S_1 * A * S_2
+						auto A = ATensor->LabFrame();
+						tmp += 2.0 * (S1x * S2x * A(0,0) + S1x * S2y * A(0,1) + S1x * S2z * A(0,2));
+						tmp += 2.0 * (S1y * S2x * A(1,0) + S1y * S2y * A(1,1) + S1y * S2z * A(1,2));
+						tmp += 2.0 * (S1z * S2x * A(2,0) + S1z * S2y * A(2,1) + S1z * S2z * A(2,2));
+
+						arma::sp_cx_mat half = 0.5 * arma::eye<arma::sp_cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+						tmp(arma::span::all, arma::span::all) += half;
+					}
+					else
+					{
+						// If there is no interaction tensor or if the tensor is isotropic, just take the dot product
+						tmp += 2.0 * (S1x * S2x + S1y * S2y + S1z * S2z);
+						
+						arma::sp_cx_mat half = 0.5 * arma::eye<arma::sp_cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+						tmp(arma::span::all, arma::span::all) += half;
 					}
 				}
 			}

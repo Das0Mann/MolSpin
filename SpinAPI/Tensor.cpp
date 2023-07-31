@@ -131,14 +131,33 @@ namespace SpinAPI
 		
 		// Check whether the matrix was symmetric (i.e. _matrix - symmetrized_matrix == 0)
 		if(abs(_matrix - symmetrized_matrix).max() > 1e-10)
+		{
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
-		
-		// Do the diagonalization
-		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
-		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
-		this->axis1 = principalAxes.col(0);
-		this->axis2 = principalAxes.col(1);
-		this->axis3 = principalAxes.col(2);
+			
+			// Do the diagonalization (TODO: THIS HAS TO BE OPTIMIZED, arma::eig_gen only uses cx_vec/mat datatypes 
+			// which in return is not in alignment with the rest of molspin)
+			arma::cx_mat cxprincipalAxes = arma::eye<arma::cx_mat>(3, 3);
+			arma::cx_vec _tmpvec = arma::conv_to< arma::cx_vec >::from((this->anisotropic));
+			arma::cx_mat _tmpmatrix = arma::conv_to< arma::cx_mat >::from(_matrix);
+			
+			arma::eig_gen(_tmpvec, cxprincipalAxes, _tmpmatrix);
+
+			arma::mat principalAxes = arma::conv_to< arma::mat >::from(cxprincipalAxes);
+			this->anisotropic = arma::conv_to< arma::vec >::from(_tmpvec);
+			
+			this->axis1 = principalAxes.col(0);
+			this->axis2 = principalAxes.col(1);
+			this->axis3 = principalAxes.col(2);
+		}
+		else
+		{
+			// Do the diagonalization
+			arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
+			arma::eig_sym(this->anisotropic, principalAxes, _matrix);
+			this->axis1 = principalAxes.col(0);
+			this->axis2 = principalAxes.col(1);
+			this->axis3 = principalAxes.col(2);
+		}
 	}
 	
 	void Tensor::SeparateIsotropy()
@@ -281,7 +300,9 @@ namespace SpinAPI
 				}
 			}
 		}
-		
+	
+
+		//TODO: Here is a problem when not using hermitian matrices such as for pseudo-secular	
 		// Put the tensor data members into the correct format
 		this->SeparateIsotropy();
 		
@@ -389,9 +410,9 @@ namespace SpinAPI
 		axes.col(0) = this->axis1;
 		axes.col(1) = this->axis2;
 		axes.col(2) = this->axis3;
-		
+
 		// TODO: Consider whether arma::inv(axes) should be used instead of axes.t() if "axes" are not orthogonal
-		return (axes * arma::diagmat(this->anisotropic) * axes.t()) + arma::eye(size(axes)) * this->isotropic;
+		return (axes * arma::diagmat(this->anisotropic) * arma::inv(axes)) + arma::eye(size(axes)) * this->isotropic;
 	}
 	
 	// Return the length of the trajectory (0 if no trajectory is assigned)

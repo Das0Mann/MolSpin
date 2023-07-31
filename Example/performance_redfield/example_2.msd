@@ -8,84 +8,71 @@ SpinSystem system1
 	// ---------------------------------------------------------
 	// Spins
 	// ---------------------------------------------------------
-
 	Spin RPElectron1
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.0035);
+		tensor = isotropic(2.0023);
 	}
 	
 	Spin RPElectron2
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.002);
+		tensor = isotropic(2.0023);
 	}
 
-	Spin C1
+	Spin H1
 	{
 		type = nucleus;
 		spin = 1/2;
-		tensor = matrix("-0.099 -0.003 0.000;-0.003 -0.087 0.000;0.000 0.000 1.757");
 	}
 
+        Spin H2
+        {
+                type = nucleus;
+                spin = 1/2;
+        }
+
+	
 	// -------------------------
 	// Zeeman interaction
 	// -------------------------
 	
 	Interaction zeeman1
+        {
+                prefactor = 1e-6;
+                type = zeeman;
+                field = "0 0 50";
+                spins = RPElectron1;
+                tau_c = 1;          
+                g = 0.001;
+        }
+
+	Interaction zeeman2
 	{
+		prefactor = 1e-6;
 		type = zeeman;
-		field = "0 0 0.1";
-		group1 = RPElectron1;
-	}	
-
-        Interaction zeeman2
-        {
-                type = zeeman;
-                field = "0.0 0.0 0.1";
-                spins = RPElectron2;
-        }
-
-        Interaction zeemanC1
-        {
-                type = zeeman;
-                field = "0.0 0.0 0.1";
-                spins = C1;
-		CommonPrefactor = true;
-		Prefactor = -0.000382102;
-        }
-
-
+		field = "0 0 50";
+		spins = RPElectron2;
+		tau_c = 1;
+                g = 0.001;
+	}
+	
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
-
-	Interaction radicalhyperfineC1
+	Interaction radical1hyperfine
 	{
+		prefactor = 1e-3;
 		type = hyperfine;
-		group1 = RPElectron1;
-		group2 = C1;
-//		tensor = matrix("0.0 0.0 0.0; 0.0 0.0 0.0; 0.1 0.1 -0.03");
-		commonprefactor = false;
-		prefactor= 0.001;
-	} 
-
-	// -------------------------
-        // Dipolar interactions
-        // -------------------------
-
-        Interaction radical
-        {
-                type = doublespin;
-                group1 = RPElectron1;
-                group2 = RPElectron2;
-                tensor = matrix("-0.002 0.0 0.0; 0.0 -0.002 0.0; 0.0 0.0 -0.002");
-		commonprefactor = false;	
-                prefactor= 0.001;
-        }
-
+		group1 = RPElectron1, RPElectron2;
+		group2 = H1,H2;
+                tensor = matrix("0.5 0.0 0.0;0.0 0.5 0.0;0.0 0.0 2.0");
+		tau_c = 1;
+                g = 0.01;
+	}
+ 
 	// -------------------------
 	// Spin States
         // ---------------------------------------------------------
@@ -111,7 +98,6 @@ SpinSystem system1
 		spin(RPElectron2) = |-1/2>;
 		spin(RPElectron1) = |-1/2>;
 	}
-
 	State Identity
 	{
 	}
@@ -123,29 +109,37 @@ SpinSystem system1
         {
                 type = sink;
                 source = Singlet;
-                rate = 0.015;
-        }
-
-        Transition Product2
-        {
-                type = sink;
-                source = T0;
-                rate = 0.015;
+                rate =0.001 ;
         }
 
         Transition Product3
         {
                 type = sink;
-                source = Tp;
-                rate = 0.015;
+                source = Singlet;
+                rate =0.001;
         }
 
         Transition Product4
         {
                 type = sink;
-                source = Tm;
-                rate = 0.015;
+                source = T0;
+                rate =0.001;
         }
+
+        Transition Product5
+        {
+                type = sink;
+                source = Tp;
+                rate =0.001;
+        }
+
+        Transition Product6
+        {
+                type = sink;
+                source = Tm;
+                rate =0.001;
+        }
+
 
         // -------------------------
 	// Spin system properties
@@ -160,46 +154,44 @@ Settings
 {
 	Settings general
 	{
-		steps = 100;
+		steps = 1; //88;
 		notifications = details;
 	}
 
-        Action field_strength1
-        {
-	        type = AddVector;
-	        vector = system1.zeeman1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
+	Action scan
+	{	
+		type = rotatevector;
+		vector = system1.zeeman1.field;
+		axis = "0 1 0";
+		value = 90;
+	}
 
-        Action field_strength2
-        {
-	        type = AddVector;
-	        vector = system1.zeeman2.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
-
-        Action field_strength2
-        {
-	        type = AddVector;
-	        vector = system1.zeemanC1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
-
+	Output orientation
+	{
+		type = vectorangle;
+		vector = system1.zeeman1.field;
+		reference = " 0 0 1";
+	}
 }
 // -------------------------------------------------------------
 Run
 {
-	Task Method1
-	{
-                type = StaticSS-CIDNP;
-                logfile = "example_staticsscidnp.log";
-                datafile = "example_staticsscidnp.dat";
-                transitionyields = true;
-		nuclei_list=C1;
-	}
+//	Task Method1
+//	{
+//                type = StaticSS;
+//                logfile = "example_staticss.log";
+//                datafile = "example_staticss.dat";
+//                transitionyields = true;
+//	}
 	
+	Task Method2
+	{
+		type = redfield-relaxation;
+                logfile = "redfield-relaxation.log";
+                datafile = "redfield-relaxation.dat";
+                transitionyields = true;
+	
+	}
+
 }
 

@@ -19,10 +19,10 @@ namespace RunSection
 	class TaskStaticRPOnlyHSSymDecRedfield : public BasicTask
 	{
 		private:
-			double timestep;
-            double totaltime;
             bool modeQuantumYield;
             bool productYieldsOnly;                         // If true, a quantum yield will be calculated from each Transition object and multiplied by the rate constant
+	    double timestep;
+            double totaltime;
                                                             // If false, a quantum yield will be calculated each defined State object
 
 
@@ -33,6 +33,7 @@ namespace RunSection
 			bool Redfieldtensor(const arma::cx_mat& _op1, const arma::cx_mat& _op2, const arma::cx_mat& _specdens, arma::cx_mat& _redfieldtensor);
 			bool ConstructSpecDensGeneral(const int& _spectral_function, const std::vector<double>& _ampl_list, const std::vector<double>& _tau_c_list,const arma::cx_mat& _domega, arma::cx_mat& _specdens);
 			bool ConstructSpecDensSpecific(const int& _spectral_function, const std::complex<double>& _ampl, const std::complex<double>& _tau_c,const arma::cx_mat& _domega, arma::cx_mat& _specdens);
+			bool Slippage(arma::cx_mat ** _ptr_Tensors, const int& _num_op, const arma::cx_mat& _eig_val_mat, const arma::cx_mat& _domega, const arma::cx_mat& _rho0, const std::complex<double>& _tau_c, arma::cx_mat& _rho0_new);
 
 
 		protected:

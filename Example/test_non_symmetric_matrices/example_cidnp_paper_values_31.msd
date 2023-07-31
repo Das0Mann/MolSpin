@@ -13,62 +13,45 @@ SpinSystem system1
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.0035);
+		tensor = isotropic(1);
 	}
 	
 	Spin RPElectron2
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.002);
+		tensor = isotropic(1);
 	}
 
-	Spin C1
-	{
-		type = nucleus;
-		spin = 1/2;
-	}
-
-	// -------------------------
-	// Zeeman interaction
-	// -------------------------
-	
-	Interaction zeeman1
-	{
-		type = zeeman;
-		field = "0 0 1";
-		group1 = RPElectron1;
-	}	
-
-        Interaction zeeman2
+        Spin H1
         {
-                type = zeeman;
-                field = "0.0 0.0 1";
-                spins = RPElectron2;
+                spin = 1/2;
+		tensor = isotropic(1);
         }
 
-        Interaction zeemanC1
-        {
-                type = zeeman;
-                field = "0.0 0.0 1";
-                spins = C1;
-		CommonPrefactor = true;
-		Prefactor = -0.000382102;
-        }
-
-	// -------------------------
+	/ -------------------------
 	// Hyperfine interactions
 	// -------------------------
 
-	Interaction radicalhyperfineC1
-	{
-		type = hyperfine;
-		group1 = RPElectron1;
-		group2 = C1;
-		tensor = matrix("-0.099 -0.003 0.000;-0.003 -0.087 0.000;0.000 0.000 1.757");
-		commonprefactor = true;
-		prefactor= 0.001;
-	} 
+     	Interaction radical1hyperfinehydrogenH1asymmetric
+    	{
+        	type = hyperfine;
+        	group1 = RPElectron1;
+        	group2 = H1;
+                CommonPrefactor = false;
+		ignoretensors = true;
+		tensor = matrix("0.0 0.0 0.0;0.0 0.0 0.0;0.00125 0.0  0.005");
+    	}
+
+        Interaction radical1hyperfinehydrogenH1symmetric
+        {
+                type = hyperfine;
+                group1 = RPElectron1;
+                group2 = H1;
+                CommonPrefactor = false;
+                ignoretensors = true;
+                tensor = matrix("0.0 0.0 0.00125;0.0 0.0 0.0;0.00125 0.0  0.005");
+        }
 
 	// -------------------------
         // Dipolar interactions
@@ -79,9 +62,19 @@ SpinSystem system1
                 type = doublespin;
                 group1 = RPElectron1;
                 group2 = RPElectron2;
-		tensor=matrix("-0.002 0.0 0.0;0.0 -0.002 0.0;0.0 0.0 -0.002");
-		commonprefactor = true;	
-                prefactor= 0.001;
+		tensor=matrix("-0.00023193 0.0 0.0; 0.0 -0.00023193 0.0; 0.0 0.0 0.000463867");
+		ignoretensors=true;
+		CommonPrefactor = false;	
+        }
+
+        Interaction exchange
+        {
+                type = exchange;
+                group1 = RPElectron1;
+                group2 = RPElectron2;
+                tensor=isotropic(0.00054);
+                CommonPrefactor = false;
+		ignoretensors=true
         }
 
 	// -------------------------
@@ -121,29 +114,18 @@ SpinSystem system1
         {
                 type = sink;
                 source = Singlet;
-                rate = 0.015;
+		rate = 5.68E-05;	
+                //rate = 0.01;
         }
 
         Transition Product2
         {
                 type = sink;
-                source = T0;
-                rate = 0.015;
+                source = Identity;
+		rate = 5.68E-06;
+                //rate = 0.001;
         }
 
-        Transition Product3
-        {
-                type = sink;
-                source = Tp;
-                rate = 0.015;
-        }
-
-        Transition Product4
-        {
-                type = sink;
-                source = Tm;
-                rate = 0.015;
-        }
 
         // -------------------------
 	// Spin system properties
@@ -151,7 +133,7 @@ SpinSystem system1
 
 	Properties properties
 	{
-		initialstate = T0;
+		initialstate = T0,Tm,Tp;
 	}
 }
 // -------------------------------------------------------------
@@ -159,32 +141,18 @@ Settings
 {
 	Settings general
 	{
-		steps = 200;
+		steps = 1;
 		notifications = details;
 	}
 
-        Action field_strength1
-        {
-	        type = AddVector;
-	        vector = system1.zeeman1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
 
-        Action field_strength2
+        // ---------------------------------------------------------
+        // Outputs objects
+        // ---------------------------------------------------------
+        Output orientation
         {
-	        type = AddVector;
-	        vector = system1.zeeman2.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
-
-        Action field_strength2
-        {
-	        type = AddVector;
-	        vector = system1.zeemanC1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
+		type = xyz;
+                vector = system1.zeeman1.field;
         }
 }
 // -------------------------------------------------------------
@@ -193,10 +161,10 @@ Run
 	Task Method1
 	{
                 type = StaticSS-CIDNP;
-                logfile = "example_staticsscidnp.log";
-                datafile = "example_staticsscidnp.dat";
+                logfile = "example_staticsscidnp_paper_values_31.log";
+                datafile = "example_staticsscidnp_paper_values_32.dat";
                 transitionyields = true;
-		nuclei_list=C1;
+		nuclei_list = H1;
 	}	
 }
 

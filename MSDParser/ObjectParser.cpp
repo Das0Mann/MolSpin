@@ -316,7 +316,96 @@ namespace MSDParser
 		_out = tmp;
 		return true;
 	}
-	
+
+	// -----------------------------------------------------
+	// ObjectParser public Getmatrix method overloads
+	// - Similar to Get, but allows multiple values to be specifed
+	// -----------------------------------------------------
+	// Attemp to find a keyword matching the given name	y
+	bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
+	{
+		std::cout << "Starting with reading: " << _str << std::endl;
+
+		// Step 1: Get a list of strings by splitting _str using the delimiter ','
+		std::vector<std::string> strs;
+		if (!this->GetList(_str, strs, ','))
+			return false;
+
+		// Step 2: Check if the list of strings is empty
+		if (strs.empty())
+			return false;
+		
+		size_t numElements = 0;
+
+		// Step 3: Iterate through each string in the list to determine the number of elements
+		for (const std::string& str : strs)
+		{
+			size_t count = std::count(str.begin(), str.end(), ' ') + 1;
+
+			// If it's the first string, set the numElements
+			if (numElements == 0)
+				numElements = count;
+			// If the count is different from numElements, return false (rows should have the same number of elements)
+			else if (count != numElements)
+				return false;
+		}
+
+		std::cout << numElements << std::endl;
+		std::cout << strs.size() << std::endl;
+
+		// Step 4: Create a matrix with the size of the list of strings (rows) and numElements (columns)
+		arma::mat tmp(strs.size(), numElements);
+
+		// Step 5: Iterate through each string in the list
+		for (size_t i = 0; i < strs.size(); i++)
+		{
+			std::string str = strs[i];
+
+			// Step 6: Remove '[' and ']' characters from the string
+			str.erase(std::remove(str.begin(), str.end(), '['), str.end());
+			str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
+
+			// Step 7: Output the modified string
+			//std::cout << "Substring: " << str << std::endl;
+
+			std::istringstream stream(str);
+			std::string token;
+			size_t j = 0;
+
+			// Step 8: Split the string using the delimiter ' ' and parse the values into the matrix
+			while (std::getline(stream, token, ' '))
+			{
+				try {
+					tmp(i, j) = std::stod(token);
+					//std::cout << "Parsed value: " << tmp(i, j) << std::endl;
+				} catch (const std::exception& e) {
+					//std::cout << "Invalid number format: " << token << std::endl;
+					return false;
+				}
+
+				j++;
+			}
+		}
+
+		for (int i = 0; i < (int) strs.size();i++){
+			for(int j = 0; j < (int) numElements;j++){
+				if(tmp(i,j) <= 1e-20)
+				{
+					tmp(i,j) *= 0.0;
+				}	
+			}
+		}
+
+		std::cout << tmp << std::endl;
+		// Step 9: Assign the temporary matrix to the output matrix (_out)
+		_out = tmp;
+
+		// Step 10: Output a message indicating the successful parsing
+		std::cout << "Read the list of multiexponentials for " << _str << std::endl;
+
+		// Step 11: Return true to indicate successful parsing
+		return true;
+	}
 	// -----------------------------------------------------
 	// Specialized Get method to get a spin quantum number
 	// -----------------------------------------------------

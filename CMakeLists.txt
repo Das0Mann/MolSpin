@@ -3,13 +3,24 @@ cmake_minimum_required(VERSION 3.14)
 
 project(MolSpin)
 
+# Search for OpenMP
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+find_package(Armadillo)
+include_directories(${ARMADILLO_INCLUDE_DIRS})
+
 option(LINK_OPENBLAS "Whether OpenBLAS should be linked." ON)
 option(LINK_LAPACK "Whether LAPACK should be linked." ON)
 option(ENABLE_OPENMP "Whether OpenMP should be available from the MolSpin code." ON)
 
 # Compiler options
 set(CMAKE_CXX_STANDARD 14)
-add_compile_options(-Wall -O2)
+add_compile_options(-O2 -g -Wall -c)
 
 # Paths
 set(PATH_SOURCE_MOLSPIN_MAIN "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -185,7 +196,7 @@ set(LIBS_MOLSPIN_CORE
 
 # Dependencies
 set(LIBS_DEPENDENCIES
-	armadillo
+	${ARMADILLO_LIBRARIES} #	armadillo
 )
 
 if(LINK_OPENBLAS)
@@ -200,8 +211,8 @@ endif()
 # OpenMP is optional (does not affect OpenMP usage in Armadillo)
 if(ENABLE_OPENMP)
 	# The -fopenmp flag has be to be inserted after linking Armadillo, so add it to the end of the dependencies list
+	add_definitions(-DUSE_OPENMP=yes)
 	list(APPEND LIBS_DEPENDENCIES -fopenmp)
-	add_definitions(-DUSE_OPENMP)
 endif()
 
 # -------------------------------------------------

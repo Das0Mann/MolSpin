@@ -33,6 +33,7 @@ namespace SpinAPI
 		Undefined,
 		SingleSpin,
 		DoubleSpin,
+		Exchange,
 	};
 	
 	// Used by the Interaction class to determine the time-dependence of the field for SingleSpin interactions

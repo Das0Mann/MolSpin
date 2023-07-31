@@ -12,100 +12,83 @@ SpinSystem system1
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.0035);
 	}
 	
 	Spin RPElectron2
 	{
 		type = electron;
 		spin = 1/2;
-		tensor = isotropic(2.002);
 	}
 
-	Spin H1
+	Spin FADHBeta1
 	{
 		spin = 1/2;
+		tensor = matrix("0.00024374807218487007 -3.080644368944783e-05 2.9091859084380416e-05;-3.080644368944782e-05 0.00013035721866991337 -5.754234641385961e-06;2.909185908438041e-05 -5.75423464138596e-06 0.00011702083253180584");
 	}
 
-        Spin C1
-        {
-                spin = 1/2;
-        }
+	Spin FADH6
+	{
+		spin = 1/2;
+		tensor = matrix("-0.0001833333306189016 3.8247743672635986e-05 -1.5375003551147258e-06;3.8247743672635986e-05 -0.0004576429525705895 -2.353081542319135e-07;-1.537500355114725e-06 -2.3530815423191244e-07 -0.0004165071949152782");
+	}
 
-        Spin N1
-        {
-                spin = 1;
-        }
+	Spin FADN5
+	{
+		spin = 1;
+		tensor = matrix("-1.09302886e-05 -2.81218002e-06 -6.96255148e-05;-2.81218002e-06 -2.22239306e-05 1.15009400e-05;-6.96255148e-05 1.15009400e-05 0.00179211");
+	}
 
+	Spin FADN10
+	{
+		spin = 1;
+		tensor = matrix("1.72116133e-05 -1.66650515e-06 -2.60628815e-06;-1.66650515e-06 6.5802297e-06 -5.54980951e-06;-2.60628815e-06 -5.54980951e-06 0.00063954");
+	}
 
 	// -------------------------
 	// Zeeman interaction
 	// -------------------------
 	
-	Interaction zeeman1
+	Interaction zeeman
 	{
+		prefactor = 0.001;
 		type = zeeman;
-		field = "0 0 0";
-		group1 = RPElectron1;
+		field = "0.0 0.0 0.05";
+		group1 = RPElectron1,RPElectron2;
 	}	
-
-        Interaction zeeman2
-        {
-                type = zeeman;
-                field = "0.0 0.0 0";
-                spins = RPElectron2;
-        }
-
-        Interaction zeemanN1
-        {
-                type = zeeman;
-                field = "0.0 0.0 0";
-                spins = N1;
-        }
-
 
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
-
-	Interaction radicalhyperfineH1
+	Interaction radical1hyperfineFADHBeta1
 	{
-		prefactor= 0.001;
+//		prefactor = 0.001;
 		type = hyperfine;
 		group1 = RPElectron1;
-		group2 = H1;
-		tensor = matrix("-0.08 0.00 0.00; 0.00 -0.04 0.00; 0.00 0.00 0.12");
+		group2 = FADHBeta1;
 	} 
 
-        Interaction radicalhyperfineC1
+        Interaction radical1hyperfineFADH6
         {
-                prefactor= 0.001;
+//		prefactor = 0.001;
                 type = hyperfine;
                 group1 = RPElectron1;
-                group2 = C1;
-                tensor = matrix("-1.05 0.00 0.00; 0.00 -0.98 0.00; 0.00 0.00 2.03");
+                group2 = FADH6;
         }
 
-        Interaction radicalhyperfineN1
+        Interaction radical1hyperfineFADN5
         {
-                prefactor= 0.001;
+//		prefactor = 0.001;
                 type = hyperfine;
                 group1 = RPElectron1;
-                group2 = N1;
-                tensor = matrix("-0.2 0.00 0.00; 0.00 -0.18 0.00; 0.00 0.00 0.38");
+                group2 = FADN5;
         }
 
-	// -------------------------
-        // Dipolar interactions
-        // -------------------------
-
-        Interaction radical
+        Interaction radical1hyperfineFADN10
         {
-                prefactor= 0.001;
-                type = doublespin;
-                group1 = RPElectron2;
-                group2 = RPElectron1;
-                tensor = matrix("-0.54 0.0 0.0; 0.0 -0.54 0.0; 0.0 0.0 -0.54");
+//		prefactor = 0.001;
+                type = hyperfine;
+                group1 = RPElectron1;
+                group2 = FADN10;
         }
 
 	// -------------------------
@@ -145,38 +128,29 @@ SpinSystem system1
         {
                 type = sink;
                 source = Singlet;
-                rate = 0.01;
-        }
-
-        Transition Product2
-        {
-                type = sink;
-                source = Singlet;
                 rate = 0.001;
         }
 
-
-        Transition Product3
+       Transition Product2
         {
                 type = sink;
                 source = T0;
                 rate = 0.001;
         }
 
-        Transition Product4
+       Transition Product3
         {
                 type = sink;
                 source = Tp;
                 rate = 0.001;
         }
 
-        Transition Product5
+       Transition Product4
         {
                 type = sink;
                 source = Tm;
                 rate = 0.001;
         }
-
 
         // -------------------------
 	// Spin system properties
@@ -186,51 +160,49 @@ SpinSystem system1
 		initialstate = Singlet;
 	}
 }
+
 // -------------------------------------------------------------
 Settings
 {
+	// ---------------------------------------------------------
+	// General settings
+	// ---------------------------------------------------------
 	Settings general
 	{
-		steps = 100;
-		notifications = details;
+		steps = 180;
 	}
 
-        Action field_strength1
-        {
-	        type = AddVector;
-	        vector = system1.zeeman1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
+	// ---------------------------------------------------------
+	// Actions
+	// ---------------------------------------------------------
+	Action scan
+	{
+		type = rotatevector;
+		vector = system1.zeeman.field;
+		axis = "0 1 0"; // Rotate the field around the y-axis
+		value = 1;
+	}
 
-        Action field_strength2
-        {
-	        type = AddVector;
-	        vector = system1.zeeman2.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
-
-        Action field_strength2
-        {
-	        type = AddVector;
-	        vector = system1.zeemanN1.field;
-	        direction = "0 0 1";
-        	value = 0.1;
-        }
-
+	// ---------------------------------------------------------
+	// Outputs objects
+	// ---------------------------------------------------------
+	Output orientation
+	{
+		type = vectorangle;
+		vector = system1.zeeman.field;
+		reference = "0 0 1"; // Get angle relative to z-axis
+	}
 }
+
 // -------------------------------------------------------------
 Run
 {
-	Task Method1
-	{
-                type = StaticSS-CIDNP;
-                logfile = "example_staticsscidnp.log";
-                datafile = "example_staticsscidnp.dat";
+        Task Method1
+        {
+                type = StaticSS;
+                logfile = "example_staticss.log";
+                datafile = "example_staticss.dat";
                 transitionyields = true;
-		nuclei_list=N1;
-	}
-	
+        }
 }
 

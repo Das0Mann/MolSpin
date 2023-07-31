@@ -36,7 +36,7 @@ namespace RunSection
 	bool TaskStaticSS::RunLocal()
 	{
 		this->Log() << "Running method StaticSS." << std::endl;
-		
+
 		// If this is the first step, write first part of header to the data file
 		if(this->RunSettings()->CurrentStep() == 1)
 		{

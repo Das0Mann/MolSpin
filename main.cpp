@@ -17,12 +17,12 @@
 #include <unistd.h>
 
 //////////////////////////////////////////////////////////////////////////////
-#ifdef USE_OPENBLAS
+//#ifdef USE_OPENBLAS
 extern "C" void openblas_set_num_threads(int);
-#endif
-#ifdef USE_OPENMP
+//#endif
+//#ifdef USE_OPENMP
 extern "C" void omp_set_num_threads(int);
-#endif
+//#endif
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc,char** argv)
 {
@@ -162,12 +162,12 @@ int main(int argc,char** argv)
 					if(threads >= 1 && threads <= MAX_THREADS)
 					{
 						std::cout << "# - Number of threads set to " << threads << "." << std::endl;
-#ifdef USE_OPENBLAS
+						//#ifdef USE_OPENBLAS
 						openblas_set_num_threads(threads);
-#endif
-#ifdef USE_OPENMP
+						//#endif
+						//#ifdef USE_OPENMP
 						omp_set_num_threads(threads);
-#endif
+						//#endif
 					}
 					else
 					{

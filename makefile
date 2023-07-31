@@ -14,7 +14,7 @@
 # MolSpin was developed using gcc 5.4.0.
 # --------------------------------------------------------------------------
 # Using MKL with dynamic linking can be done like this:
-#LMKL = -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
+#LMKL = -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl -fopenmp
 # Be sure to check the Intel MKL Link Line Advisor to get the correct link
 # line for your specific system.
 # Note that this line should be added to LFLAGS only.
@@ -67,8 +67,8 @@ DEP_TESTS =
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
 CC = g++ -std=c++14		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
-LFLAGS = -Wall -O2		# Linker Flags
-CFLAGS = -g -Wall -c	# Compile flags to .o
+LFLAGS = -Wall -Ofast		# Linker Flags
+CFLAGS = -g -Wall -c -march=native -funroll-loops -fconcepts -Ofast # Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------
