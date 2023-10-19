@@ -26,6 +26,9 @@ namespace SpinAPI
 			arma::vec axis1;			// Principal axis definitions in the lab frame
 			arma::vec axis2;
 			arma::vec axis3;
+			arma::vec mat1;
+			arma::vec mat2;
+			arma::vec mat3;
 			Trajectory trajectory;
 			
 			// Trajectory columns
@@ -35,6 +38,17 @@ namespace SpinAPI
 			bool trjHasAxis1;
 			bool trjHasAxis2;
 			bool trjHasAxis3;
+
+			bool trjHasMatXX;
+			bool trjHasMatXY;
+			bool trjHasMatXZ;
+			bool trjHasMatYX;
+			bool trjHasMatYY;
+			bool trjHasMatYZ;
+			bool trjHasMatZX;
+			bool trjHasMatZY;
+			bool trjHasMatZZ;
+			
 			unsigned int trjTime;
 			unsigned int trjIsotropic;
 			unsigned int trjAnisotropicX;
@@ -49,6 +63,17 @@ namespace SpinAPI
 			unsigned int trjAxis3X;
 			unsigned int trjAxis3Y;
 			unsigned int trjAxis3Z;
+			
+			unsigned int trjMatXX;
+			unsigned int trjMatXY;
+			unsigned int trjMatXZ;
+			unsigned int trjMatYX;
+			unsigned int trjMatYY;
+			unsigned int trjMatYZ;
+			unsigned int trjMatZX;
+                        unsigned int trjMatZY;
+                        unsigned int trjMatZZ;
+
 			
 			// Private methods
 			void DiagonalizeMatrix(const arma::mat&);	// Set the tensor from a matrix

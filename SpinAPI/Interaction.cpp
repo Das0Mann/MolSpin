@@ -21,7 +21,7 @@ namespace SpinAPI
 	// The constructor sets up the interaction parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
 	Interaction::Interaction(std::string _name, std::string _contents)	: properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), couplingTensor(nullptr),
-																			field({0, 0, 0}), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false),
+																			field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false),
 																			trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																			tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0})
 	{
@@ -73,9 +73,20 @@ namespace SpinAPI
 			{
 				this->type = InteractionType::DoubleSpin;
 			}
-			else if(str.compare("twospin") == 0 || str.compare("exchange") == 0)
+			else if(str.compare("exchange") == 0)
 			{
 				this->type = InteractionType::Exchange;
+			}
+			else if(str.compare("zfs") == 0)
+			{
+				this->type = InteractionType::Zfs;
+
+				double indvalue,inevalue;
+				this->Properties()->Get("dvalue",indvalue);
+				this->Properties()->Get("evalue",inevalue);
+
+				this->dvalue = indvalue;
+				this->evalue = inevalue;
 			}
 		}
 		
@@ -138,7 +149,7 @@ namespace SpinAPI
 		}
 	}
 	
-	Interaction::Interaction(const Interaction& _interaction)	: properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field),
+	Interaction::Interaction(const Interaction& _interaction)	: properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
 																	group1(_interaction.group1), group2(_interaction.group2), type(_interaction.type), fieldType(_interaction.fieldType),
 																	prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors),
 																	trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor),
@@ -159,6 +170,8 @@ namespace SpinAPI
 		this->properties = std::make_shared<MSDParser::ObjectParser>(*(_interaction.properties));
 		this->couplingTensor = _interaction.couplingTensor;
 		this->field = _interaction.field;
+		this->dvalue = _interaction.dvalue;
+		this->evalue = _interaction.evalue;
 		this->type = _interaction.type;
 		this->fieldType = _interaction.fieldType;
 		this->prefactor = _interaction.prefactor;
@@ -198,6 +211,8 @@ namespace SpinAPI
 			return true;
 		else if(this->type == InteractionType::Exchange && !this->group1.empty() && !this->group2.empty())
 			return true;
+		else if(this->type == InteractionType::Zfs && !this->group1.empty())
+			return true;
 		
 		return false;
 	}
@@ -210,6 +225,18 @@ namespace SpinAPI
 		return this->field;
 	}
 	
+	// Returns the D value for Zfs
+	const double Interaction::Dvalue() const
+	{
+		return this->dvalue;
+	}
+	
+	// Returns the E value for Zfs
+	const double Interaction::Evalue() const
+	{
+		return this->evalue;
+	}
+
 	// Returns the prefactor value
 	const double Interaction::Prefactor() const
 	{
@@ -231,7 +258,12 @@ namespace SpinAPI
 		if((this->type == InteractionType::SingleSpin && this->HasFieldTimeDependence())
 			|| (this->trjHasTime && this->trjHasPrefactor))
 			return true;
-			
+		
+		if(this->trjHasTime)
+		{
+			return true;
+		}
+
 		return false;
 	}
 	
@@ -352,7 +384,7 @@ namespace SpinAPI
 	{
 		bool createdSpinLists = false;
 		
-		if(this->type == InteractionType::SingleSpin)
+		if(this->type == InteractionType::SingleSpin || this->type == InteractionType::Zfs)
 		{
 			// Attempt to get a list of spins from the input file
 			std::string str;
@@ -441,6 +473,14 @@ namespace SpinAPI
 			result.insert(result.end(), this->group2.cbegin(), this->group2.cend());	// Insert after the previously inserted spins
 		}
 		else if(this->type == InteractionType::Exchange &&
+			(std::find(this->group1.cbegin(), this->group1.cend(), _spin) != this->group1.cend()
+			|| std::find(this->group2.cbegin(), this->group2.cend(), _spin) != this->group2.cend()))
+		{
+			result.reserve(this->group1.size() + this->group2.size());					// Reserve space for both groups to avoid more than 1 reallocation
+			result.insert(result.begin(), this->group1.cbegin(), this->group1.cend());	// Insert at the beginning of the vector
+			result.insert(result.end(), this->group2.cbegin(), this->group2.cend());	// Insert after the previously inserted spins
+		}
+		else if(this->type == InteractionType::Zfs &&
 			(std::find(this->group1.cbegin(), this->group1.cend(), _spin) != this->group1.cend()
 			|| std::find(this->group2.cbegin(), this->group2.cend(), _spin) != this->group2.cend()))
 		{

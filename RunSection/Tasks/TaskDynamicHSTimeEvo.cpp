@@ -73,9 +73,6 @@ namespace RunSection
 				continue;
 			}
 
-			std::cout << H << std::endl;
-			std::cout << "KEK" << std::endl;
-			std::cout << dH << std::endl;	
 			// Get the total reaction operator
 			arma::cx_mat K;																			// Static part of total reaction operator
 			arma::sp_cx_mat dK = arma::sp_cx_mat(space.SpaceDimensions(), space.SpaceDimensions());	// Dynamic part of total reaction operator

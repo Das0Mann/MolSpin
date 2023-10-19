@@ -34,6 +34,7 @@ namespace SpinAPI
 		SingleSpin,
 		DoubleSpin,
 		Exchange,
+		Zfs,
 	};
 	
 	// Used by the Interaction class to determine the time-dependence of the field for SingleSpin interactions

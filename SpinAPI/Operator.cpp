@@ -109,7 +109,7 @@ namespace SpinAPI
 		std::vector<std::string> spinlist;
 		if(this->properties->GetList("spins", spinlist) || this->properties->GetList("spin", spinlist) || this->properties->GetList("spinlist", spinlist))
 		{
-			for(const std::string s : spinlist)
+			for(const std::string& s : spinlist)
 			{
 				// Search through the spin systems for the spin
 				for(auto i = _systems.cbegin(); i != _systems.cend(); i++)

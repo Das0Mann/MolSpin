@@ -1844,7 +1844,6 @@ namespace RunSection
 
 				// Normalization factor contribution from radical "r"
 				Z *= static_cast<double>(spaces[r].SpaceDimensions() / radical[r]->Multiplicity());
-				// std::cout << "KEK" << std::endl;
 				// std::cout << (spaces[r].SpaceDimensions() / radical[r]->Multiplicity()) << std::endl;
 				// std::cout << (spaces[r].SpaceDimensions()) << std::endl;
 				// std::cout << Z << std::endl;

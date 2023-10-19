@@ -106,6 +106,7 @@ namespace MSDParser
 		catch(const std::exception&) {return false;}
 		//vector<double>
 		_out = tmp;
+		std::cout << _out << std::endl;
 		return true;
 	}
 	
@@ -322,90 +323,194 @@ namespace MSDParser
 	// - Similar to Get, but allows multiple values to be specifed
 	// -----------------------------------------------------
 	// Attemp to find a keyword matching the given name	y
-	bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
-	{
-		std::cout << "Starting with reading: " << _str << std::endl;
+    bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
+    {
+        // Step 1: Output the initial message indicating the start of the reading process.
+        std::cout << "Starting with reading: " << _str << std::endl;
 
-		// Step 1: Get a list of strings by splitting _str using the delimiter ','
-		std::vector<std::string> strs;
-		if (!this->GetList(_str, strs, ','))
-			return false;
+        // Step 2: Initialize an empty vector to hold the split strings.
+        std::vector<std::string> strs;
 
-		// Step 2: Check if the list of strings is empty
-		if (strs.empty())
-			return false;
+        // Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
+        if (!this->GetList(_str, strs, ','))
+            return false;
+
+        // Step 4: Check if the resulting list is empty and return false if it is.
+        if (strs.empty())
+            return false;
+
+        // Step 5: Initialize variable to keep track of the number of elements in each row.
+        size_t numElements = 0;
+
+        // Step 6: Create a lambda function to trim whitespace from both ends of a string.
+        auto trim = [](std::string& str) {
+            str.erase(0, str.find_first_not_of(' '));       // Prefix
+            str.erase(str.find_last_not_of(' ') + 1); // Suffix
+        };
+
+        // Step 7: Validate the number of elements in each row (numElements).
+        for (const std::string& str : strs) {
+            std::string modified_str = str;
+            // Remove square brackets
+            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
+            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
+
+            // Trim leading and trailing whitespaces
+            trim(modified_str);
+
+            std::istringstream stream(modified_str);
+            size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
+
+            // Check if the number of elements in each row is consistent
+            if (numElements == 0)
+                numElements = count;
+            else if (count != numElements)
+                return false;
+        }
+
+        // Step 8: Output the number of rows and columns.
+        std::cout << "Number of rows: " << strs.size() << ", Number of columns: " << numElements << std::endl;
+
+        // Step 9: Create a temporary matrix to store the values.
+        arma::mat tmp(strs.size(), numElements);
+
+        // Step 10: Populate the temporary matrix with values.
+        for (size_t i = 0; i < strs.size(); ++i) {
+            std::string str = strs[i];
+            // Remove square brackets
+            str.erase(std::remove(str.begin(), str.end(), '['), str.end());
+            str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
+
+            // Trim leading and trailing whitespaces
+            trim(str);
+
+            std::istringstream stream(str);
+            std::string token;
+            size_t j = 0;
+
+            // Parse each value and populate the matrix
+            while (std::getline(stream, token, ' ')) {
+                trim(token);
+                try {
+                    tmp(i, j) = std::stod(token);
+                } catch (const std::exception& e) {
+                    std::cout << "Invalid number format: " << token << std::endl;
+		    std::cout << "Please check your list carefully. Such numbers should not appear for a float format.";
+                    return false;
+                }
+                j++;
+            }
+        }
+
+        // Step 11: Output the populated matrix for debugging.
+	//std::cout << tmp << std::endl;
+
+        // Step 12: Handle small numbers close to zero.
+        for (int i = 0; i < (int) strs.size(); i++) {
+            for (int j = 0; j < (int) numElements; j++) {
+                if (std::abs(tmp(i, j)) <= 1e-20) {
+                    tmp(i, j) = 0.0;
+                }
+            }
+        }
+
+        // Step 13: Assign the populated temporary matrix to the output matrix.
+        _out = tmp;
+
+        // Step 14: Output a message indicating the successful parsing.
+        std::cout << "Read the list of multiexponentials for " << _str << std::endl;
+
+        // Step 15: Return true to indicate successful parsing.
+        return true;
+    }
+
+	// Old version: less robust	
+	// bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
+	// {
+	// 	std::cout << "Starting with reading: " << _str << std::endl;
+
+	// 	// Step 1: Get a list of strings by splitting _str using the delimiter ','
+	// 	std::vector<std::string> strs;
+	// 	if (!this->GetList(_str, strs, ','))
+	// 		return false;
+
+	// 	// Step 2: Check if the list of strings is empty
+	// 	if (strs.empty())
+	// 		return false;
 		
-		size_t numElements = 0;
+	// 	size_t numElements = 0;
 
-		// Step 3: Iterate through each string in the list to determine the number of elements
-		for (const std::string& str : strs)
-		{
-			size_t count = std::count(str.begin(), str.end(), ' ') + 1;
+	// 	// Step 3: Iterate through each string in the list to determine the number of elements
+	// 	for (const std::string& str : strs)
+	// 	{
+	// 		size_t count = std::count(str.begin(), str.end(), ' ') + 1;
 
-			// If it's the first string, set the numElements
-			if (numElements == 0)
-				numElements = count;
-			// If the count is different from numElements, return false (rows should have the same number of elements)
-			else if (count != numElements)
-				return false;
-		}
+	// 		// If it's the first string, set the numElements
+	// 		if (numElements == 0)
+	// 			numElements = count;
+	// 		// If the count is different from numElements, return false (rows should have the same number of elements)
+	// 		else if (count != numElements)
+	// 			return false;
+	// 	}
 
-		std::cout << numElements << std::endl;
-		std::cout << strs.size() << std::endl;
+	// 	std::cout << numElements << std::endl;
+	// 	std::cout << strs.size() << std::endl;
 
-		// Step 4: Create a matrix with the size of the list of strings (rows) and numElements (columns)
-		arma::mat tmp(strs.size(), numElements);
+	// 	// Step 4: Create a matrix with the size of the list of strings (rows) and numElements (columns)
+	// 	arma::mat tmp(strs.size(), numElements);
 
-		// Step 5: Iterate through each string in the list
-		for (size_t i = 0; i < strs.size(); i++)
-		{
-			std::string str = strs[i];
+	// 	// Step 5: Iterate through each string in the list
+	// 	for (size_t i = 0; i < strs.size(); i++)
+	// 	{
+	// 		std::string str = strs[i];
 
-			// Step 6: Remove '[' and ']' characters from the string
-			str.erase(std::remove(str.begin(), str.end(), '['), str.end());
-			str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
+	// 		// Step 6: Remove '[' and ']' characters from the string
+	// 		str.erase(std::remove(str.begin(), str.end(), '['), str.end());
+	// 		str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
 
-			// Step 7: Output the modified string
-			//std::cout << "Substring: " << str << std::endl;
+	// 		// Step 7: Output the modified string
+	// 		//std::cout << "Substring: " << str << std::endl;
 
-			std::istringstream stream(str);
-			std::string token;
-			size_t j = 0;
+	// 		std::istringstream stream(str);
+	// 		std::string token;
+	// 		size_t j = 0;
 
-			// Step 8: Split the string using the delimiter ' ' and parse the values into the matrix
-			while (std::getline(stream, token, ' '))
-			{
-				try {
-					tmp(i, j) = std::stod(token);
-					//std::cout << "Parsed value: " << tmp(i, j) << std::endl;
-				} catch (const std::exception& e) {
-					//std::cout << "Invalid number format: " << token << std::endl;
-					return false;
-				}
+	// 		// Step 8: Split the string using the delimiter ' ' and parse the values into the matrix
+	// 		while (std::getline(stream, token, ' '))
+	// 		{
+	// 			try {
+	// 				tmp(i, j) = std::stod(token);
+	// 				//std::cout << "Parsed value: " << tmp(i, j) << std::endl;
+	// 			} catch (const std::exception& e) {
+	// 				//std::cout << "Invalid number format: " << token << std::endl;
+	// 				return false;
+	// 			}
 
-				j++;
-			}
-		}
+	// 			j++;
+	// 		}
+	// 	}
 
-		for (int i = 0; i < (int) strs.size();i++){
-			for(int j = 0; j < (int) numElements;j++){
-				if(tmp(i,j) <= 1e-20)
-				{
-					tmp(i,j) *= 0.0;
-				}	
-			}
-		}
+	// 	for (int i = 0; i < (int) strs.size();i++){
+	// 		for(int j = 0; j < (int) numElements;j++){
+	// 			if(tmp(i,j) <= 1e-20)
+	// 			{
+	// 				tmp(i,j) *= 0.0;
+	// 			}	
+	// 		}
+	// 	}
 
-		std::cout << tmp << std::endl;
-		// Step 9: Assign the temporary matrix to the output matrix (_out)
-		_out = tmp;
+	// 	std::cout << tmp << std::endl;
+	// 	// Step 9: Assign the temporary matrix to the output matrix (_out)
+	// 	_out = tmp;
 
-		// Step 10: Output a message indicating the successful parsing
-		std::cout << "Read the list of multiexponentials for " << _str << std::endl;
+	// 	// Step 10: Output a message indicating the successful parsing
+	// 	std::cout << "Read the list of multiexponentials for " << _str << std::endl;
 
-		// Step 11: Return true to indicate successful parsing
-		return true;
-	}
+	// 	// Step 11: Return true to indicate successful parsing
+	// 	return true;
+	// }
+
+
 	// -----------------------------------------------------
 	// Specialized Get method to get a spin quantum number
 	// -----------------------------------------------------

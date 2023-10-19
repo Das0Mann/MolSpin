@@ -28,9 +28,24 @@
 #include "TaskStaticSSRedfieldTimeEvo.h"
 #include "TaskStaticSSRedfieldTimeEvoSparse.h"
 #include "TaskMultiStaticSSRedfieldTimeEvo.h"
+//#include "TaskStaticRPOnlyHSSymDecRedfield.h"
+
 #include "TaskStaticSSSpectra.h"
 #include "TaskStaticSSCIDNP.h"
-//#include "TaskStaticRPOnlyHSSymDecRedfield.h"
+
+#include "TaskStaticHSStochYields.h"
+#include "TaskStaticHSStochTimeEvo.h"
+#include "TaskStaticHSDirectYields.h"
+#include "TaskStaticHSDirectTimeEvo.h"
+#include "TaskDynamicHSDirectYields.h"
+#include "TaskDynamicHSDirectTimeEvo.h"
+#include "TaskDynamicHSStochYields.h"
+#include "TaskDynamicHSStochTimeEvo.h"
+#include "TaskStaticHSDirectYieldsSymmUncoupled.h"
+#include "TaskStaticHSStochYieldsSymmUncoupled.h"
+#include "TaskStaticHSDirectTimeEvoSymmUncoupled.h"
+#include "TaskStaticHSStochTimeEvoSymmUncoupled.h"
+
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
 {
@@ -52,7 +67,7 @@ namespace RunSection
 		else if(_tasktype.compare("multistaticss-timeevolution") == 0 || _tasktype.compare("staticss-multisystem") == 0) {task = std::make_shared<TaskMultiStaticSSTimeEvo>(_obj, *this);}
 		else if(_tasktype.compare("multidynamichs-timeevolution") == 0 || _tasktype.compare("dynamichs-multisystem") == 0) {task = std::make_shared<TaskMultiDynamicHSTimeEvo>(_obj, *this);}
 		
-		//NEW (Added by Luca Gerhards): Including BWR-Relaxation Theory Task Class [TaskStaticSSRedfield.cpp] as CreateTask member.
+		// NEW (Added by Luca Gerhards): Including BWR-Relaxation Theory Task Class [TaskStaticSSRedfield.cpp] as CreateTask member.
 		
 		else if(_tasktype.compare("redfield-relaxation") ==0 || _tasktype.compare("Redfield-Relaxation") == 0) {task = std::make_shared<TaskStaticSSRedfield>(_obj, *this);}
 		else if(_tasktype.compare("redfield-relaxation-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldSparse>(_obj, *this);}
@@ -60,11 +75,31 @@ namespace RunSection
 		else if(_tasktype.compare("redfield-relaxation-timeevolution-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvoSparse>(_obj, *this);}
 		else if(_tasktype.compare("multistaticss-redfield-timeevolution") ==0 || _tasktype.compare("staticss-multisystem-redfield-timeevolution") == 0) {task = std::make_shared<TaskMultiStaticSSRedfieldTimeEvo>(_obj, *this);}
 		//else if(_tasktype.compare("RP-Symmetricuncoupled-Redfield") ==0 || _tasktype.compare("rp-symmetricuncoupled-redfield") == 0) {task = std::make_shared<TaskStaticRPOnlyHSSymDecRedfield>(_obj, *this);}
+
+		// NEW (ADDED by Luca Gerhards): Including spectroscopy task such as CIDNP
 		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0) {task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);}
 		else if(_tasktype.compare("staticss-cidnp") ==0 || _tasktype.compare("StaticSS-CIDNP") == 0) {task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);}	
+		
+		// NEW (Added by Gediminas Pazera): Including SSE theory as CreateTask member.
+                else if(_tasktype.compare("statichs-stoch-yields") == 0 || _tasktype.compare("StaticHS-Stoch-Yields") == 0) {task = std::make_shared<TaskStaticHSStochYields>(_obj, *this);}
+                else if(_tasktype.compare("statichs-stoch-timeevo") == 0 || _tasktype.compare("StaticHS-Stoch-TimeEvo") == 0) {task = std::make_shared<TaskStaticHSStochTimeEvo>(_obj, *this);}
+                else if(_tasktype.compare("statichs-direct-yields") == 0 || _tasktype.compare("StaticHS-Direct-Yields") == 0) {task = std::make_shared<TaskStaticHSDirectYields>(_obj, *this);}
+                else if(_tasktype.compare("statichs-direct-timeevo") == 0 || _tasktype.compare("StaticHS-Direct-TimeEvo") == 0) {task = std::make_shared<TaskStaticHSDirectTimeEvo>(_obj, *this);}
+                else if(_tasktype.compare("dynamichs-direct-yields") == 0 || _tasktype.compare("DynamicHS-Direct-Yields") == 0) {task = std::make_shared<TaskDynamicHSDirectYields>(_obj, *this);}
+                else if(_tasktype.compare("dynamichs-direct-timeevo") == 0 || _tasktype.compare("DynamicHS-Direct-TimeEvo") == 0) {task = std::make_shared<TaskDynamicHSDirectTimeEvo>(_obj, *this);}
+                else if(_tasktype.compare("dynamichs-stoch-yields") == 0 || _tasktype.compare("DynamicHS-Stoch-Yields") == 0) {task = std::make_shared<TaskDynamicHSStochYields>(_obj, *this);}
+                else if(_tasktype.compare("dynamichs-stoch-timeevo") == 0 || _tasktype.compare("DynamicHS-Stoch-TimeEvo") == 0) {task = std::make_shared<TaskDynamicHSStochTimeEvo>(_obj, *this);}
+                else if(_tasktype.compare("statichs-direct-yields-symm-uncoupled") == 0 || _tasktype.compare("StaticHS-Direct-Yields-Symm-Uncoupled") == 0) {task = std::make_shared<TaskStaticHSDirectYieldsSymmUncoupled>(_obj, *this);}
+                else if(_tasktype.compare("statichs-direct-timeevo-symm-uncoupled") == 0 || _tasktype.compare("StaticHS-Direct-TimeEvo-Symm-Uncoupled") == 0) {task = std::make_shared<TaskStaticHSDirectTimeEvoSymmUncoupled>(_obj, *this);}
+                else if(_tasktype.compare("statichs-stoch-yields-symm-uncoupled") == 0 || _tasktype.compare("StaticHS-Stoch-Yields-Symm-Uncoupled") == 0) {task = std::make_shared<TaskStaticHSStochYieldsSymmUncoupled>(_obj, *this);}
+                else if(_tasktype.compare("statichs-stoch-timeevo-symm-uncoupled") == 0 || _tasktype.compare("StaticHS-Stoch-TimeEvo-Symm-Uncoupled") == 0) {task = std::make_shared<TaskStaticHSStochTimeEvoSymmUncoupled>(_obj, *this);}
+
+		
+		
 		// NOTE: To add a new task class, just add another "else if" here...
 		// The string used in the "compare" method is the "type" to be specified in the MolSpin input file
 	
+		
 		// Return the task instance pointer - or nullptr if the type was not recognized
 		return task;
 	}

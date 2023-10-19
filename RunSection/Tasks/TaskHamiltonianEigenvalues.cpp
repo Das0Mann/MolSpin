@@ -208,7 +208,7 @@ namespace RunSection
 		
 		// Get a list of spins for calculating the transition frequencies
 		std::vector<std::pair<SpinAPI::spin_ptr, std::vector<arma::cx_mat>>> spins;
-		for(const std::string s : this->transitionSpins)
+		for(const std::string& s : this->transitionSpins)
 		{
 			auto spin = _system->spins_find(s);
 			if(spin != nullptr)
@@ -243,7 +243,7 @@ namespace RunSection
 		this->Log() << "\nwhile the actual resonance frequency, 'f', is given in MHz.";
 		this->Log() << "\n\ni j w f";
 		
-		for(const std::pair<SpinAPI::spin_ptr, std::vector<arma::cx_mat>> s : spins)
+		for(const std::pair<SpinAPI::spin_ptr, std::vector<arma::cx_mat>>& s : spins)
 		{
 			if(this->separateRealImag)
 				this->Log() << " Sx(" << s.first->Name() << ").real Sx(" << s.first->Name() << ").imaginary Sy(" << s.first->Name() << ").real Sy(" << s.first->Name() << ").imaginary Sz(" << s.first->Name() << ").real Sz(" << s.first->Name() << ").imaginary";
@@ -263,7 +263,7 @@ namespace RunSection
 				this->Log() << (std::abs(_e[j] - _e[i]) / (2.0*M_PI) * 1000.0) << " ";
 				
 				// Transition matrix elements
-				for(const std::pair<SpinAPI::spin_ptr, std::vector<arma::cx_mat>> s : spins)
+				for(const std::pair<SpinAPI::spin_ptr, std::vector<arma::cx_mat>>& s : spins)
 				{
 					if(this->separateRealImag)
 						this->Log() << std::real(s.second[0](i,j)) << " " << std::imag(s.second[0](i,j)) << " " << std::real(s.second[1](i,j)) << " " << std::imag(s.second[1](i,j)) << " " << std::real(s.second[2](i,j)) << " " << std::imag(s.second[2](i,j)) << " ";
@@ -398,7 +398,7 @@ namespace RunSection
 		{
 			// Loop through the list of states that was specified
 			auto systems = this->SpinSystems();
-			for(const std::string s : strs)
+			for(const std::string& s : strs)
 			{
 				SpinAPI::state_ptr state = nullptr;
 				

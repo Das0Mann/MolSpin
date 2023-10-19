@@ -15,43 +15,53 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Spin Constructors and Destructor
 	// -----------------------------------------------------
-	Tensor::Tensor(double _isotropic)	: isotropic(_isotropic), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), trajectory(),
+	Tensor::Tensor(double _isotropic)	: isotropic(_isotropic), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 											trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+											trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 											trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-											trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+											trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+											trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 	}
 	
-	Tensor::Tensor(double _isotropic, double _aniso1, double _aniso2, double _aniso3)	: isotropic(_isotropic), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), trajectory(),
+	Tensor::Tensor(double _isotropic, double _aniso1, double _aniso2, double _aniso3)	: isotropic(_isotropic), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 																							trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+																							trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																							trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-																							trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+																							trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+																							trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 		this->anisotropic(0) = _aniso1;
 		this->anisotropic(1) = _aniso2;
 		this->anisotropic(2) = _aniso3;
 	}
 	
-	Tensor::Tensor(double _isotropic, const arma::vec& _anisotropic)	: isotropic(_isotropic), anisotropic(_anisotropic), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), trajectory(),
+	Tensor::Tensor(double _isotropic, const arma::vec& _anisotropic)	: isotropic(_isotropic), anisotropic(_anisotropic), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 																			trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+																			trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																			trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-																			trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+																			trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+																			trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 	}
 	
-	Tensor::Tensor(double _isotropic, const arma::vec& _anisotropic, const arma::mat& _axes)	: isotropic(_isotropic), anisotropic(_anisotropic), axis1(_axes.col(0)), axis2(_axes.col(1)), axis3(_axes.col(2)), trajectory(),
+	Tensor::Tensor(double _isotropic, const arma::vec& _anisotropic, const arma::mat& _axes)	: isotropic(_isotropic), anisotropic(_anisotropic), axis1(_axes.col(0)), axis2(_axes.col(1)), axis3(_axes.col(2)), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 																									trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+																									trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																									trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-																									trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+																									trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+																									trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 		// Make sure axes are orthonormal
 		this->OrthonormalizeAxes();
 	}
 	
-	Tensor::Tensor(const arma::mat& _matrix)	: isotropic(0.0), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), trajectory(),
+	Tensor::Tensor(const arma::mat& _matrix)	: isotropic(0.0), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 													trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+													trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 													trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-													trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+													trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+													trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 		// Diagonalize the matrix to obtain the principal axes and values
 		this->DiagonalizeMatrix(_matrix);
@@ -60,19 +70,23 @@ namespace SpinAPI
 		this->SeparateIsotropy();
 	}
 	
-	Tensor::Tensor(const std::string& _tensor, const std::string& _path)	: isotropic(0.0), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), trajectory(),
+	Tensor::Tensor(const std::string& _tensor, const std::string& _path)	: isotropic(0.0), anisotropic(3,arma::fill::zeros), axis1({1,0,0}), axis2({0,1,0}), axis3({0,0,1}), mat1({0,0,0}), mat2({0,0,0}), mat3({0,0,0}), trajectory(),
 											trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
+											trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 											trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
-											trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0)
+											trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
+											trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
 		if(!this->ParseTensor(_tensor, _path))
 			std::cout << "Error: Failed to parse tensor!" << std::endl;
 	}
 	
-	Tensor::Tensor(const Tensor& _tensor)	: isotropic(_tensor.isotropic), anisotropic(_tensor.anisotropic), axis1(_tensor.axis1), axis2(_tensor.axis2), axis3(_tensor.axis3), trajectory(_tensor.trajectory),
+	Tensor::Tensor(const Tensor& _tensor)	: isotropic(_tensor.isotropic), anisotropic(_tensor.anisotropic), axis1(_tensor.axis1), axis2(_tensor.axis2), axis3(_tensor.axis3), mat1(_tensor.mat1),mat2(_tensor.mat2),mat3(_tensor.mat3), trajectory(_tensor.trajectory),
 												trjHasTime(_tensor.trjHasTime), trjHasIsotropic(_tensor.trjHasIsotropic), trjHasAnisotropic(_tensor.trjHasAnisotropic), trjHasAxis1(_tensor.trjHasAxis1), trjHasAxis2(_tensor.trjHasAxis2), trjHasAxis3(_tensor.trjHasAxis3),
+												trjHasMatXX(_tensor.trjHasMatXX), trjHasMatXY(_tensor.trjHasMatXY), trjHasMatXZ(_tensor.trjHasMatXZ), trjHasMatYX(_tensor.trjHasMatYX), trjHasMatYY(_tensor.trjHasMatYY), trjHasMatYZ(_tensor.trjHasMatYZ), trjHasMatZX(_tensor.trjHasMatZX), trjHasMatZY(_tensor.trjHasMatZY), trjHasMatZZ(_tensor.trjHasMatZZ),
 												trjTime(_tensor.trjTime), trjIsotropic(_tensor.trjIsotropic), trjAnisotropicX(_tensor.trjAnisotropicX), trjAnisotropicY(_tensor.trjAnisotropicY), trjAnisotropicZ(_tensor.trjAnisotropicZ),
-												trjAxis1X(_tensor.trjAxis1X), trjAxis1Y(_tensor.trjAxis1Y), trjAxis1Z(_tensor.trjAxis1Z), trjAxis2X(_tensor.trjAxis2X), trjAxis2Y(_tensor.trjAxis2Y), trjAxis2Z(_tensor.trjAxis2Z), trjAxis3X(_tensor.trjAxis3X), trjAxis3Y(_tensor.trjAxis3Y), trjAxis3Z(_tensor.trjAxis3Z)
+												trjAxis1X(_tensor.trjAxis1X), trjAxis1Y(_tensor.trjAxis1Y), trjAxis1Z(_tensor.trjAxis1Z), trjAxis2X(_tensor.trjAxis2X), trjAxis2Y(_tensor.trjAxis2Y), trjAxis2Z(_tensor.trjAxis2Z), trjAxis3X(_tensor.trjAxis3X), trjAxis3Y(_tensor.trjAxis3Y), trjAxis3Z(_tensor.trjAxis3Z),
+												trjMatXX(_tensor.trjMatXX), trjMatXY(_tensor.trjMatXY), trjMatXZ(_tensor.trjMatXZ), trjMatYX(_tensor.trjMatYX), trjMatYY(_tensor.trjMatYY), trjMatYZ(_tensor.trjMatYZ), trjMatZX(_tensor.trjMatZX), trjMatZY(_tensor.trjMatZY), trjMatZZ(_tensor.trjMatZZ)
 	{
 	}
 	
@@ -96,6 +110,17 @@ namespace SpinAPI
 		this->trjHasAxis1 = _tensor.trjHasAxis1;
 		this->trjHasAxis2 = _tensor.trjHasAxis2;
 		this->trjHasAxis3 = _tensor.trjHasAxis3;
+		
+		this->trjHasMatXX = _tensor.trjHasMatXX;
+		this->trjHasMatXY = _tensor.trjHasMatXY;
+		this->trjHasMatXZ = _tensor.trjHasMatXZ;
+		this->trjHasMatYX = _tensor.trjHasMatYX;
+		this->trjHasMatYY = _tensor.trjHasMatYY;
+		this->trjHasMatYZ = _tensor.trjHasMatYZ;
+		this->trjHasMatZX = _tensor.trjHasMatZX;
+		this->trjHasMatZY = _tensor.trjHasMatZY;
+		this->trjHasMatZZ = _tensor.trjHasMatZZ;
+
 		this->trjTime = _tensor.trjTime;
 		this->trjIsotropic = _tensor.trjIsotropic;
 		this->trjAnisotropicX = _tensor.trjAnisotropicX;
@@ -110,6 +135,17 @@ namespace SpinAPI
 		this->trjAxis3X = _tensor.trjAxis3X;
 		this->trjAxis3Y = _tensor.trjAxis3Y;
 		this->trjAxis3Z = _tensor.trjAxis3Z;
+
+		this->trjMatXX = _tensor.trjMatXX;
+                this->trjMatXY = _tensor.trjMatXY;
+                this->trjMatXZ = _tensor.trjMatXZ;
+                this->trjMatYX = _tensor.trjMatYX;
+                this->trjMatYY = _tensor.trjMatYY;
+                this->trjMatYZ = _tensor.trjMatYZ;
+                this->trjMatZX = _tensor.trjMatZX;
+                this->trjMatZY = _tensor.trjMatZY;
+                this->trjMatZZ = _tensor.trjMatZZ;
+
 		
 		return (*this);
 	}
@@ -131,33 +167,14 @@ namespace SpinAPI
 		
 		// Check whether the matrix was symmetric (i.e. _matrix - symmetrized_matrix == 0)
 		if(abs(_matrix - symmetrized_matrix).max() > 1e-10)
-		{
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
-			
-			// Do the diagonalization (TODO: THIS HAS TO BE OPTIMIZED, arma::eig_gen only uses cx_vec/mat datatypes 
-			// which in return is not in alignment with the rest of molspin)
-			arma::cx_mat cxprincipalAxes = arma::eye<arma::cx_mat>(3, 3);
-			arma::cx_vec _tmpvec = arma::conv_to< arma::cx_vec >::from((this->anisotropic));
-			arma::cx_mat _tmpmatrix = arma::conv_to< arma::cx_mat >::from(_matrix);
-			
-			arma::eig_gen(_tmpvec, cxprincipalAxes, _tmpmatrix);
-
-			arma::mat principalAxes = arma::conv_to< arma::mat >::from(cxprincipalAxes);
-			this->anisotropic = arma::conv_to< arma::vec >::from(_tmpvec);
-			
-			this->axis1 = principalAxes.col(0);
-			this->axis2 = principalAxes.col(1);
-			this->axis3 = principalAxes.col(2);
-		}
-		else
-		{
-			// Do the diagonalization
-			arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
-			arma::eig_sym(this->anisotropic, principalAxes, _matrix);
-			this->axis1 = principalAxes.col(0);
-			this->axis2 = principalAxes.col(1);
-			this->axis3 = principalAxes.col(2);
-		}
+		
+		// Do the diagonalization
+		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
+		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
+		this->axis1 = principalAxes.col(0);
+		this->axis2 = principalAxes.col(1);
+		this->axis3 = principalAxes.col(2);
 	}
 	
 	void Tensor::SeparateIsotropy()
@@ -300,9 +317,7 @@ namespace SpinAPI
 				}
 			}
 		}
-	
-
-		//TODO: Here is a problem when not using hermitian matrices such as for pseudo-secular	
+		
 		// Put the tensor data members into the correct format
 		this->SeparateIsotropy();
 		
@@ -410,9 +425,9 @@ namespace SpinAPI
 		axes.col(0) = this->axis1;
 		axes.col(1) = this->axis2;
 		axes.col(2) = this->axis3;
-
+		
 		// TODO: Consider whether arma::inv(axes) should be used instead of axes.t() if "axes" are not orthogonal
-		return (axes * arma::diagmat(this->anisotropic) * arma::inv(axes)) + arma::eye(size(axes)) * this->isotropic;
+		return (axes * arma::diagmat(this->anisotropic) * axes.t()) + arma::eye(size(axes)) * this->isotropic;
 	}
 	
 	// Return the length of the trajectory (0 if no trajectory is assigned)
@@ -465,10 +480,64 @@ namespace SpinAPI
 			this->axis3(2) = this->trajectory.Get(_step, this->trjAxis3Z);
 		}
 		
+
 		// Make sure that the axes are still orthonormal
 		if(this->trjHasAxis1 || this->trjHasAxis2 || this->trjHasAxis3)
 			this->OrthonormalizeAxes();
+
+		// Get matrix elements
+                if(this->trjHasMatXX)
+                {
+                        this->mat1(0) = this->trajectory.Get(_step, this->trjMatXX); 
+                }
+
+                if(this->trjHasMatXY)
+                {
+                        this->mat1(1) = this->trajectory.Get(_step, this->trjMatXY);
+                }
+                if(this->trjHasMatXZ)
+                {
+                        this->mat1(2) = this->trajectory.Get(_step, this->trjMatXZ); 
+                }
+
+                if(this->trjHasMatYX)
+                {
+                        this->mat2(0) = this->trajectory.Get(_step, this->trjMatYX);
+                }
+                if(this->trjHasMatYY)
+                {
+                        this->mat2(1) = this->trajectory.Get(_step, this->trjMatYY);
+                }
+                if(this->trjHasMatYZ)
+                {
+                        this->mat2(2) = this->trajectory.Get(_step, this->trjMatYZ);
+                }
+
+                if(this->trjHasMatZX)
+                {
+                        this->mat3(0) = this->trajectory.Get(_step, this->trjMatZX);
+                }
+                if(this->trjHasMatZY)
+                {
+                        this->mat3(1) = this->trajectory.Get(_step, this->trjMatZY);
+                }
+                if(this->trjHasMatZZ)
+                {
+                        this->mat3(2) = this->trajectory.Get(_step, this->trjMatZZ);
+                }
+
 		
+
+                // Make matrix diagonal to further use it in the code
+                if(this->trjHasMatXX || this->trjHasMatXY || this->trjHasMatXZ || this->trjHasMatYX || this->trjHasMatYY || this->trjHasMatYZ || this->trjHasMatZX || this->trjHasMatZY || this->trjHasMatZZ)
+                {
+
+                        arma::mat tmp_trj_mat = {{this->mat1(0),this->mat1(1),this->mat1(2)},
+                                                 {this->mat2(0),this->mat2(1),this->mat2(2)},
+                                                 {this->mat3(0),this->mat3(1),this->mat3(2)}};
+                        this->DiagonalizeMatrix(tmp_trj_mat);           // Sets anisotropic part and axes
+                }
+
 		return true;
 	}
 	
@@ -530,10 +599,62 @@ namespace SpinAPI
 				this->axis3(1) = this->trajectory.Get(row, this->trjAxis3Y) * l + this->trajectory.Get(row-1, this->trjAxis3Y) * (1 - l);
 				this->axis3(2) = this->trajectory.Get(row, this->trjAxis3Z) * l + this->trajectory.Get(row-1, this->trjAxis3Z) * (1 - l);
 			}
-		
+			
 			// Make sure that the axes are still orthonormal
 			if(this->trjHasAxis1 || this->trjHasAxis2 || this->trjHasAxis3)
 				this->OrthonormalizeAxes();
+		
+			// get matrix elements
+			if(this->trjHasMatXX)
+                        {
+				this->mat1(0) = this->trajectory.Get(row, this->trjMatXX) * l + this->trajectory.Get(row-1, this->trjMatXX) * (1 - l);
+			}
+
+                        if(this->trjHasMatXY)
+                        {
+                                this->mat1(1) = this->trajectory.Get(row, this->trjMatXY) * l + this->trajectory.Get(row-1, this->trjMatXY) * (1 - l);
+                        }
+                        if(this->trjHasMatXZ)
+                        {
+                                this->mat1(2) = this->trajectory.Get(row, this->trjMatXZ) * l + this->trajectory.Get(row-1, this->trjMatXZ) * (1 - l);
+                        }
+
+                        if(this->trjHasMatYX)
+                        {
+                                this->mat2(0) = this->trajectory.Get(row, this->trjMatYX) * l + this->trajectory.Get(row-1, this->trjMatYX) * (1 - l);
+                        }
+                        if(this->trjHasMatYY)
+                        {
+                                this->mat2(1) = this->trajectory.Get(row, this->trjMatYY) * l + this->trajectory.Get(row-1, this->trjMatYY) * (1 - l);
+                        }
+                        if(this->trjHasMatYZ)
+                        {
+                                this->mat2(2) = this->trajectory.Get(row, this->trjMatYZ) * l + this->trajectory.Get(row-1, this->trjMatYZ) * (1 - l);
+                        }
+
+                        if(this->trjHasMatZX)
+                        {
+                                this->mat3(0) = this->trajectory.Get(row, this->trjMatZX) * l + this->trajectory.Get(row-1, this->trjMatZX) * (1 - l);
+                        }
+                        if(this->trjHasMatZY)
+                        {
+                                this->mat3(1) = this->trajectory.Get(row, this->trjMatZY) * l + this->trajectory.Get(row-1, this->trjMatZY) * (1 - l);
+                        }
+                        if(this->trjHasMatZZ)
+                        {
+                                this->mat3(2) = this->trajectory.Get(row, this->trjMatZZ) * l + this->trajectory.Get(row-1, this->trjMatZZ) * (1 - l);
+                        }
+
+			// Make matrix diagonal to further use it in the code
+	                if(this->trjHasMatXX || this->trjHasMatXY || this->trjHasMatXZ || this->trjHasMatYX || this->trjHasMatYY || this->trjHasMatYZ || this->trjHasMatZX || this->trjHasMatZY || this->trjHasMatZZ)
+	                {
+	
+	                        arma::mat tmp_trj_mat = {{this->mat1(0),this->mat1(1),this->mat1(2)},
+	                                                 {this->mat2(0),this->mat2(1),this->mat2(2)},
+	                                                 {this->mat3(0),this->mat3(1),this->mat3(2)}};
+	                        this->DiagonalizeMatrix(tmp_trj_mat);           // Sets anisotropic part and axes
+	                }
+			
 		}
 		
 		return true;
@@ -573,8 +694,20 @@ namespace SpinAPI
 			this->trjHasAxis3 &= this->trajectory.HasColumn("axis3.y", trjAxis3Y);
 			this->trjHasAxis3 &= this->trajectory.HasColumn("axis3.z", trjAxis3Z);
 			
+			// matrix elements
+			this->trjHasMatXX = this->trajectory.HasColumn("mat.xx", trjMatXX);
+			this->trjHasMatXY = this->trajectory.HasColumn("mat.xy", trjMatXY);
+			this->trjHasMatXZ = this->trajectory.HasColumn("mat.xz", trjMatXZ);
+			this->trjHasMatYX = this->trajectory.HasColumn("mat.yx", trjMatYX);
+			this->trjHasMatYY = this->trajectory.HasColumn("mat.yy", trjMatYY);
+			this->trjHasMatYZ = this->trajectory.HasColumn("mat.yz", trjMatYZ);
+			this->trjHasMatZX = this->trajectory.HasColumn("mat.zx", trjMatZX);
+			this->trjHasMatZY = this->trajectory.HasColumn("mat.zy", trjMatZY);
+			this->trjHasMatZZ = this->trajectory.HasColumn("mat.zz", trjMatZZ);
+		
+
 			// Check whether any useful data was contained in the trajectory (note that time is irrelevant here, as it is just used for indexing)
-			if( !(this->trjHasIsotropic | this->trjHasAnisotropic | this->trjHasAxis1 | this->trjHasAxis2 | this->trjHasAxis3) )
+			if( !(this->trjHasIsotropic | this->trjHasAnisotropic | this->trjHasAxis1 | this->trjHasAxis2 | this->trjHasAxis3 | this->trjHasMatXX | this->trjHasMatXY | this->trjHasMatXZ | this->trjHasMatYX | this->trjHasMatYY | this->trjHasMatYZ | this->trjHasMatZX | this->trjHasMatZY | this->trjHasMatZZ) )
 			{
 				// Unload the trajectory if it contained no useful information
 				this->trajectory.Clear();

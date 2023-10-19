@@ -132,9 +132,16 @@ namespace RunSection
 
 			// Get nuclei of interest for CIDNP spectrum
 
-			arma::cx_mat Sproj;
+			arma::cx_mat Iprojx;
+			arma::cx_mat Iprojy;
+			arma::cx_mat Iprojz;
+
 			std::vector<std::string> nuclei_list;
 			int m;
+
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
+
 
 			if (this->Properties()->GetList("nuclei_list", nuclei_list, ','))
 			{
@@ -153,22 +160,22 @@ namespace RunSection
 						if ((*l)->Name() == nuclei_list[m])
 						{
 							std::cout << (*l)->Name() << std::endl;
-							if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Sproj))
+							if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
 							{
 								return false;
 							}
 
-							// std::cout << "Sz of" << (*l)->Name() << std::endl;
-							// std::cout << Sproj << std::endl;
+							if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sy()), (*l), Iprojy))
+							{
+								return false;
+							}
 
-							// Obtain the results
+							if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Iprojz))
+							{
+								return false;
+							}
+
 							arma::cx_mat P;
-							// double sum_yield;
-
-							// sum_yield = 0.0;
-
-							this->Data() << this->RunSettings()->CurrentStep() << " ";
-							this->WriteStandardOutput(this->Data());
 
 							// There are two result modes - either write results per transition or for each defined state
 							if (this->productYieldsOnly)
@@ -187,20 +194,16 @@ namespace RunSection
 										continue;
 									}
 
-									// std::cout << P << std::endl;
-									// std::cout << Sproj << std::endl;
-
-									//	sum_yield += std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0));
-
-									std::cout << std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0)) << std::endl;
+									std::cout << "Ix:" << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << std::endl;
+									std::cout << "Iy:" << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << std::endl;
+									std::cout << "Iz:" << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << std::endl;
 
 									// Return the yield for this transition
-									this->Data() << std::real(arma::trace(Sproj * (*j)->Rate() * P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
 								}
 
-								// this->Data() << sum_yield << " ";
-
-								// sum_yield *= 0.0;
 							}
 							else
 							{
@@ -214,15 +217,11 @@ namespace RunSection
 										continue;
 									}
 
-									//	sum_yield += std::real(arma::trace(Sproj * P * rho0));
-
 									// Return the yield for this state - note that no reaction rates are included here.
-									this->Data() << std::abs(arma::trace(P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojx *  P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojy *  P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojz *  P * rho0)) << " ";
 								}
-
-								// this->Data() << sum_yield << " ";
-
-								// sum_yield *= 0.0;
 							}
 						}
 					}
@@ -267,14 +266,23 @@ namespace RunSection
 						// Write each transition name
 						auto transitions = (*i)->Transitions();
 						for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
-							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield ";
+						{
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Ix ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Iy ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Iz ";
+
+						}
 					}
 					else
 					{
 						// Write each state name
 						auto states = (*i)->States();
 						for (auto j = states.cbegin(); j != states.cend(); j++)
-							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << " ";
+						{
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".Ix ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".Iy ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".Iz ";
+						}
 					}
 				}
 			}

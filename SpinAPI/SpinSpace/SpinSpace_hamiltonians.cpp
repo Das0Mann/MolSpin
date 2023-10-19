@@ -158,7 +158,7 @@ namespace SpinAPI
 						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), S2y);
 						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), S2z);
 					}
-					
+					//TODO: This is not correct when the user uses a non isotropic exchange which he will not when being smart.
 					if(ATensor != nullptr && !IsIsotropic(*ATensor))
 					{
 						// Use the tensor to calculate the product S_1 * A * S_2
@@ -170,16 +170,61 @@ namespace SpinAPI
 						arma::cx_mat half = 0.5 * arma::eye<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
 						tmp += half;
-						
 					}
 					else
 					{
+						//TODO: Be carfeul with the sign here!!! Usually you would use a minus sign to at the whol interaction.
 						// If there is no interaction tensor or if the tensor is isotropic, just take the dot product
 						tmp += 2.0 * (S1x * S2x + S1y * S2y + S1z * S2z);
 						arma::cx_mat half = 0.5 * arma::eye<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
 						tmp += half;
 					}
+				}
+			}
+		}
+		else if(_interaction->Type() == InteractionType::Zfs)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spins1 = _interaction->Group1();
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			
+			// Fill the matrix with the sum of all the interactions
+			for(auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			{
+				// Obtain the magnetic moment operators within the Hilbert space
+				if(_interaction->IgnoreTensors())
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+				}
+				else
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+				}
+
+				// Get D and E value
+				double D = _interaction->Dvalue();
+				double E = _interaction->Evalue();
+
+				if (D == 0.0 && E == 0.0)
+				{
+					std::cout << "D or E value for zero-field splitting was not found." << std::endl;
+
+				}
+				else
+				{
+					std::cout << D << E << std::endl;
+
+					// Calculate Zfs interaction
+
+					tmp = D * (Sz * Sz - ((1.00/3.00) * (*i)->S() * ((*i)->S() + 1))) + E * (Sx * Sx - Sy * Sy);
+					//std::cout << tmp << std::endl;
 				}
 			}
 		}
@@ -371,6 +416,7 @@ namespace SpinAPI
 						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), S2z);
 					}
 					
+					//TODO: This is not correct when the user uses a non isotropic exchange which he will not when being smart.
 					if(ATensor != nullptr && !IsIsotropic(*ATensor))
 					{
 						// Use the tensor to calculate the product S_1 * A * S_2
@@ -385,6 +431,7 @@ namespace SpinAPI
 					}
 					else
 					{
+						//TODO: Be carfeul with the sign here!!! Usually you would use a minus sign to at the whol interaction.
 						// If there is no interaction tensor or if the tensor is isotropic, just take the dot product
 						tmp += 2.0 * (S1x * S2x + S1y * S2y + S1z * S2z);
 						
@@ -393,7 +440,52 @@ namespace SpinAPI
 						tmp(arma::span::all, arma::span::all) += half;
 					}
 				}
-			}
+			}	
+		}
+		else if(_interaction->Type() == InteractionType::Zfs)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spins1 = _interaction->Group1();
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			
+			// Fill the matrix with the sum of all the interactions
+			for(auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			{
+				// Obtain the magnetic moment operators within the Hilbert space
+				if(_interaction->IgnoreTensors())
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+				}
+				else
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+				}
+
+				// Get D and E value
+				double D = _interaction->Dvalue();
+				double E = _interaction->Evalue();
+
+				if (D == 0.0 && E == 0.0)
+				{
+					std::cout << "D or E value for zero-field splitting was not found." << std::endl;
+
+				}
+				else
+				{
+					std::cout << D << E << std::endl;
+
+					// Calculate Zfs interaction
+
+					tmp = D * (Sz * Sz - ((1.00/3.00) * (*i)->S() * ((*i)->S() + 1))) + E * (Sx * Sx - Sy * Sy);
+					//std::cout << tmp << std::endl;
+				}
+			}			
 		}
 		else
 		{
