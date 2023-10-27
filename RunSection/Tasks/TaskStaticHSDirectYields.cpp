@@ -49,7 +49,7 @@ namespace RunSection
 		for(auto i = systems.cbegin(); i != systems.cend(); i++) // iteration through all spin systems, in this case (or usually), this is one
 		{
 			// Gyromagnetic constant
-			double gamma_e = 176.0859644; //gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1
+			 double gamma_e = 176.0859644; //gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1 also rad T^-1 ns^-1
 			
 			// Count the number of nuclear spins
 			int nucspins = 0;
