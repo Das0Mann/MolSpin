@@ -30,6 +30,7 @@ namespace RunSection
 			// Constructors / Destructors
 			TaskStaticHSDirectTimeEvo(const MSDParser::ObjectParser&, const RunSection&);	// Normal constructor
 			~TaskStaticHSDirectTimeEvo();													// Destructor
+			bool is_identity_matrix(arma::sp_cx_mat& matrix); // check if the matrix is an identity
 	};
 }
 

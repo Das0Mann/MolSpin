@@ -41,7 +41,6 @@ namespace RunSection
 			bool productYieldsOnly;				// If true, a quantum yield will be calculated from each Transition object and multiplied by the rate constant
 												// If false, a quantum yield will be calculated each defined State object
 			void WriteHeader(std::ostream&);	// Write header for the output file
-			
 		protected:
 			bool RunLocal() override;
 			bool Validate() override;
@@ -50,6 +49,7 @@ namespace RunSection
 			// Constructors / Destructors
 			TaskDynamicHSDirectYields(const MSDParser::ObjectParser&, const RunSection&);	// Normal constructor
 			~TaskDynamicHSDirectYields();													// Destructor
+			bool is_identity_matrix(arma::sp_cx_mat& matrix); // check if the matrix is an identity
 	};
 }
 

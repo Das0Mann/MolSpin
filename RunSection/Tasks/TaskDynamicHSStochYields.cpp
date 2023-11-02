@@ -232,11 +232,12 @@ namespace RunSection
 			arma::sp_cx_mat P;
 			arma::sp_cx_mat Sum(4*Z,4*Z);
 			int num_transitions = 0;
+			double temprate = 0;
 				
 			arma::vec rates(1,1) ;
 			std::map<int,arma::sp_cx_mat> Operators;
-			double kmin=0;
-			double kmax=0;
+			double kmin;
+			double kmax;
 			if(!time_dependent_transitions)
 			{
 				// Gather rates and operators
@@ -255,7 +256,7 @@ namespace RunSection
                                         	rates.insert_rows(num_transitions,1);
                                 	}
                                 	Operators[num_transitions] = P;
-                                	rates(num_transitions) = (*j)->Rate()*1e3 / gamma_e;
+                                	rates(num_transitions) = (*j)->Rate();
                                 	num_transitions++;
 				}
 				kmin = rates.min();
@@ -296,12 +297,29 @@ namespace RunSection
                                         	if((*j)->SourceState() == nullptr)
                                         	continue;
                                         	space.GetState((*j)->SourceState(), P);
-                                        	K += (*j)->Rate()*1e3 /2/ gamma_e*P;
+                                        	K += (*j)->Rate()/2*P;
                                 	}
                         	} else
                         	{
-                                	symmetric = true; // Symmetric Recombination
-                                	this->Log() << "Recombination rates are equal, hence Symmetric Recombination condition is satisfied and calculations will be simplified." << std::endl;
+					symmetric = true; // Symmetric Recombination
+
+                                	for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
+                                	{
+                                        	if((*j)->SourceState() == nullptr)
+                                                	continue;
+                                        	space.GetState((*j)->SourceState(), P);
+                                        	if(this->is_identity_matrix(P))
+                                        	{
+                                                	symmetric = false;
+                                        	}
+                                        	K += (*j)->Rate()/2*P;
+                                	}
+
+                                	if(symmetric)
+                                	{
+                                        	K = arma::sp_cx_mat();
+                                        	this->Log() << "Recombination rates are equal, hence Symmetric Recombination condition is satisfied and calculations will be simplified." << std::endl;
+                                	}	
                         	}
 			}
 			else
@@ -311,7 +329,6 @@ namespace RunSection
                         	{
                                 	this->Log() << "Warning: Failed to update matrix representation of transitions!" << std::endl;
                         	}
-				K = K * 1e3 /gamma_e;
 			}
 
 			// Obtain the sampling method and set up states for time-propagation
@@ -356,16 +373,14 @@ namespace RunSection
                         if(ttotal > 2e-53)
                         {
                                 this->Log() << "Total time is chosen as " << ttotal << " ns." << std::endl;
-                                ttotal = ttotal * 1e-3 * gamma_e;
-                                this->Log() << "Total time is chosen as " << ttotal << " rad mT^-1." << std::endl;
+                                this->Log() << "Total time is chosen as " << ttotal* 1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         } else
                         {
                                 this->Log() << "Both total time and epsilon are not given or not appropriately defined. Using the default." << std::endl;
                                 std::cout << "# ERROR: total time and/or epsilon are not defined/given! Using the default of 10000 ns." << std::endl;
                                 ttotal = 10000;
                                 this->Log() << "Total time is chosen as " << ttotal << " ns." << std::endl;
-                                ttotal = ttotal * 1e-3 * gamma_e;
-                                this->Log() << "Total time is chosen as " << ttotal << " rad mT^-1." << std::endl;
+                                this->Log() << "Total time is chosen as " << ttotal* 1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         }
 
 			// Setting timestep
@@ -376,16 +391,14 @@ namespace RunSection
                         if(dt > std::pow(2,-53))
                         {
                                 this->Log() << "Time step is chosen as " << dt << " ns." << std::endl;
-                                dt = dt * 1e-3 * gamma_e;
-                                this->Log() << "Time step is chosen as " << dt << " rad mT^-1." << std::endl;
+                                this->Log() << "Time step is chosen as " << dt * 1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         } else
                         {
                                 this->Log() << "Time step is undefined. Using the default." << std::endl;
                                 std::cout << "# ERROR: undefined time step! Using the default of 1 ns." << std::endl;
                                 dt = 1;
                                 this->Log() << "Time step is chosen as " << dt << " ns." << std::endl;
-                                dt = dt * 1e-3 * gamma_e;
-                                this->Log() << "Time step is chosen as " << dt << " rad mT^-1." << std::endl;
+                                this->Log() << "Time step is chosen as " << dt * 1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         }	
 
 			// Number of time propagation steps
@@ -462,7 +475,6 @@ namespace RunSection
                                 std::cout << "# ERROR: Failed to obtain the Hamiltonian!" << std::endl;
                                 return 1;
                         }
-                        H = H * 1000;
 			
                       	arma::mat ExptValues;
                         ExptValues.zeros(num_steps,num_transitions);
@@ -492,14 +504,14 @@ namespace RunSection
                                                 time(k) = current_time;
 
                                                 // Set the currentime for the Dynamic Hamiltonian
-                                                space.SetTime(current_time / 1e-3 / gamma_e);
+                                                space.SetTime(current_time);
 						
 						auto transitions = (*i)->Transitions();
 
 						int idx = 0;
 						for(auto o = transitions.begin(); o != transitions.end(); o++)
 						{		
-							double rate = (*o)->Rate()*1e3 / gamma_e;
+							double rate = (*o)->Rate();
 							double abs_trace = std::abs(arma::trace(B.t() * Operators[idx] * B));
                                                         double expected_value = abs_trace / mc_samples;
                                                         ExptValues(k, idx) = rate*expected_value;
@@ -510,7 +522,7 @@ namespace RunSection
                                                         this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                 }
 
-		                                dK = (- arma::cx_double(0.0, 1.0))* dK *1e3 /gamma_e;
+		                                dK = (- arma::cx_double(0.0, 1.0))* dK;
 
                                                 // Update B using the Higham propagator
                                                 H = H + dK;
@@ -534,14 +546,14 @@ namespace RunSection
                                                         time(k) = current_time;
 
                                                         // Set the currentime for the Dynamic Hamiltonian
-                                                        space.SetTime(current_time / 1e-3 / gamma_e);
+                                                        space.SetTime(current_time);
 							
 							auto transitions = (*i)->Transitions();
 
 							int idx = 0;		
 							for(auto o = transitions.begin(); o != transitions.end(); o++)
                                                 	{
-                                                        	double rate = (*o)->Rate()*1e3 / gamma_e;
+                                                        	double rate = (*o)->Rate();
                                                         	double expected_value = std::abs(arma::cdot(prop_state, Operators[idx] * prop_state));
                                                         	ExptValues(k, idx) += rate*expected_value;
                                                         	idx++;
@@ -552,7 +564,7 @@ namespace RunSection
                                                         	this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                 	}
 
-                                                	dK = (- arma::cx_double(0.0, 1.0))* dK *1e3 /gamma_e;
+                                                	dK = (- arma::cx_double(0.0, 1.0))* dK;
 
                                                         // Update B using Krylov Subspace propagator
                                                         H = H + dK;
@@ -582,7 +594,7 @@ namespace RunSection
 			                                time(k) = current_time;
 			
 			                                // Set the currentime for the Dynamic Hamiltonian
-			                                space.SetTime(current_time / 1e-3 / gamma_e);
+			                                space.SetTime(current_time);
 			
 			                                // Calculate the expected values for each transition operator
 			                                for(int idx = 0; idx < num_transitions; idx++)
@@ -596,8 +608,6 @@ namespace RunSection
 			                                {
 			                                        this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
 			                                }
-			
-			                                dH = dH * 1000;
 								
 			                                // Update B using the Higham propagator
 			                                H = H + dH;
@@ -617,7 +627,7 @@ namespace RunSection
                                                 	time(k) = current_time;
 							
 							// Set the currentime for the Dynamic Hamiltonian
-                                                        space.SetTime(current_time / 1e-3 / gamma_e);
+                                                        space.SetTime(current_time);
 
                                                 	// Calculate the expected values for each transition operator
                                                  	for(int idx = 0; idx < num_transitions; idx++)
@@ -631,8 +641,6 @@ namespace RunSection
                                                         {
                                                                 this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                         }
-
-                                                        dH = dH * 1000;
 
                                             		// Update B using the Higham propagator
                                             		H = H + dH;
@@ -659,7 +667,7 @@ namespace RunSection
                                                       		time(k) = current_time;
 								
 								// Set the currentime for the Dynamic Hamiltonian
-                                                        	space.SetTime(current_time / 1e-3 / gamma_e);
+                                                        	space.SetTime(current_time);
 
                                                       		// Calculate the expected values for each transition operator
                                                       		for(int idx = 0; idx < num_transitions; idx++)
@@ -672,8 +680,6 @@ namespace RunSection
                                                         	{
                                                                 	this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                         	}
-
-                                                        	dH = dH * 1000;
 						
                                                       		// Update B using Krylov Subspace propagator
                                                       		H = H + dH;
@@ -699,7 +705,7 @@ namespace RunSection
 	                                                        time(k) = current_time;
 								
 								// Set the currentime for the Dynamic Hamiltonian
-                                                                space.SetTime(current_time / 1e-3 / gamma_e);
+                                                                space.SetTime(current_time);
 
 	                                                        // Calculate the expected values for each transition operator
 	                                                        for(int idx = 0; idx < num_transitions; idx++)
@@ -712,8 +718,6 @@ namespace RunSection
                                                                 {
                                                                         this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                                 }
-
-                                                                dH = dH * 1000;
 
 	                                                        // Update B using Krylov Subspace propagator
 								H = H + dH;
@@ -746,14 +750,14 @@ namespace RunSection
                                                 time(k) = current_time;
 
                                                 // Set the currentime for the Dynamic Hamiltonian
-                                                space.SetTime(current_time / 1e-3 / gamma_e);
+                                                space.SetTime(current_time);
 
                                                 auto transitions = (*i)->Transitions();
 
                                                 int idx = 0;
                                                 for(auto o = transitions.begin(); o != transitions.end(); o++)
                                                 {
-                                                        double rate = (*o)->Rate()*1e3 / gamma_e;
+                                                        double rate = (*o)->Rate();
                                                         double abs_trace = std::abs(arma::trace(B.t() * Operators[idx] * B));
                                                         double expected_value = abs_trace / mc_samples;
                                                         ExptValues(k, idx) = rate*expected_value;
@@ -764,14 +768,12 @@ namespace RunSection
                                                         this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                 }
 
-                                                dK = (- arma::cx_double(0.0, 1.0))* dK *1e3 /gamma_e;
+                                                dK = (- arma::cx_double(0.0, 1.0))* dK;
 						
 						if(!space.DynamicHamiltonian(dH))
                                                 {
                                                 	this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                 }
-
-                                                dH = dH * 1000;
 
                                                 // Update B using the Higham propagator
                                                 H = H + dK + dH;
@@ -795,14 +797,14 @@ namespace RunSection
                                                         time(k) = current_time;
 
                                                         // Set the currentime for the Dynamic Hamiltonian
-                                                        space.SetTime(current_time / 1e-3 / gamma_e);
+                                                        space.SetTime(current_time);
 
                                                         auto transitions = (*i)->Transitions();
 
                                                         int idx = 0;
                                                         for(auto o = transitions.begin(); o != transitions.end(); o++)
                                                         {
-                                                                double rate = (*o)->Rate()*1e3 / gamma_e;
+                                                                double rate = (*o)->Rate();
                                                                 double expected_value = std::abs(arma::cdot(prop_state, Operators[idx] * prop_state));
                                                                 ExptValues(k, idx) += rate*expected_value;
                                                                 idx++;
@@ -813,14 +815,12 @@ namespace RunSection
                                                                 this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                         }
 
-                                                        dK = (- arma::cx_double(0.0, 1.0))* dK *1e3 /gamma_e;
+                                                        dK = (- arma::cx_double(0.0, 1.0))* dK;
 							
 							if(!space.DynamicHamiltonian(dH))
                                                 	{
                                                         	this->Log() << "Warning: Failed to update the Hamiltonian matrix representation!" << std::endl;
                                                 	}
-
-                                                	dH = dH * 1000;
 
                                                         // Update B using Krylov Subspace propagator
                                                         H = H + dK + dH;
@@ -853,17 +853,36 @@ namespace RunSection
 				
 			this->Data() << std::endl;
 			
-			std::cout << std::endl;
-			std::cout << "Quantum Yields:" << std::endl;
-                        std::cout << std::setprecision(6) <<  ans << std::endl;
-			std::cout << std::endl;
-
-			std::cout << "Accumulated sum of the quantum yields:" << std::endl;
-                        std::cout << std::setprecision(6) << arma::accu(ans) << std::endl;
-			std::cout << std::endl;
 		}	
 		return true;
-	}
+	}	
+	bool TaskDynamicHSStochYields::is_identity_matrix(arma::sp_cx_mat& matrix)
+        {
+                // Check if the matrix is square.
+                if (matrix.n_rows != matrix.n_cols) {
+                        return false;
+                }
+
+                double EPSILON = 1e-14;
+                // Check if all the diagonal elements of the matrix are equal to 1.0.
+                for (int i = 0; i < matrix.n_rows; i++) {
+                        if (std::abs(matrix(i, i).real() - 1.0) > EPSILON || std::abs(matrix(i, i).imag()) > EPSILON) {
+                                return false;
+                        }
+                }
+
+                // Check if all the non-diagonal elements of the matrix are equal to 0.0.
+                for (int i = 0; i < matrix.n_rows; i++) {
+                        for (int j = 0; j < matrix.n_cols; j++) {
+                                if (i != j && (std::abs(matrix(i, j).real()) > EPSILON || std::abs(matrix(i, j).imag()) > EPSILON)) {
+                                        return false;
+                                }
+                        }
+                }
+
+                // If we reach here, then the matrix is an identity matrix.
+                return true;
+        }
 	
 	// Writes the header of the data file (but can also be passed to other streams)
 	void TaskDynamicHSStochYields::WriteHeader(std::ostream& _stream)
