@@ -235,6 +235,24 @@ namespace RunSection
 			this->Log() << "Starting with construction of relaxation matrix." << std::endl;
 			for (auto interaction = (*i)->interactions_cbegin(); interaction < (*i)->interactions_cend(); interaction++)
 			{
+				// Chosen parameter in input file
+				this->Log() <<"------------------------------------------" << std::endl;
+				this->Log() <<"Chosen input parameter for interaction:  " << (*interaction)->Name() << std::endl;
+				this->Log() <<"------------------------------------------" << std::endl;
+				(*interaction)->Properties()->Get("terms", terms);
+					this->Log() <<"terms == " << terms << std::endl;
+				(*interaction)->Properties()->Get("def_g", def_g);
+					this->Log() << "def_g == " << def_g << std::endl;
+				(*interaction)->Properties()->Get("def_multexpo", def_multexpo);
+					this->Log() << "def_multexpo == " << def_multexpo << std::endl;
+				(*interaction)->Properties()->Get("ops", ops);
+					this->Log() << "ops == " << ops << std::endl;
+				(*interaction)->Properties()->Get("coeff", coeff);
+					this->Log() << "coeff == " << coeff << std::endl;
+				(*interaction)->Properties()->Get("slip", slip);
+					this->Log() << "slip == " << slip << std::endl;
+				this->Log() <<"------------------------------------------" << std::endl;
+
 				// Check if def_multexpo keyword is used
 				if ((*interaction)->Properties()->Get("def_multexpo", def_multexpo) && def_multexpo == 1)
 				{
@@ -430,10 +448,16 @@ namespace RunSection
 									// TODO: Slippage Operator for multiexponential loop
 
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
-
-									if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+									
+									if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
 									{
-										this->Log() << "Setting up Redfield tensor for each component (Axx, Axy, Axz, Ayx, ...) separately " << std::endl;
+
+										// TODO: This if-statement routine is not correct set up here!
+										this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
+									}
+									else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
+									{
+										this->Log() << "Setting up Redfield tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
 
 										// Counter for inner loop
 										int m = 0;
@@ -503,12 +527,6 @@ namespace RunSection
 
 											m = m + 1;
 										}
-									}
-									else if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
-									{
-
-										// TODO: This if-statement routine is not correct set up here!
-										this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
 									}
 									else
 									{
@@ -720,15 +738,9 @@ namespace RunSection
 
 										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
 
-										if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
 										{
-											// TODO: This if-statement routine is not correct set up here!
-
-											this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
-										}
-										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
-										{
-											this->Log() << "Setting up Redfield tensor for each component (Axx, Axy, Axz, Ayx, ...) separately " << std::endl;
+											this->Log() << "Setting up Redfield tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
 
 											// Counter for inner loop
 											int m = 0;
@@ -813,6 +825,12 @@ namespace RunSection
 													m = m + 1;
 												}
 											}
+										}
+										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
+										{
+											// TODO: This if-statement routine is not correct set up here!
+
+											this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
 										}
 										else
 										{
