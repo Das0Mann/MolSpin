@@ -234,6 +234,10 @@ namespace SpinAPI
 			// NOTE: These operators can only be created in superoperator space!
 			bool RelaxationOperator(const operator_ptr&, arma::cx_mat&) const;
 			bool RelaxationOperator(const operator_ptr&, arma::sp_cx_mat&) const;
+
+			// Same relaxation operators, but when unitary transformation of projection operators is required
+			bool RelaxationOperatorFrameChange(const operator_ptr& _operator, arma::cx_mat _rotationmatrix, arma::cx_mat& _out) const;
+			bool RelaxationOperatorFrameChange(const operator_ptr& _operator, arma::cx_mat _rotationmatrix, arma::sp_cx_mat& _out) const;
 			
 			// ------------------------------------------------
 			// Other public methods

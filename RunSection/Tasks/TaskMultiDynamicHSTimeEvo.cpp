@@ -142,7 +142,8 @@ namespace RunSection
 			this->GetCreationOperators(spaces, C, rho);
 			
 			// Propagate
-			this->AdvanceStep_AsyncLeapfrog(spaces, H, dH, K, dK, C, rho);
+			//this->AdvanceStep_AsyncLeapfrog(spaces, H, dH, K, dK, C, rho);
+			this->AdvanceStep_RK4(spaces, H, dH, K, dK, C, rho);
 			
 			// Print results
 			if(n % this->outputstride == 0)
@@ -232,6 +233,29 @@ namespace RunSection
 			dRho = (arma::cx_double(0.0,-1.0) * ((_H[i] + _dH[i]) * _rho[i] - _rho[i] * (_H[i] + _dH[i])) - ((_K[i] + _dK[i]) * _rho[i] + _rho[i] * (_K[i] + _dK[i])) + _C[i]);
 			_rho[i] += dRho * this->timestep / 2.0;
 		}
+	}
+
+	void TaskMultiDynamicHSTimeEvo::AdvanceStep_RK4(const std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>>& _spaces,
+                                                const std::vector<arma::cx_mat>& _H, const std::vector<arma::sp_cx_mat>& _dH,
+                                                const std::vector<arma::cx_mat>& _K, const std::vector<arma::sp_cx_mat>& _dK,
+                                                const std::vector<arma::sp_cx_mat>& _C, std::vector<arma::cx_mat>& _rho) 
+	{
+    for(unsigned int i = 0; i < _spaces.size(); i++) 
+    {
+        arma::cx_mat k1 = ComputeRhoDot(_H[i], _dH[i], _K[i], _dK[i], _C[i], _rho[i]);
+        arma::cx_mat k2 = ComputeRhoDot(_H[i], _dH[i], _K[i], _dK[i], _C[i], _rho[i] + 0.5 * this->timestep * k1);
+        arma::cx_mat k3 = ComputeRhoDot(_H[i], _dH[i], _K[i], _dK[i], _C[i], _rho[i] + 0.5 * this->timestep * k2);
+        arma::cx_mat k4 = ComputeRhoDot(_H[i], _dH[i], _K[i], _dK[i], _C[i], _rho[i] + this->timestep * k3);
+ 
+        _rho[i] += (this->timestep / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+    }
+	}
+
+	arma::cx_mat TaskMultiDynamicHSTimeEvo::ComputeRhoDot(const arma::cx_mat& H, const arma::sp_cx_mat& dH,
+														const arma::cx_mat& K, const arma::sp_cx_mat& dK,
+														const arma::sp_cx_mat& C, const arma::cx_mat& rho) 
+	{
+		return arma::cx_double(0.0, -1.0) * ((H + dH) * rho - rho * (H + dH)) - ((K + dK) * rho + rho * (K + dK)) + C;
 	}
 	
 	// -----------------------------------------------------

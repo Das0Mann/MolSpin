@@ -22,6 +22,13 @@ namespace RunSection
 			// Data members
 			
 			// Private methods
+			long long  GetNumDifferencesRPOnlyDec(long long dimension);
+			arma::vec GetDifferencesRPOnlyDec(arma::vec values);
+			arma::cx_vec GetPopulationVector(const int& Z1, const int& Z2, const arma::cx_mat& V1, const arma::cx_mat& V2);
+			arma::vec GetPerpendicular3DVectorRPOnlyDec(arma::vec vector, bool normalise);
+			arma::vec GetResonanceEffectsRPOnlyDec(arma::cx_vec initialstatepopulation, arma::sp_cx_mat transitionhamiltonian);
+			double GetHistogramPrefactorRPOnlyDec(bool useMHzunits);
+			arma::vec GetNormalisedHistogramHeightsRPOnlyDec(arma::vec energygaps, arma::vec resonanceeffects, double binwidth, int numbins, bool useMHzunits);
 			arma::vec GetHistogramBinCenters();
 			void WriteHeader(std::ostream&);	// Write header for the output file
 			

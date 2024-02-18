@@ -110,7 +110,7 @@ namespace RunSection
 			// ----------------------------------------------------------------
 
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H, "std");
+			arma::eig_sym(eigen_val, eigen_vec, H);
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
 			// Put eigenbasis on pointer to sue for PState (projection operator) in final calculation
@@ -1510,31 +1510,153 @@ namespace RunSection
 
 // Rotate tensors in eigenbasis of H0
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
-									for (k = 0; k < num_op; k++)
+								for (k = 0; k < num_op; k++)
+								{
+									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
+								}
+
+								if ((*interaction)->Properties()->Get("slip", slip) && slip == 1)
+								{
+									this->Log() << "Calculating slippage of inital condition for interaction" << std::endl;
+									arma::cx_mat rho0_new;
+									rho0_new.set_size(size(rho0));
+									rho0_new.zeros();
+
+									if (!Slippage(ptr_Tensors, num_op, eig_val_mat, domega, rho0, static_cast<std::complex<double>>(tau_c_list[0]), rho0_new))
 									{
-										*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+										this->Log() << "There are problems with the construction of the intial condition for slippage - Please check your input." << std::endl;
+										continue;
 									}
 
-									// Calculated Slippage of inital condition if required
-									if ((*interaction)->Properties()->Get("slip", slip) && slip == 1)
-									{
-										this->Log() << "Calculating slippage of inital condition for interaction" << std::endl;
-										arma::cx_mat rho0_new;
-										rho0_new.set_size(size(rho0));
-										rho0_new.zeros();
+									rho0 = rho0_new;
+									rho0_new *= 0.0;
+								}
 
-										if (!Slippage(ptr_Tensors, num_op, eig_val_mat, domega, rho0, static_cast<std::complex<double>>(tau_c_list[0]), rho0_new))
+								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
+
+								if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+								{
+									this->Log() << "No cross-relaxation terms are requested" << std::endl;
+
+									if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
+									{
+										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
+
+// loop through all operators and construct R tensor in Liouville space
+#pragma omp parallel for num_threads(threads)
+										for (int l = 0; l < threads; l++)
 										{
-											this->Log() << "There are problems with the construction of the intial condition for slippage - Please check your input." << std::endl;
-											continue;
+											*ptr_R[l] *= 0.0;
 										}
 
-										rho0 = rho0_new;
-										rho0_new *= 0.0;
+#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, domega, num_op, ptr_Tensors, ptr_R, interaction, def_specdens) num_threads(threads)
+										for (k = 0; k < num_op; k++)
+										{
+											// ----------------------------------------------------------------
+											// CONSTRUCTING SPECTRAL DENSITY MATRIX
+											// ----------------------------------------------------------------
+											ampl_combined = ampl_list[k] * ampl_list[k];
+
+											if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+											{
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
+												{
+													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+													continue;
+												}
+
+												SpecDens *= (*interaction)->Prefactor();
+											}
+											else
+											{
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensSpecificTimeEvo(0, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
+												{
+													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+													continue;
+												}
+
+												SpecDens *= (*interaction)->Prefactor();
+											}
+
+											// -----------------------------------------------------------------
+											// CONSTRUCTING R MATRIX
+											// -----------------------------------------------------------------
+
+											tmp_R *= 0.0;
+
+											if (!RedfieldtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
+											{
+												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+												continue;
+											}
+
+											*ptr_R[omp_get_thread_num()] += tmp_R;
+										}
 									}
+									else
+									{
+										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
 
-									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
+										// ----------------------------------------------------------------
+										// CONSTRUCTING SPECTRAL DENSITY MATRIX
+										// ----------------------------------------------------------------
 
+										if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+										{
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(1, ampl_list, tau_c_list, domega, SpecDens))
+											{
+												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+												continue;
+											}
+
+											SpecDens *= (*interaction)->Prefactor();
+										}
+										else
+										{
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(0, ampl_list, tau_c_list, domega, SpecDens))
+											{
+												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+												continue;
+											}
+
+											SpecDens *= (*interaction)->Prefactor();
+										}
+
+#pragma omp parallel for num_threads(threads)
+										for (l = 0; l < threads; l++)
+										{
+											*ptr_R[l] *= 0.0;
+										}
+
+#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, domega, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
+										for (k = 0; k < num_op; k++)
+										{
+											// -----------------------------------------------------------------
+											// CONSTRUCTING R MATRIX
+											// -----------------------------------------------------------------
+
+											tmp_R *= 0.0;
+
+											if (!RedfieldtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
+											{
+												this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+												continue;
+											}
+
+											*ptr_R[omp_get_thread_num()] += tmp_R;
+										}
+									}
+								}
+								else
+								{
 									if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
 									{
 										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
@@ -1545,7 +1667,8 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, domega, num_op, ptr_R, ptr_Tensors, def_specdens, interaction) num_threads(threads)
+// loop through all operators and construct R tensor in Liouville space
+#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, domega, num_op, ptr_Tensors, ptr_R, interaction, def_specdens) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
 											for (s = 0; s < num_op; s++)
@@ -1559,7 +1682,6 @@ namespace RunSection
 												if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 												{
 													SpecDens *= 0.0;
-
 													if (!ConstructSpecDensSpecificTimeEvo(1, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
@@ -1581,11 +1703,9 @@ namespace RunSection
 													SpecDens *= (*interaction)->Prefactor();
 												}
 
-												ampl_combined *= 0.0;
-
-												// -----------------------------------------------------------------------------------------
+												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
-												// -----------------------------------------------------------------------------------------
+												// ----------------------------------------------------------------
 
 												tmp_R *= 0.0;
 
@@ -1600,6 +1720,7 @@ namespace RunSection
 												if (k != s)
 												{
 													tmp_R *= 0.0;
+
 													if (!RedfieldtensorTimeEvo((*ptr_Tensors[s]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
@@ -1613,10 +1734,12 @@ namespace RunSection
 									}
 									else
 									{
+										// loop through all operators and construct R tensor in Liouville space
 										// ----------------------------------------------------------------
 										// CONSTRUCTING SPECTRAL DENSITY MATRIX
 										// ----------------------------------------------------------------
 
+										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
 										if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 										{
 											SpecDens *= 0.0;
@@ -1653,9 +1776,10 @@ namespace RunSection
 										{
 											for (s = 0; s < num_op; s++)
 											{
-												// -----------------------------------------------------------------------------------------
+												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
-												// -----------------------------------------------------------------------------------------
+												// ----------------------------------------------------------------
+
 												tmp_R *= 0.0;
 
 												if (!RedfieldtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
@@ -1669,24 +1793,25 @@ namespace RunSection
 												if (k != s)
 												{
 													tmp_R *= 0.0;
+
 													if (!RedfieldtensorTimeEvo((*ptr_Tensors[s]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
 														continue;
 													}
-
 													*ptr_R[omp_get_thread_num()] += tmp_R;
 												}
 											}
 										}
 									}
+								}
 
-									for (l = 0; l < threads; l++)
-									{
-										R += *ptr_R[l];
-									}
+								for (l = 0; l < threads; l++)
+								{
+									R += *ptr_R[l];
+								}
 
-									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
+								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 								}
 							}
 						}
@@ -1756,6 +1881,28 @@ namespace RunSection
 
 			A -= K_SS;
 
+			// Get the relaxation terms of other relaxation operators, assuming that they can just be added
+			arma::cx_mat O_SS;
+				
+			for(auto t = (*i)->operators_cbegin(); t != (*i)->operators_cend(); t++)
+			{
+				space.UseSuperoperatorSpace(true);
+				if(space.RelaxationOperatorFrameChange((*t), eigen_vec , O_SS))
+				{
+
+					
+					A += O_SS;
+					space.UseSuperoperatorSpace(false);
+
+					this->Log() << "Added other relaxation operator \"" << (*t)->Name() << "\" to the Liouvillian.\n";
+				}
+				else
+				{
+						this->Log() << "There is a problem with operator \"" << (*t)->Name() << ". Please check.\n";
+						space.UseSuperoperatorSpace(false);
+				}
+			}
+			
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
@@ -1827,7 +1974,6 @@ namespace RunSection
 						continue;
 					}
 
-					rho0 /= arma::trace(rho0);
 					// Obtain the results
 					arma::cx_mat PState;
 					auto states = (*i)->States();
@@ -2074,16 +2220,21 @@ namespace RunSection
 			slip_op += (arma::cx_double(0.0, 1.0)) * _eig_val_mat * (*_ptr_Tensors[alpha]) * (Tk2[alpha]) * _rho0 - (arma::cx_double(0.0, 1.0)) * _eig_val_mat * (Tk2[alpha]) * _rho0 * (*_ptr_Tensors[alpha]);
 
 			// Hermitian conjugated (h.c.) -> .t() hermitian conjugated matrix
-			slip_op += (*_ptr_Tensors[alpha]).t() * (Tk1[alpha]).t() * _rho0.t() - (Tk1[alpha]).t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+			// For T_alpha(k=1) Hermitian conjugate
+			slip_op += _rho0.t() * (Tk1[alpha]).t() * (*_ptr_Tensors[alpha]).t() - (*_ptr_Tensors[alpha]).t() * _rho0.t() * (Tk1[alpha]).t();
 
-			slip_op += (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() - (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * _rho0.t();
-			slip_op += -Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() + Tk2[alpha].t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
-			slip_op += -(*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() + Tk2[alpha].t() * _rho0.t() * (*_ptr_Tensors[alpha]).t() * (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t();
-			slip_op += (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() * Tk2[alpha].t() * _rho0.t() - (arma::cx_double(0.0, -1.0)) * _eig_val_mat.t() * Tk2[alpha].t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+			// For T_alpha(k=2) Hermitian conjugate, using .t() for conjugate transpose
+			arma::cx_double i_complex(0.0, -1.0); // Use -i for the conjugate of i
+			slip_op += (*_ptr_Tensors[alpha]).t() * (Tk2[alpha]).t() * _rho0.t() * i_complex * _eig_val_mat.t() - (Tk2[alpha]).t() * _rho0.t() * i_complex * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t();
+			slip_op += -(Tk2[alpha]).t() * _rho0.t() * i_complex * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() + (Tk2[alpha]).t() * i_complex * _eig_val_mat.t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+			slip_op += -(*_ptr_Tensors[alpha]).t() * (Tk2[alpha]).t() * _rho0.t() * i_complex * _eig_val_mat.t() + (Tk2[alpha]).t() * _rho0.t() * (*_ptr_Tensors[alpha]).t() * i_complex * _eig_val_mat.t();
+			slip_op += i_complex * _eig_val_mat.t() * (*_ptr_Tensors[alpha]).t() * (Tk2[alpha]).t() * _rho0.t() - i_complex * _eig_val_mat.t() * (Tk2[alpha]).t() * _rho0.t() * (*_ptr_Tensors[alpha]).t();
+
 		}
 
 		// Update initial density matrix
 		_rho0_new = _rho0 + slip_op;
+		//_rho0_new /= arma::trace(_rho0_new);
 
 		// Delete pointer arrays
 

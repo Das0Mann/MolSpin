@@ -24,6 +24,7 @@ namespace RunSection
 			bool RedfieldtensorTimeEvoSparse(const arma::sp_cx_mat& _op1, const arma::sp_cx_mat& _op2, const arma::sp_cx_mat& _specdens,arma::sp_cx_mat& _redfieldtensor); //Contruction of Redfieldtensor with operator basis
 			bool ConstructSpecDensGeneralTimeEvoSparse(const int& _spectral_function, const std::vector<double>& _ampl_list, const std::vector<double>& _tau_c_list,const arma::sp_cx_mat& _domega, arma::sp_cx_mat& _specdens);
 			bool ConstructSpecDensSpecificTimeEvoSparse(const int& _spectral_function, const std::complex<double>& _ampl, const std::complex<double>& _tau_c,const arma::sp_cx_mat& _domega, arma::sp_cx_mat& _specdens);
+			bool SlippageTimeEvoSparse(arma::sp_cx_mat **_ptr_Tensors, const int &_num_op, const arma::sp_cx_mat &_eig_val_mat, const arma::sp_cx_mat &_domega, const arma::sp_cx_mat &_rho0, const std::complex<double> &_tau_c, arma::sp_cx_mat &_rho0_new);
 
 			
 		protected:

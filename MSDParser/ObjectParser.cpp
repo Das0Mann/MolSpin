@@ -106,7 +106,7 @@ namespace MSDParser
 		catch(const std::exception&) {return false;}
 		//vector<double>
 		_out = tmp;
-		std::cout << _out << std::endl;
+		//std::cout << _out << std::endl;
 		return true;
 	}
 	

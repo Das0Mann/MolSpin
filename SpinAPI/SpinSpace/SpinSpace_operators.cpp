@@ -1250,7 +1250,7 @@ namespace SpinAPI
 
 		//Select Taylor Degree Function
 		
-		//int pmax = 8;
+				//int pmax = 8;
                 int mmax = 55;
 
                 if(M.is_empty())
@@ -1261,39 +1261,39 @@ namespace SpinAPI
 		// End of taylor select function
 		
 		int m;
-                double s;
-                if(abs(t) == 0)
-                {
-                        m = 0;
-                }
-                else
-                {
-                        arma::mat U(mmax,mmax);
-                        U.zeros(mmax,mmax);
-                        for(int it = 0; it < mmax; it++)
-                        {
-                                U(it,it) = it+1;
-                        }
+        double s;
+        if(abs(t) == 0)
+        {
+            m = 0;
+        }
+        else
+        {
+            arma::mat U(mmax,mmax);
+            U.zeros(mmax,mmax);
+            for(int it = 0; it < mmax; it++)
+            {
+                U(it,it) = it+1;
+        	}
 
-                        arma::mat C = trans(abs(t)*ceil(M))*U;
+            arma::mat C = trans(abs(t)*ceil(M))*U;
 
-                        C.replace(0, arma::datum::inf);
+            C.replace(0, arma::datum::inf);
 
-                        int cost = C.min();
+            int cost = C.min();
 
-                        arma::uvec index = ind2sub(size(C), C.index_min());
-                        m = index(1) + 1;
-                        arma::vec temp({cost/static_cast<double>(m),1});
-                        s = temp.max();
-                }
-                arma::cx_mat F(B.n_rows,B.n_cols);
-                F = B;
+            arma::uvec index = ind2sub(size(C), C.index_min());
+            m = index(1) + 1;
+            arma::vec temp({cost/static_cast<double>(m),1});
+            s = temp.max();
+        }
+        arma::cx_mat F(B.n_rows,B.n_cols);
+        F = B;
 
-                std::complex<double> eta = arma::cx_double(1.0,0.0);
-                if(shift)
-                {
-                        eta = std::exp(t*mu/arma::cx_double(s,0.0));
-                }
+        std::complex<double> eta = arma::cx_double(1.0,0.0);
+        if(shift)
+        {
+            eta = std::exp(t*mu/arma::cx_double(s,0.0));
+        }
 		
 		for(int it1 = 0; it1 < s; it1++)
                 {
@@ -1353,7 +1353,7 @@ namespace SpinAPI
                         ,1.16671e+01,1.19490e+01,1.22310e+01,1.25129e+01,1.27949e+01,1.30769e+01,1.33588e+01,1.36407e+01
                         ,1.39226e+01,1.42046e+01,1.44865e+01,1.47684e+01};
                 }
-		else if(precision == "half")
+				else if(precision == "half")
                 {
                         theta = {1.95058e-03,7.44366e-02,2.66455e-01,5.24205e-01
                         ,8.10269e-01,1.10823e+00,1.41082e+00,1.71493e+00,2.01903e+00,2.32247e+00,2.62492e+00,2.92630e+00
@@ -1376,7 +1376,7 @@ namespace SpinAPI
                         return Err;
                 }
 	
-		int pmax = 8;
+				int pmax = 8;
                 int mmax = 55;
 
                 std::random_device rand_dev2; // random number generator
@@ -1395,33 +1395,34 @@ namespace SpinAPI
                 }
                 else
                 {
-                        arma::vec eta; eta.zeros(pmax);
-                        alpha.zeros(pmax-1);
-			//arma::sp_cx_mat X(H.n_rows, H.n_cols);
-			//X = H;
-			for(int p = 0; p < pmax; p++)
-                        {
-			//X = X * H;
-			double c = normAmEst(H,p+2,generator2);
-			//double c = arma::norm(X,1); //normAm of a power, you can also an estimator instead
-			c = pow(c,1/(p+2));
-                                eta(p) = c;
-                        }
-                        for(int p = 0; p < pmax-1; p++)
-                        {
-                                arma::vec temp = {eta(p), eta(p+1)};
-                                alpha(p) = temp.max();
-                        }
-                }
-		arma::mat M(mmax,pmax-1);
-                M.zeros(mmax,pmax-1);
-                for(int p = 2; p < pmax+1; p++)
-                {
-                        for(int m = p*(p-1)-1; m < mmax+1; m++)
-                        {
-                                M(m-1,p-2) = alpha(p-2) / theta(m-1);
-                        }
-                }
+                    arma::vec eta; eta.zeros(pmax);
+                    alpha.zeros(pmax-1);
+					//arma::sp_cx_mat X(H.n_rows, H.n_cols);
+					//X = H;
+					for(int p = 0; p < pmax; p++)
+					{
+						//X = X * H;
+						double c = normAmEst(H,p+2,generator2);
+						//double c = arma::norm(X,1); //normAm of a power, you can also an estimator instead
+						c = pow(c,1/(p+2));
+									eta(p) = c;
+					}
+
+					for(int p = 0; p < pmax-1; p++)
+					{
+						arma::vec temp = {eta(p), eta(p+1)};
+						alpha(p) = temp.max();
+					}
+				}
+				arma::mat M(mmax,pmax-1);
+				M.zeros(mmax,pmax-1);
+				for(int p = 2; p < pmax+1; p++)
+				{
+					for(int m = p*(p-1)-1; m < mmax+1; m++)
+					{
+						M(m-1,p-2) = alpha(p-2) / theta(m-1);
+					}
+				}
 
                 return M;
         }

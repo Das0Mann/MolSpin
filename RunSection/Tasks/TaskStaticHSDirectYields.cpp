@@ -49,7 +49,7 @@ namespace RunSection
 		for(auto i = systems.cbegin(); i != systems.cend(); i++) // iteration through all spin systems, in this case (or usually), this is one
 		{
 			// Gyromagnetic constant
-			 double gamma_e = 176.0859644; //gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1 also rad T^-1 ns^-1
+			double gamma_e = 176.0859644; //gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1
 			
 			// Count the number of nuclear spins
 			int nucspins = 0;
@@ -99,7 +99,6 @@ namespace RunSection
 				std::cout << "# ERROR: Failed to obtain the Hamiltonian!" << std::endl;
 				return 1;
                         }
-			H = H * 1000;
 
 			int Z = space.SpaceDimensions()/4; // Size of the nuclear spin subspace
 			std::cout << "# Hilbert Space Size " << 4*Z << " x " << 4*Z << std::endl;
@@ -130,7 +129,7 @@ namespace RunSection
 					rates.insert_rows(num_transitions,1);
 				}
 				Operators[num_transitions] = P;
-				rates(num_transitions) = (*j)->Rate()*1e3 / gamma_e; 	
+				rates(num_transitions) = (*j)->Rate(); 	
 				num_transitions++;
 			}
 			
@@ -139,21 +138,39 @@ namespace RunSection
 	
 			bool symmetric = false;
 			arma::sp_cx_mat K;
+			K.zeros(4*Z,4*Z);
 			// Check if symmetric recombination or not
 			if(std::abs(arma::accu(rates-rates.max())) > 0)
 			{
-				K.zeros(4*Z,4*Z);
 				for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
 				{
 					if((*j)->SourceState() == nullptr)
                                         continue;
 					space.GetState((*j)->SourceState(), P);
-					K += (*j)->Rate()*1e3 /2/ gamma_e*P;
+					K += (*j)->Rate()/2*P;
 				}	
 			} else
 			{
 				symmetric = true; // Symmetric Recombination
-				this->Log() << "Recombination rates are equal, hence Symmetric Recombination condition is satisfied and calculations will be simplified." << std::endl;
+
+                                for(auto j = transitions.cbegin(); j != transitions.cend(); j++)
+                                {
+                                        if((*j)->SourceState() == nullptr)
+                                                continue;
+                                        space.GetState((*j)->SourceState(), P);
+                                        if(this->is_identity_matrix(P))
+                                        {
+                                                symmetric = false;
+                                        }
+                                        K += (*j)->Rate()/2*P;
+                                }
+
+                                if(symmetric)
+                                {
+                                        K = arma::sp_cx_mat();
+                                        this->Log() << "Recombination rates are equal, hence Symmetric Recombination condition is satisfied and calculations will be simplified." << std::endl;
+                                }		
+	
 			}
 			
 			// Set up states for time-propagation
@@ -224,8 +241,7 @@ namespace RunSection
 			if(ttotal > std::pow(2,-53))
                         {
                                 this->Log() << "Total time is chosen as " << ttotal << " ns." << std::endl;
-                                ttotal = ttotal * 1e-3 * gamma_e;
-                                this->Log() << "Total time is chosen as " << ttotal << " rad mT^-1." << std::endl;
+                                this->Log() << "Total time is chosen as " << ttotal*1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         } else
                         {
                                 this->Log() << "No total time is given or it is incorrect: checking if epsilon is defined." << std::endl;
@@ -233,16 +249,15 @@ namespace RunSection
                                 {
                                         this->Log() << "Epsilon is " << epsilon << "." << std::endl;
                                         ttotal = std::log(1/epsilon)/kmin;
-                                        this->Log() << "Estimated total time is " << ttotal / 1e-3 / gamma_e << " ns." << std::endl;
-                                        this->Log() << "Estimated total time is " << ttotal << " rad mT^-1." << std::endl;
+                                        this->Log() << "Estimated total time is " << ttotal << " ns." << std::endl;
+                                        this->Log() << "Estimated total time is " << ttotal*1e-3 * gamma_e << " rad mT^-1." << std::endl;
                                 } else
                                 {
                                         this->Log() << "Both total time and epsilon are not given or not appropriately defined. Using the default." << std::endl;
                                         std::cout << "# ERROR: total time and/or epsilon are not defined/given! Using the default of 10000 ns." << std::endl;
                                         ttotal = 10000;
                                         this->Log() << "Total time is chosen as " << ttotal << " ns." << std::endl;
-                                        ttotal = ttotal * 1e-3 * gamma_e;
-                                        this->Log() << "Total time is chosen as " << ttotal << " rad mT^-1." << std::endl;
+                                        this->Log() << "Total time is chosen as " << ttotal*1e-3 * gamma_e << " rad mT^-1." << std::endl;
                                 }
 			}
 
@@ -254,16 +269,14 @@ namespace RunSection
 			if(dt > std::pow(2,-53))
                         {
                                 this->Log() << "Time step is chosen as " << dt << " ns." << std::endl;
-                                dt = dt * 1e-3 * gamma_e;
-                                this->Log() << "Time step is chosen as " << dt << " rad mT^-1." << std::endl;
+                                this->Log() << "Time step is chosen as " << dt*1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         } else
                         {
                                 this->Log() << "Time step is undefined. Using the default." << std::endl;
                                 std::cout << "# ERROR: undefined time step! Using the default of 1 ns." << std::endl;
                                 dt = 1;
                                 this->Log() << "Time step is chosen as " << dt << " ns." << std::endl;
-                                dt = dt * 1e-3 * gamma_e;
-                                this->Log() << "Time step is chosen as " << dt << " rad mT^-1." << std::endl;
+                                this->Log() << "Time step is chosen as " << dt*1e-3 * gamma_e << " rad mT^-1." << std::endl;
                         }
 
 			// Number of time propagation steps
@@ -580,18 +593,7 @@ namespace RunSection
 				}
                                 this->Data() << std::setprecision(6) << ans(0, it) << " " ;
                         }
-                        	
 			
-			
-			std::cout << std::endl;
-			std::cout << "Quantum Yields:" << std::endl;
-                        std::cout << std::setprecision(6) <<  ans << std::endl;
-			std::cout << std::endl;
-
-			std::cout << "Accumulated sum of the quantum yields:" << std::endl;
-                        std::cout << std::setprecision(6) << arma::accu(ans) << std::endl;
-			std::cout << std::endl;
-
 		this->Log() << "\nDone with SpinSystem \"" << (*i)->Name() << "\"" << std::endl;		
 		}	
 		this->Data() << std::endl;
@@ -599,6 +601,34 @@ namespace RunSection
 		
 	}
 	
+	bool TaskStaticHSDirectYields::is_identity_matrix(arma::sp_cx_mat& matrix)
+        {
+                // Check if the matrix is square.
+                if (matrix.n_rows != matrix.n_cols) {
+                        return false;
+                }
+
+                double EPSILON = 1e-14;
+                // Check if all the diagonal elements of the matrix are equal to 1.0.
+                for (int i = 0; i < int(matrix.n_rows); i++) {
+                        if (std::abs(matrix(i, i).real() - 1.0) > EPSILON || std::abs(matrix(i, i).imag()) > EPSILON) {
+                                return false;
+                        }
+                }
+
+                // Check if all the non-diagonal elements of the matrix are equal to 0.0.
+                for (int i = 0; i < int(matrix.n_rows); i++) {
+                        for (int j = 0; j < int(matrix.n_cols); j++) {
+                                if (i != j && (std::abs(matrix(i, j).real()) > EPSILON || std::abs(matrix(i, j).imag()) > EPSILON)) {
+                                        return false;
+                                }
+                        }
+                }
+
+                // If we reach here, then the matrix is an identity matrix.
+                return true;
+        }	
+
 	// Writes the header of the data file (but can also be passed to other streams)
 	void TaskStaticHSDirectYields::WriteHeader(std::ostream& _stream)
 	{

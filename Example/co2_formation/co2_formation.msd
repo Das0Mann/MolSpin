@@ -32,8 +32,8 @@ Interaction zeeman1
         type = zeeman;
         field = "0 0 0.03";                                                                                     // Magnetic field in T
         group1 = RPElectron1;
-        tau_c = 0.0089;                                                                                 // Correlation time in ns
-        g = 0.0, 0.081000618,  0.081000618,  0.081000618, 0.0, 0.0;     // Amplitude for spherical tensors (T00, T20)
+        tau_c = 0.0089;
+        g = 0.0, 0.081000618,  0.081000618,  0.081000618, 0.081000618, 0.081000618;     // Amplitude for spherical tensors (T00, T20)
         ops = 0;                                                                                                // Spherical tensor basis
         def_g = 1;                                                                                              // Each operator receives seperate amplitude
         def_specdens = 1;                                                                               // Neglect dynamical shift

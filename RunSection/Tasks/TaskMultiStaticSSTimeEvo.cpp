@@ -58,7 +58,7 @@ namespace RunSection
 			// Make sure to save the newly created spin space
 			spaces.push_back(std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>( *i, space ));
 		}
-		std::cout << "HI" << std::endl;
+
 		// Now, create a matrix to hold the Liouvillian superoperator and the initial state
 		arma::sp_cx_mat L(dimensions, dimensions);
 		arma::cx_vec rho0(dimensions);
@@ -67,7 +67,7 @@ namespace RunSection
 		// Loop through the systems again to fill this matrix and vector
 		for(auto i = spaces.cbegin(); i != spaces.cend(); i++)
 		{
-			std::cout << "HI" << std::endl;
+
 			// Make sure we have an initial state
 			auto initial_states = i->first->InitialState();
 			arma::cx_mat rho0HS;
@@ -94,7 +94,7 @@ namespace RunSection
 				}
 				rho0HS /= arma::trace(rho0HS);	// The density operator should have a trace of 1
 			}
-			std::cout << "HI" << std::endl;
+			
 			// Now put the initial state into the superspace vector
 			arma::cx_vec rho0vec;
 			if(!i->second->OperatorToSuperspace(rho0HS, rho0vec))
@@ -103,7 +103,7 @@ namespace RunSection
 				return false;
 			}
 			rho0.rows(nextDimension, nextDimension + i->second->SpaceDimensions() - 1) = rho0vec;
-			std::cout << "HI" << std::endl;
+			
 			// Next, get the Hamiltonian
 			arma::sp_cx_mat H;
 			if(!i->second->Hamiltonian(H))
@@ -112,7 +112,7 @@ namespace RunSection
 				return false;
 			}
 			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
-			std::cout << "HI" << std::endl;
+			
 			// Then get the reaction operators
 			arma::sp_cx_mat K;
 			if(!i->second->TotalReactionOperator(K))
@@ -121,7 +121,7 @@ namespace RunSection
 				return false;
 			}
 			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) -= K;
-			std::cout << "HI" << std::endl;
+			
 			// Obtain the creation operators - note that we need to loop through the other SpinSystems again to find transitions leading into the current SpinSystem
 			unsigned int nextCDimension = 0;	// Similar to nextDimension, but to keep track of first dimension for this other SpinSystem
 			for(auto j = spaces.cbegin(); j != spaces.cend(); j++)
@@ -150,10 +150,10 @@ namespace RunSection
 						}
 					}
 				}
-				std::cout << "HIL" << std::endl;
+				
 				// Move on to check next spin system for transitions into the current spin space
 				nextCDimension += j->second->SpaceDimensions();
-				std::cout << "HIL" << std::endl;
+				
 				
 			}
 			

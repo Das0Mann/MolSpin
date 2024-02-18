@@ -30,6 +30,15 @@ namespace RunSection
 											const std::vector<arma::cx_mat>&, const std::vector<arma::sp_cx_mat>&,
 											const std::vector<arma::cx_mat>&, const std::vector<arma::sp_cx_mat>&,
 											const std::vector<arma::sp_cx_mat>&, std::vector<arma::cx_mat>&);
+
+			void AdvanceStep_RK4(const std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>>& _spaces,
+                                                const std::vector<arma::cx_mat>& _H, const std::vector<arma::sp_cx_mat>& _dH,
+                                                const std::vector<arma::cx_mat>& _K, const std::vector<arma::sp_cx_mat>& _dK,
+                                                const std::vector<arma::sp_cx_mat>& _C, std::vector<arma::cx_mat>& _rho);
+			
+			arma::cx_mat ComputeRhoDot(const arma::cx_mat& H, const arma::sp_cx_mat& dH,
+                                                      const arma::cx_mat& K, const arma::sp_cx_mat& dK,
+                                                      const arma::sp_cx_mat& C, const arma::cx_mat& rho);
 			
 			// Method to obtain the results from the current state
 			void OutputResults(const std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>>&, const std::vector<arma::cx_mat>&, const unsigned int);

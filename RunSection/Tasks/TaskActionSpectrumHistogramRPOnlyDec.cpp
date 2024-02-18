@@ -33,118 +33,14 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskActionSpectrumHistogramRPOnlyDec protected methods
 	// -----------------------------------------------------
-	double conversion_factor_to_MHz = 5e2 / arma::datum::pi;
-
-	int GetNumDifferences(int dimension)
-	{
-		int num_gaps = dimension * (dimension - 1) / 2;
-		return num_gaps;
-	}
-
-	arma::vec GetDifferences(arma::vec values)
-	{
-		int dimension = values.size();
-		int num_gaps = GetNumDifferences(dimension);
-		arma::vec differences(num_gaps);
-		int ind = 0;
-		for (int k = 0; k < dimension - 1; k++)
-		{
-			for (int s = k + 1; s < dimension; s++)
-			{
-				differences(ind) = std::abs(values(k) - values(s));
-				ind++;
-			}
-		}
-		return differences;
-	}
-
-	arma::vec GetEigenstatePopulations(arma::cx_mat eigenvectors_matrix, arma::cx_mat initial_state)
-	{
-		arma::cx_mat eigenbasis_initial_state = eigenvectors_matrix.t() * initial_state * eigenvectors_matrix;
-		arma::vec populations = arma::real(eigenbasis_initial_state.diag());
-		return populations;
-	}
-
-	arma::vec GetPerpendicular3DVector(arma::vec vector, bool normalise)
-	{
-		arma::vec perp(3);
-		perp.zeros();
-		int mutually_perp_axis = (arma::abs(vector)).index_min();
-		if (mutually_perp_axis == 0)
-		{
-			perp(2) = vector(1);
-			perp(1) = -1 * vector(2);
-		}
-		if (mutually_perp_axis == 1)
-		{
-			perp(2) = vector(0);
-			perp(0) = -1 * vector(2);
-		}
-		if (mutually_perp_axis == 2)
-		{
-			perp(1) = vector(0);
-			perp(0) = -1 * vector(1);
-		}
-		if (normalise)
-			perp /= arma::norm(perp);
-		return perp;
-	}
-
-	arma::vec GetResonanceEffects(arma::cx_mat eigenvectors_matrix, arma::cx_mat initial_state, arma::cx_mat transition_hamiltonian)
-	{
-		int dim = size(initial_state)(0);
-		int num_resonances = GetNumDifferences(dim);
-		arma::vec resonance_effects(num_resonances);
-		arma::vec eigenstate_populations = GetEigenstatePopulations(eigenvectors_matrix, initial_state);
-		arma::cx_mat eigenbasis_transition_hamiltonian = eigenvectors_matrix.t() * transition_hamiltonian * eigenvectors_matrix;
-
-		// Fill the array of resonance effects one element at the time
-		int ind_resonance = 0;
-		for (int k = 0; k < dim - 1; k++)
-		{
-			for (int s = k + 1; s < dim; s++)
-			{
-				auto sqrt_of_transprob = std::abs(eigenbasis_transition_hamiltonian(k, s));
-				auto value = std::abs(eigenstate_populations(k) - eigenstate_populations(s)) * (sqrt_of_transprob * sqrt_of_transprob);
-				resonance_effects(ind_resonance) = value;
-				ind_resonance++;
-			}
-		}
-		return resonance_effects;
-	}
-
-	double GetHistogramPrefactor(bool use_MHz_units)
-	{
-		double prefactor;
-		if (use_MHz_units)
-			prefactor = conversion_factor_to_MHz;
-		else
-			prefactor = 1e9;
-		return prefactor;
-	}
-
-	arma::vec GetNormalisedHistogramHeights(arma::vec energy_gaps, arma::vec resonance_effects, double bin_width, int num_bins, bool use_MHz_units)
-	{
-		double prefactor = GetHistogramPrefactor(use_MHz_units);
-		int num_resonances = energy_gaps.size();
-		arma::vec heights(num_bins);
-		heights.zeros();
-		for (int s = 0; s < num_resonances; s++)
-		{
-			auto gap = std::abs(energy_gaps(s)) * prefactor;
-			auto effect = std::abs(resonance_effects(s));
-			auto bin_number = floor(gap / bin_width); // only works for uniform bin_width
-			heights(bin_number) += effect;
-		}
-		return heights / arma::sum(heights);
-	}
+	double conversionfactortoMHzRPOnlyDec = 5e2 / arma::datum::pi;
 
 	bool TaskActionSpectrumHistogramRPOnlyDec::RunLocal()
 	{
-		this->Log() << "Running method ActionSpectrumHistogram." << std::endl;
+		this->Log() << "Running method ActionSpectrumHistogramRPOnlyDec." << std::endl;
 
 		// If this is the first step, write first part of header to the data file
-		auto bin_centers = this->GetHistogramBinCenters();
+		auto bincenters = this->GetHistogramBinCenters();
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
 			this->WriteHeader(this->Data());
@@ -154,172 +50,428 @@ namespace RunSection
 		// ----------------------------------------------------------------
 
 		auto systems = this->SpinSystems();
-		for (auto system = systems.cbegin(); system != systems.cend(); system++)
+		for (auto i = systems.cbegin(); i != systems.cend(); i++)
 		{
-			// Make sure we have an initial state
-			auto initial_states = (*system)->InitialState();
-			if (initial_states.size() < 1)
+					// Get a list of subspaces, make sure that we have a pair of uncoupled radicals
+			auto subspaces = SpinAPI::CompleteSubspaces(*(*i));
+			if(subspaces.size() < 2)
 			{
-				this->Log() << "Skipping SpinSystem \"" << (*system)->Name() << "\" as no initial state was specified." << std::endl;
+				this->Log() << "Failed to obtain radicals. The spin system does not have two uncoupled subspaces! Skipping SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 				continue;
 			}
-
-			this->Log() << "\nStarting with SpinSystem \"" << (*system)->Name() << "\"." << std::endl;
-
-			// Obtain a SpinSpace to describe the system
-			SpinAPI::SpinSpace space(*(*system));
-			arma::cx_mat rho0;
-			space.UseSuperoperatorSpace(false);
-
-			// Get the initial state
-			for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+			
+			// Objects to hold the two unpaired electrons and their subspaces
+			SpinAPI::spin_ptr radical[2] = {nullptr, nullptr};
+			std::vector<SpinAPI::spin_ptr> subspace1;
+			std::vector<SpinAPI::spin_ptr> subspace2;
+			
+			// Find two subspaces with an electron
+			for(auto j = subspaces.cbegin(); j != subspaces.cend(); j++)
 			{
-				arma::cx_mat tmp_rho0;
-				if (!space.GetState(*j, tmp_rho0))
+				for(auto k = j->cbegin(); k != j->cend(); k++)
 				{
-					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*system)->Name() << "\"." << std::endl;
+					if((*k)->Type() == SpinAPI::SpinType::Electron)
+					{
+						if(radical[0] == nullptr)
+						{
+							radical[0] = (*k);
+							subspace1 = (*j);
+						}
+						else if (radical[1] == nullptr)
+						{
+							radical[1] = (*k);
+							subspace2 = (*j);
+						}
+						
+						break;
+					}
+				}
+			}
+			
+			// Check whether we found a radical pair
+			if(radical[0] == nullptr || radical[1] == nullptr)
+			{
+				this->Log() << "Failed to obtain radicals. Did not find two uncoupled electronic spins! Skipping SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+				continue;
+			}
+			
+			// Obtain SpinSpaces to describe the two subsystems
+			SpinAPI::SpinSpace spaces[2] = {SpinAPI::SpinSpace(subspace1), SpinAPI::SpinSpace(subspace2)};
+			spaces[0].UseSuperoperatorSpace(false);
+			spaces[1].UseSuperoperatorSpace(false);
+			spaces[0].Add((*i)->Interactions());
+			spaces[1].Add((*i)->Interactions());
+			
+			// Provide information about the radicals
+			this->Log() << "---------------------------------------" << std::endl;
+			this->Log() << "Found radical 1 with " << subspace1.size() << " spins:" << std::endl;
+			this->Log() << " - Unpaired Electron: " << radical[0]->Name() << std::endl;
+			this->Log() << " - Subspace dimensions: " << spaces[0].SpaceDimensions() << std::endl;
+			
+			if(subspace1.size() > 1)
+			{
+				this->Log() << " - Other spins:" << std::endl;
+				for(auto j = subspace1.cbegin(); j != subspace1.cend(); j++)
+					if((*j) != radical[0])
+						this->Log() << "   - " << (*j)->Name() << std::endl;
+			}
+			else
+			{
+				this->Log() << " - There are no other spins." << std::endl;
+			}
+			
+			this->Log() << "\nFound radical 2 with " << subspace2.size() << " spins:" << std::endl;
+			this->Log() << " - Unpaired Electron: " << radical[1]->Name() << std::endl;
+			this->Log() << " - Subspace dimensions: " << spaces[1].SpaceDimensions() << std::endl;
+			
+			if(subspace2.size() > 1)
+			{
+				this->Log() << " - Other spins:" << std::endl;
+				for(auto j = subspace2.cbegin(); j != subspace2.cend(); j++)
+					if((*j) != radical[1])
+						this->Log() << "   - " << (*j)->Name() << std::endl;
+			}
+			else
+			{
+				this->Log() << " - There are no other spins." << std::endl;
+			}
+			
+			this->Log() << "\nSpins not included in radicals: " << ((*i)->spins_size() - subspace1.size() - subspace2.size()) << " / " << (*i)->spins_size() << std::endl;
+			this->Log() << "---------------------------------------" << std::endl;
+			this->Log() << "Spins that are not included in the radicals are not considered in the calculations." << std::endl;
+			
+			// Matrices to hold spin operators, eigenvectors and eigenvalue-differences
+			arma::cx_mat eigenvectors[2]; // To hold eigenvectors
+			arma::vec eigenvalues[2];	   // To hold eigenvalues
+
+			std::cout << spaces[0].HilbertSpaceDimensions() << std::endl;
+			std::cout << spaces[1].HilbertSpaceDimensions() << std::endl;
+			arma::cx_mat Id1;
+			Id1.eye(spaces[0].HilbertSpaceDimensions(),spaces[0].HilbertSpaceDimensions());
+			arma::cx_mat Id2;
+			Id2.eye(spaces[1].HilbertSpaceDimensions(),spaces[1].HilbertSpaceDimensions());
+
+			arma::sp_cx_mat transitionhamiltonancomplete = arma::kron(arma::conv_to<arma::sp_cx_mat>::from(Id1), arma::conv_to<arma::sp_cx_mat>::from(Id2));
+			transitionhamiltonancomplete.zeros();
+
+			arma::cx_mat tmptransitionhamiltonian[2];
+
+			// Fill the matrices (get Hamiltonian, diagonalize it, get spin operators...)
+			for(unsigned int r = 0; r < 2; r++)
+			{
+				// Get the Hamiltonian of the first radical subspace
+				arma::cx_mat H;
+				
+				if(!spaces[r].Hamiltonian(H))
+				{
+					this->Log() << "Failed to obtain Hamiltonian for radical " << r << "." << std::endl;
 					continue;
 				}
-				if (j == initial_states.cbegin())
-					rho0 = tmp_rho0;
-				else
-					rho0 += tmp_rho0;
-			}
-			rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
-
-			// ----------------------------------------------------------------
-			// Get the Hamiltonian
-			// ----------------------------------------------------------------
-
-			arma::cx_mat H;
-			if (!space.Hamiltonian(H))
-			{
-				this->Log() << "Failed to obtain Hamiltonian in superspace." << std::endl;
-				continue;
-			}
-
-			// ----------------------------------------------------------------
-			// DIAGONALIZATION OF H0// 
-			// ----------------------------------------------------------------
-			arma::cx_mat eigenvectors; // To hold eigenvectors
-			arma::vec eigenvalues;	   // To hold eigenvalues
-
-			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigenvalues, eigenvectors, H);
-			this->Log() << "Diagonalization done! Eigenvalues: " << eigenvalues.n_elem << ", eigenvectors: " << eigenvectors.n_cols << std::endl;
-			// ----------------------------------------------------------------
-			// GET ARRAY OF ENERGY GAPS, SIMILAR TO THE "domega" matrix
-			// ----------------------------------------------------------------
-			arma::vec energy_gaps = GetDifferences(eigenvalues);
-			// ----------------------------------------------------------------
-			// EVALUATE RESONANCE EFFECTS USING EIGENVECTORS OF H0
-			// ----------------------------------------------------------------
-			// Make transition hamiltonian with copy and pasted code. 
-			arma::cx_mat transition_hamiltonian = arma::zeros<arma::cx_mat>(arma::size(H));
-			transition_hamiltonian.zeros();
-			bool zeeman_parameters_already_found = false;
-			for (auto interaction = (*system)->interactions_cbegin(); interaction != (*system)->interactions_cend(); interaction++)
-			{
-				bool is_Zeeman_interaction = (*interaction)->Type() == SpinAPI::InteractionType::SingleSpin;
-
-				if (is_Zeeman_interaction)
+				
+				// Diagonalize Hamiltonian
+				if(!arma::eig_sym(eigenvalues[r],eigenvectors[r],H))
 				{
-					// Inherit some properties of Zeeman interaction
-					arma::vec static_field = (*interaction)->Field();
-					auto ATensor = (*interaction)->CouplingTensor();
-					bool ignore_tensors = (*interaction)->IgnoreTensors();
-					auto spinlist = (*interaction)->Group1();
-
-					// Get RF Field
-					std::string rf_field_user_input;
-					arma::vec rf_field(3);
-					this->Properties()->Get("rf_field", rf_field_user_input);
-
-					bool use_perpendicular_field = rf_field_user_input == "perpendicular";
-
-					if (use_perpendicular_field)
-						rf_field = GetPerpendicular3DVector(static_field, true);
-					else
-						this->Properties()->Get("rf_field", rf_field);
-
-					// Check if a set of Zeeman interaction parameters have been found and parsed previously
-					if (use_perpendicular_field and zeeman_parameters_already_found)
-						throw std::logic_error("RF field vector must be supplied by user if multiple static field Zeeman interactions are provided.");
-					zeeman_parameters_already_found = true;
-
-					// Obtain the list of spins interacting with the field, and define matrices to hold the magnetic moment operators
-					arma::cx_mat Sx;
-					arma::cx_mat Sy;
-					arma::cx_mat Sz;
-
-					// Loop through list of spins and append to the transition hamiltonian
-					for (auto j = spinlist.cbegin(); j != spinlist.cend(); j++)
-					{
-						if (ignore_tensors)
-						{
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sx()), (*j), Sx);
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sy()), (*j), Sy);
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sz()), (*j), Sz);
-						}
-						else
-						{
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tx()), (*j), Sx);
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), Sy);
-							space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), Sz);
-						}
-
-						if (ATensor != nullptr && !IsIsotropic(*ATensor))
-						{
-							// Use the tensor to calculate the product S * A * B
-							auto A = ATensor->LabFrame();
-							transition_hamiltonian += Sx * rf_field(0) * A(0, 0) + Sx * rf_field(1) * A(0, 1) + Sx * rf_field(2) * A(0, 2);
-							transition_hamiltonian += Sy * rf_field(0) * A(1, 0) + Sy * rf_field(1) * A(1, 1) + Sy * rf_field(2) * A(1, 2);
-							transition_hamiltonian += Sz * rf_field(0) * A(2, 0) + Sz * rf_field(1) * A(2, 1) + Sz * rf_field(2) * A(2, 2);
-						}
-						else
-						{
-							transition_hamiltonian += Sx * rf_field(0) + Sy * rf_field(1) + Sz * rf_field(2);
-						}
-					}
-					// Multiply by the isotropic value, if the tensor was isotropic
-					if (ATensor != nullptr && IsIsotropic(*ATensor))
-						transition_hamiltonian *= ATensor->Isotropic();
-
-					// Multiply with the given prefactor (or 1.0 if none was specified)
-					transition_hamiltonian *= (*interaction)->Prefactor();
-					// Multiply by common prefactor (bohr magneton / hbar)
-					if ((*interaction)->AddCommonPrefactor())
-						transition_hamiltonian *= 8.794e+1;
+					this->Log() << "Failed to diagonalize Hamiltonian for radical " << r << "." << std::endl;
+					continue;
 				}
-			}
-			arma::vec resonance_effects = GetResonanceEffects(eigenvectors, rho0, transition_hamiltonian);
-			// ----------------------------------------------------------------
-			// BINNING PROCESS FOR HISTOGRAM
-			// ----------------------------------------------------------------
-			double upper_limit;
-			this->Properties()->Get("upper_limit", upper_limit);
-			double bin_width;
-			this->Properties()->Get("bin_width", bin_width);
-			bool use_MHz;
-			this->Properties()->Get("units_in_MHz", use_MHz);
 
-			int num_bins = arma::regspace(bin_width / 2, bin_width, upper_limit).size();
-			auto normalised_heights = GetNormalisedHistogramHeights(energy_gaps, resonance_effects, bin_width, num_bins, use_MHz);
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-			this->Data() << normalised_heights.st(); // already contains endl
+				// Make transition hamiltonian with copy and pasted code. 
+				arma::cx_mat transitionhamiltonian = arma::zeros<arma::cx_mat>(arma::size(H));
+				bool zeemanparametersalreadyfound = false;
+
+				for (auto interaction = (*i)->interactions_cbegin(); interaction != (*i)->interactions_cend(); interaction++)
+				{
+					// Produce the transition Hamiltonian for each radical subsystem
+					bool isZeemaninteraction = (*interaction)->Type() == SpinAPI::InteractionType::SingleSpin;
+					bool containedinsubspace = spaces[r].Contains(*interaction);
+
+					if (isZeemaninteraction && containedinsubspace)
+					{
+						// Inherit some properties of Zeeman interaction
+						arma::vec staticfield = (*interaction)->Field();
+						auto ATensor = (*interaction)->CouplingTensor();
+						bool ignoretensors = (*interaction)->IgnoreTensors();
+						auto spinlist = (*interaction)->Group1();
+
+						// Get RF Field
+						std::string rffielduserinput;
+						arma::vec rffield(3);
+						this->Properties()->Get("rf_field", rffielduserinput);
+
+						bool useperpendicularfield = rffielduserinput == "perpendicular";
+
+						if (useperpendicularfield)
+							rffield = this->GetPerpendicular3DVectorRPOnlyDec(staticfield, true);
+						else
+							this->Properties()->Get("rf_field", rffield);
+
+						// Check if a set of Zeeman interaction parameters have been found and parsed previously
+						if (useperpendicularfield and zeemanparametersalreadyfound)
+							throw std::logic_error("RF field vector must be supplied by user if multiple static field Zeeman interactions are provided.");
+						zeemanparametersalreadyfound = true;
+
+						// Obtain the list of spins interacting with the field, and define matrices to hold the magnetic moment operators
+						arma::cx_mat Sx;
+						arma::cx_mat Sy;
+						arma::cx_mat Sz;
+
+						// Loop through list of spins and append to the transition hamiltonian
+						for (auto j = spinlist.cbegin(); j != spinlist.cend(); j++)
+						{
+							if (ignoretensors)
+							{
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sx()), (*j), Sx);
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sy()), (*j), Sy);
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sz()), (*j), Sz);
+							}
+							else
+							{
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tx()), (*j), Sx);
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), Sy);
+								spaces[r].CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), Sz);
+							}
+
+							if (ATensor != nullptr && !IsIsotropic(*ATensor))
+							{
+								// Use the tensor to calculate the product S * A * B
+								auto A = ATensor->LabFrame();
+								transitionhamiltonian += Sx * rffield(0) * A(0, 0) + Sx * rffield(1) * A(0, 1) + Sx * rffield(2) * A(0, 2);
+								transitionhamiltonian += Sy * rffield(0) * A(1, 0) + Sy * rffield(1) * A(1, 1) + Sy * rffield(2) * A(1, 2);
+								transitionhamiltonian += Sz * rffield(0) * A(2, 0) + Sz * rffield(1) * A(2, 1) + Sz * rffield(2) * A(2, 2);
+							}
+							else
+							{
+								transitionhamiltonian += Sx * rffield(0) + Sy * rffield(1) + Sz * rffield(2);
+							}
+						}
+						// Multiply by the isotropic value, if the tensor was isotropic
+						if (ATensor != nullptr && IsIsotropic(*ATensor))
+							transitionhamiltonian *= ATensor->Isotropic();
+
+						// Multiply with the given prefactor (or 1.0 if none was specified)
+						transitionhamiltonian *= (*interaction)->Prefactor();
+						// Multiply by common prefactor (bohr magneton / hbar)
+						if ((*interaction)->AddCommonPrefactor())
+							transitionhamiltonian *= 8.794e+1;
+					}
+				}
+
+				transitionhamiltonian = eigenvectors[r].t() * transitionhamiltonian * eigenvectors[r];
+				// Sum up both transiton Hamiltonians
+				tmptransitionhamiltonian[r] = transitionhamiltonian;
+				std::cout << "tmphamiltonianloop " << tmptransitionhamiltonian[r].is_zero() << std::endl;
+			}
+
+				std::cout << "ID 1 " << Id1.is_zero() << std::endl;
+				std::cout << "ID 2 " << Id2.is_zero() << std::endl;
+
+				// ----------------------------------------------------------------
+				// GET ARRAY OF ENERGY GAPS, SIMILAR TO THE "domega" matrix
+				// ----------------------------------------------------------------
+
+				transitionhamiltonancomplete = arma::kron(arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[0]),arma::conv_to<arma::sp_cx_mat>::from(Id2)) + arma::kron(arma::conv_to<arma::sp_cx_mat>::from(Id1),arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[1]));
+				std::cout << "transitionhamiltonian " << transitionhamiltonancomplete.is_zero() << std::endl;
+
+				// Get the all eigenvalues into one big space matrix
+				arma::vec totaleigenvalues;
+				totaleigenvalues = arma::kron(eigenvalues[0], arma::ones(spaces[1].HilbertSpaceDimensions())) + arma::kron(arma::ones(spaces[0].HilbertSpaceDimensions()), eigenvalues[1]);
+
+				std::cout << "eigenvalues " << totaleigenvalues.is_zero() << std::endl;
+				arma::vec energygaps = this->GetDifferencesRPOnlyDec(totaleigenvalues);
+				std::cout << "energygaps " << energygaps.is_zero() << std::endl;
+
+				// ----------------------------------------------------------------
+				// EVALUATE RESONANCE EFFECTS USING EIGENVECTORS OF H0
+				// ----------------------------------------------------------------
+
+				// Produce the intial state
+				arma::cx_vec rho0vec = this->GetPopulationVector(spaces[0].SpaceDimensions(),spaces[1].SpaceDimensions(),eigenvectors[0],eigenvectors[1]);
+				std::cout << "rho0vec " << rho0vec.is_zero() << std::endl;
+			
+				arma::vec resonanceeffects = this->GetResonanceEffectsRPOnlyDec(rho0vec, transitionhamiltonancomplete);
+				std::cout << "resonanceeffects " << resonanceeffects.is_zero() << std::endl;
+				//std::cout << resonanceeffects << std::endl;
+				// ----------------------------------------------------------------
+				// BINNING PROCESS FOR HISTOGRAM
+				// ----------------------------------------------------------------
+				double upperlimit;
+				this->Properties()->Get("upper_limit", upperlimit);
+				double binwidth;
+				this->Properties()->Get("bin_width", binwidth);
+				bool useMHz;
+				this->Properties()->Get("units_in_MHz", useMHz);
+
+				int numbins = arma::regspace(binwidth / 2, binwidth, upperlimit).size();
+				auto normalisedheights = GetNormalisedHistogramHeightsRPOnlyDec(energygaps, resonanceeffects, binwidth, numbins, useMHz);
+				std::cout << "normalisedheights " << normalisedheights.is_zero() << std::endl;
+				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				
+				this->Data() << normalisedheights.st(); // already contains endl
 		}
 		return true;
 	}
 
 	// --------------------------------------------------------------------------------------------------------------------------------------
 
+	long long TaskActionSpectrumHistogramRPOnlyDec::GetNumDifferencesRPOnlyDec(long long dimension)
+	{
+		long long numgaps = dimension * (dimension - 1) / 2;
+		return numgaps;
+	}
+
+	arma::vec TaskActionSpectrumHistogramRPOnlyDec::GetDifferencesRPOnlyDec(arma::vec values)
+	{
+		long long dimension = values.size();
+		std::cout << dimension << std::endl;
+		long long numgaps = GetNumDifferencesRPOnlyDec(dimension);
+		std::cout << numgaps << std::endl;
+		arma::vec differences(numgaps);
+		int ind = 0;
+		for (int k = 0; k < dimension - 1; k++)
+		{
+			for (int s = k + 1; s < dimension; s++)
+			{
+				differences(ind) = std::abs(values(k) - values(s));
+				ind++;
+			}
+		}
+
+		return differences;
+	}
+
+	arma::cx_vec TaskActionSpectrumHistogramRPOnlyDec::GetPopulationVector(const int& Z1, const int& Z2, const arma::cx_mat& V1, const arma::cx_mat& V2) 
+	{
+		std::complex<double> i(0, 1);
+
+		arma::cx_mat Sx = { {std::complex<double>(0.0, 0.0), std::complex<double>(0.5, 0.0)}, 
+							{std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)} };
+
+		arma::cx_mat Sy = { {std::complex<double>(0.0, 0.0), std::complex<double>(0.0, -0.5)}, 
+							{std::complex<double>(0.0, 0.5), std::complex<double>(0.0, 0.0)} };
+
+		arma::cx_mat Sz = { {std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)}, 
+							{std::complex<double>(0.0, 0.0), std::complex<double>(-0.5, 0.0)} };
+
+		int hilbertspace = Z1 * Z2;
+
+		// Placeholder for the resulting projection operator
+		arma::cx_vec Ps(hilbertspace, arma::fill::ones);
+		Ps /= 4.0;
+
+		arma::cx_mat IdentityZ1;
+		IdentityZ1.set_size(Z1,Z1);
+		IdentityZ1.eye();
+	
+		arma::cx_mat IdentityZ2;
+		IdentityZ2.set_size(Z2,Z2);
+		IdentityZ2.eye();
+
+		// Radical 1 - span and rotate
+		arma::cx_mat kronSxZ1 = V1.t() * arma::kron(Sx, IdentityZ1) * V1;
+		arma::cx_vec kronSxZ1diag = kronSxZ1.diag();
+		arma::cx_mat kronSyZ1 = V1.t() * arma::kron(Sy, IdentityZ1) * V1;
+		arma::cx_vec kronSyZ1diag = kronSyZ1.diag();
+		arma::cx_mat kronSzZ1 = V1.t() * arma::kron(Sz, IdentityZ1) * V1;
+		arma::cx_vec kronSzZ1diag = kronSzZ1.diag();
+
+		// Radical 2 - span and rotate
+		arma::cx_mat kronSxZ2 = V2.t() * arma::kron(Sx, IdentityZ2) * V2;
+		arma::cx_vec kronSxZ2diag = kronSxZ2.diag();
+		arma::cx_mat kronSyZ2 = V2.t() * arma::kron(Sy, IdentityZ2) * V2;
+		arma::cx_vec kronSyZ2diag = kronSyZ2.diag();
+		arma::cx_mat kronSzZ2 = V2.t() * arma::kron(Sz, IdentityZ2) * V2;
+		arma::cx_vec kronSzZ2diag = kronSzZ2.diag();
+
+		// Build the complete projection operator
+		arma::cx_mat temp = arma::kron(arma::trans(kronSxZ1diag), kronSxZ2diag);
+		Ps -= arma::conv_to<arma::cx_vec>::from(temp);
+		temp = arma::kron(trans(kronSyZ1diag), kronSyZ2diag);
+		Ps -= arma::conv_to<arma::cx_vec>::from(temp);
+		temp = arma::kron(arma::trans(kronSzZ1diag), kronSzZ2diag);
+		Ps -= arma::conv_to<arma::cx_vec>::from(temp);
+
+		return Ps;
+	}
+
+	arma::vec TaskActionSpectrumHistogramRPOnlyDec::GetPerpendicular3DVectorRPOnlyDec(arma::vec vector, bool normalise)
+	{
+		arma::vec perp(3);
+		perp.zeros();
+		int mutuallyperpaxis = (arma::abs(vector)).index_min();
+		if (mutuallyperpaxis == 0)
+		{
+			perp(2) = vector(1);
+			perp(1) = -1 * vector(2);
+		}
+		if (mutuallyperpaxis == 1)
+		{
+			perp(2) = vector(0);
+			perp(0) = -1 * vector(2);
+		}
+		if (mutuallyperpaxis == 2)
+		{
+			perp(1) = vector(0);
+			perp(0) = -1 * vector(1);
+		}
+		if (normalise)
+			perp /= arma::norm(perp);
+		return perp;
+	}
+
+	arma::vec TaskActionSpectrumHistogramRPOnlyDec::GetResonanceEffectsRPOnlyDec(arma::cx_vec initialstatepopulation, arma::sp_cx_mat transitionhamiltonian)
+	{
+		long long dim = initialstatepopulation.n_elem;
+		long long numresonances = GetNumDifferencesRPOnlyDec(dim);
+		arma::vec resonanceeffects(numresonances);
+
+		// Fill the array of resonance effects one element at the time
+		int ind_resonance = 0;
+		for (int k = 0; k < dim - 1; k++)
+		{
+			for (int s = k + 1; s < dim; s++)
+			{
+				double sqrtoftransprob = std::abs(static_cast<std::complex<double>>(transitionhamiltonian(k, s)));
+				double value = std::abs(initialstatepopulation(k) - initialstatepopulation(s)) * (sqrtoftransprob * sqrtoftransprob);
+				resonanceeffects(ind_resonance) = value;
+				ind_resonance++;
+			}
+		}
+		return resonanceeffects;
+	}
+
+	double TaskActionSpectrumHistogramRPOnlyDec::GetHistogramPrefactorRPOnlyDec(bool useMHz_units)
+	{
+		double prefactor;
+		if (useMHz_units)
+			prefactor = conversionfactortoMHzRPOnlyDec;
+		else
+			prefactor = 1e9;
+		return prefactor;
+	}
+
+	arma::vec TaskActionSpectrumHistogramRPOnlyDec::GetNormalisedHistogramHeightsRPOnlyDec(arma::vec energygaps, arma::vec resonanceeffects, double binwidth, int numbins, bool useMHz_units)
+	{
+		double prefactor = GetHistogramPrefactorRPOnlyDec(useMHz_units);
+		long long numresonances = energygaps.size();
+		arma::vec heights(numbins);
+		heights.zeros();
+		for (int s = 0; s < numresonances; s++)
+		{
+			double gap = std::abs(energygaps(s)) * prefactor;
+			double effect = std::abs(resonanceeffects(s));
+			auto binnumber = floor(gap / binwidth); // only works for uniform binwidth
+			heights(binnumber) += effect;
+		}
+		return heights / arma::sum(heights);
+	}
+
 	// Writes the header of the data file (but can also be passed to other streams)
-	void TaskActionSpectrumHistogramRPOnlyDec::WriteHeader(std::ostream &_stream)
+	void TaskActionSpectrumHistogramRPOnlyDec::TaskActionSpectrumHistogramRPOnlyDec::WriteHeader(std::ostream &_stream)
 	{
 		_stream << "Step ";
 		this->WriteStandardOutputHeader(_stream);
-		auto bin_centers = TaskActionSpectrumHistogramRPOnlyDec::GetHistogramBinCenters();
-		_stream << bin_centers.st(); // already contains endl
+		auto bincenters = TaskActionSpectrumHistogramRPOnlyDec::GetHistogramBinCenters();
+		_stream << bincenters.st(); // already contains endl
 	}
 
 	// Validation
@@ -331,12 +483,11 @@ namespace RunSection
 
 	arma::vec TaskActionSpectrumHistogramRPOnlyDec::GetHistogramBinCenters()
 	{
-		double upper_limit;
-		this->Properties()->Get("upper_limit", upper_limit);
-		double bin_width;
-		this->Properties()->Get("bin_width", bin_width);
-		auto bin_centers = arma::regspace(bin_width / 2, bin_width, upper_limit);
-		return bin_centers;
+		double upperlimit;
+		this->Properties()->Get("upper_limit", upperlimit);
+		double binwidth;
+		this->Properties()->Get("bin_width", binwidth);
+		auto bincenters = arma::regspace(binwidth / 2, binwidth, upperlimit);
+		return bincenters;
 	}
-
 }

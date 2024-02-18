@@ -9,12 +9,9 @@
 /////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include "TaskMultiStaticSSRedfieldTimeEvo.h"
-#include "Transition.h"
 #include "Settings.h"
-#include "State.h"
 #include "ObjectParser.h"
 
-#include <iostream>
 #include <omp.h>
 #include <memory>
 #include "Transition.h"
@@ -69,9 +66,11 @@ namespace RunSection
 			spaces.push_back(std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>(*i, space));
 		}
 
-		// Now, create a matrix to hold the Liouvillian superoperator and the initial state
+		// Now, create a matrix to hold the Liouvillian superoperator, the initial state and eigenvectors of respective subspaces
 		arma::cx_mat L((dimensions * dimensions), (dimensions * dimensions));
 		arma::cx_vec rho0((dimensions * dimensions));
+		std::vector<arma::cx_mat> eigveclist;
+
 		unsigned int nextDimension = 0; // Keeps track of the dimension where the next spin space starts
 
 		// Loop through the systems again to fill this matrix and vector
@@ -104,16 +103,6 @@ namespace RunSection
 				rho0HS /= arma::trace(rho0HS); // The density operator should have a trace of 1
 			}
 
-			// Now put the initial state into the superspace vector
-			arma::cx_vec rho0vec;
-			if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
-			{
-				this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
-				return false;
-			}
-
-			rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
-
 			// Next, get the Hamiltonian
 			arma::cx_mat H;
 			if (!i->second->Hamiltonian(H))
@@ -122,37 +111,6 @@ namespace RunSection
 				return false;
 			}
 
-			// ----------------------------------------------------------------
-			// DIAGONALIZATION OF H0// We need all of these operators
-			// ----------------------------------------------------------------
-			arma::cx_mat eigen_vec; // To hold eigenvectors
-			arma::vec eigen_val;	// To hold eigenvalues
-			arma::cx_mat eig_val_mat;
-
-			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H);
-			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
-
-			// ----------------------------------------------------------------
-			// CONSTRUCTING TRANSITION MATRIX "domega" OUT OF EIGENVALUES OF H0
-			// ----------------------------------------------------------------
-			arma::cx_mat domega(size(H));
-
-			for (int k = 0; k < (int)(eigen_val.size()); k++)
-			{
-				for (int s = 0; s < (int)(eigen_val.size()); s++)
-				{
-					domega(k, s) = eigen_val(k) - eigen_val(s);
-				}
-			}
-
-			// Constructing diagonal matrix with eigenvalues of H0
-			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
-
-			// Rotate density operator in eigenbasis of H0
-			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
-			rho0 = rho0 / trace(rho0);
-
 			// Redfield tensor
 			arma::cx_mat R;
 			R.set_size(size(kron(H, H)));
@@ -160,17 +118,101 @@ namespace RunSection
 
 			if (i->first->Name() == "products")
 			{
+				// Now put the initial state into the superspace vector
+				arma::cx_vec rho0vec;
+				if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
+				{
+					this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
+
+						// ---------------------------------------------------------------
+				// SETUP COMPLETE HAMILTONIAN
+				// ---------------------------------------------------------------
+				// Transform  H0 into superspace
+				arma::cx_mat lhs;
+				arma::cx_mat rhs;
+				arma::cx_mat H_SS;
+
+				// Transforming into superspace
+				i->second->SuperoperatorFromLeftOperator(H, lhs);
+				i->second->SuperoperatorFromRightOperator(H, rhs);
+
+				H_SS = lhs - rhs;
+
+				// Conversion into Liouville space of static Hamiltonian
+				L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = arma::cx_double(0.0, -1.0) * H_SS;
+
+				// Then get the reaction operators
+				arma::cx_mat K;
+				if (!i->second->TotalReactionOperator(K))
+				{
+					this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				// Transform ReactionOperator into superspace
+				arma::cx_mat Klhs;
+				arma::cx_mat Krhs;
+				arma::cx_mat K_SS;
+
+				i->second->SuperoperatorFromLeftOperator(K, Klhs);
+				i->second->SuperoperatorFromRightOperator(K, Krhs);
+
+				K_SS = Klhs + Krhs;
+
+				// Conversion into Liouville space of reaction operator
+				L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) -= K_SS;
 			}
 			else
 			{
+				// ----------------------------------------------------------------
+				// DIAGONALIZATION OF H0// We need all of these operators
+				// ----------------------------------------------------------------
+				arma::cx_mat eigen_vec; // To hold eigenvectors
+				arma::vec eigen_val;	// To hold eigenvalues
+				arma::cx_mat eig_val_mat;
+
+				this->Log() << "Starting diagonalization..." << std::endl;
+				arma::eig_sym(eigen_val, eigen_vec, H);
+				this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
+
+				eigveclist.push_back(eigen_vec);
+
+				// ----------------------------------------------------------------
+				// CONSTRUCTING TRANSITION MATRIX "domega" OUT OF EIGENVALUES OF H0
+				// ----------------------------------------------------------------
+				arma::cx_mat domega(size(H));
+
+				for (int k = 0; k < (int)(eigen_val.size()); k++)
+				{
+					for (int s = 0; s < (int)(eigen_val.size()); s++)
+					{
+						domega(k, s) = eigen_val(k) - eigen_val(s);
+					}
+				}
+
+				// Constructing diagonal matrix with eigenvalues of H0
+				eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
+
+				// Rotate density operator in eigenbasis of H0
+				rho0HS = (eigen_vec.t() * rho0HS * eigen_vec);
+
+				// Now put the initial state into the superspace vector
+				arma::cx_vec rho0vec;
+				if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
+				{
+					this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
+
 				// ---------------------------------------------------------------
 				// SETUP RELAXATION OPERATOR
 				// ---------------------------------------------------------------
-
-				// Redfield tensor
-				arma::cx_mat R;
-				R.set_size(size(kron(H, H)));
-				R.zeros();
 
 				// Temporary Redfield tensor
 				arma::cx_mat tmp_R;
@@ -414,6 +456,12 @@ namespace RunSection
 
 												A.zeros();
 												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+																								
+												// Multiply by common prefactor (bohr magneton / hbar)
+												if((*interaction)->AddCommonPrefactor()){
+													A *= (2.0023 * 8.794e+1);
+													A *= (*interaction)->Prefactor();
+												}
 
 												Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 												Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
@@ -703,6 +751,12 @@ namespace RunSection
 
 													A.zeros();
 													A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+																									
+													// Multiply by common prefactor (bohr magneton / hbar)
+													if((*interaction)->AddCommonPrefactor()){
+														A *= (2.0023 * 8.794e+1);
+														A *= (*interaction)->Prefactor();
+													}
 
 													Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 													Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
@@ -1019,6 +1073,12 @@ namespace RunSection
 
 											A.zeros();
 											A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+																							
+											// Multiply by common prefactor (bohr magneton / hbar)
+											if((*interaction)->AddCommonPrefactor()){
+												A *= (2.0023 * 8.794e+1);
+												A *= (*interaction)->Prefactor();
+											}
 
 											Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 											Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
@@ -1505,6 +1565,12 @@ namespace RunSection
 
 												A.zeros();
 												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+												
+												// Multiply by common prefactor (bohr magneton / hbar)
+												if((*interaction)->AddCommonPrefactor()){
+													A *= (2.0023 * 8.794e+1);
+													A *= (*interaction)->Prefactor();
+												}
 
 												Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 												Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
@@ -1608,7 +1674,7 @@ namespace RunSection
 													}
 
 													ampl_combined *= 0.0;
-
+													
 													// -----------------------------------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
 													// -----------------------------------------------------------------------------------------
@@ -1740,54 +1806,72 @@ namespace RunSection
 					delete ptr_Tensors[l];
 				}
 				delete[] ptr_Tensors;
+
+				// ---------------------------------------------------------------
+				// SETUP COMPLETE HAMILTONIAN
+				// ---------------------------------------------------------------
+				// Transform  H0 into superspace
+				arma::cx_mat lhs;
+				arma::cx_mat rhs;
+				arma::cx_mat H_SS;
+
+				// Transforming into superspace
+				i->second->SuperoperatorFromLeftOperator(eig_val_mat, lhs);
+				i->second->SuperoperatorFromRightOperator(eig_val_mat, rhs);
+
+				H_SS = lhs - rhs;
+
+				// Conversion into Liouville space of static Hamiltonian
+				L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = arma::cx_double(0.0, -1.0) * H_SS;
+
+				// Then get the reaction operators
+				arma::cx_mat K;
+				if (!i->second->TotalReactionOperator(K))
+				{
+					this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				// Rotation into eigenbasis of H0
+				K = eigen_vec.t() * K * eigen_vec;
+
+				// Transform ReactionOperator into superspace
+				arma::cx_mat Klhs;
+				arma::cx_mat Krhs;
+				arma::cx_mat K_SS;
+
+				i->second->SuperoperatorFromLeftOperator(K, Klhs);
+				i->second->SuperoperatorFromRightOperator(K, Krhs);
+
+				K_SS = Klhs + Krhs;
+
+				// Conversion into Liouville space of reaction operator
+				L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) -= K_SS;
+
+				// Get the relaxation terms of other relaxation operators, assuming that they can just be added
+				arma::cx_mat O_SS;
+
+				for(auto t = i->first->operators_cbegin(); t != i->first->operators_cend(); t++)
+				{
+					i->second->UseSuperoperatorSpace(true);
+					if(i->second->RelaxationOperatorFrameChange((*t), eigen_vec , O_SS))
+					{
+
+						i->second->UseSuperoperatorSpace(false);
+						L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) += O_SS;
+
+						this->Log() << "Added other relaxation operator \"" << (*t)->Name() << "\" to the Liouvillian.\n";
+					}
+					else
+					{
+						this->Log() << "There is a problem with operator \"" << (*t)->Name() << ". Please check.\n";
+						i->second->UseSuperoperatorSpace(false);
+					}
+				}
+
+				// Include R tensor in Liouville operator
+				L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) += R;
 			}
-			// ---------------------------------------------------------------
-			// SETUP COMPLETE HAMILTONIAN
-			// ---------------------------------------------------------------
-			// Transform  H0 into superspace
-			arma::cx_mat lhs;
-			arma::cx_mat rhs;
-			arma::cx_mat H_SS;
-
-			// Transforming into superspace
-			i->second->SuperoperatorFromLeftOperator(eig_val_mat, lhs);
-			i->second->SuperoperatorFromRightOperator(eig_val_mat, rhs);
-
-			H_SS = lhs - rhs;
-
-			// Conversion into Liouville space of static Hamiltonian
-
-			L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = arma::cx_double(0.0, -1.0) * H_SS;
-
-			// Then get the reaction operators
-			arma::cx_mat K;
-			if (!i->second->TotalReactionOperator(K))
-			{
-				this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin system \"" << i->first->Name() << "\"!" << std::endl;
-				return false;
-			}
-
-			// Rotation into eigenbasis of H0
-			K = eigen_vec.t() * K * eigen_vec;
-
-			// Transform ReactionOperator into superspace
-			arma::cx_mat Klhs;
-			arma::cx_mat Krhs;
-			arma::cx_mat K_SS;
-
-			i->second->SuperoperatorFromLeftOperator(K, Klhs);
-			i->second->SuperoperatorFromRightOperator(K, Krhs);
-
-			K_SS = Klhs + Krhs;
-
-			// Conversion into Liouville space of reaction operator
-
-			L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) -= K_SS;
-
-			// Include R tensor in Liouville operator
-
-			L.submat(nextDimension, nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) += R;
-
 			// Obtain the creation operators - note that we need to loop through the other SpinSystems again to find transitions leading into the current SpinSystem
 			unsigned int nextCDimension = 0; // Similar to nextDimension, but to keep track of first dimension for this other SpinSystem
 			for (auto j = spaces.cbegin(); j < spaces.cend(); j++)
@@ -1801,18 +1885,39 @@ namespace RunSection
 						// Does the Transition lead into the current spin space?
 						if ((*t)->Target() == i->first)
 						{
+							// Calculate the index for the j'th element
+							size_t j_index = std::distance(spaces.cbegin(), j);
+
 							// Prepare a creation operator
 							arma::sp_cx_mat C;
-							if (!SpinAPI::CreationOperator((*t), *(j->second), *(i->second), C, true))
-							{
-								this->Log() << "ERROR: Failed to obtain matrix representation of the creation operator for transition \"" << (*t)->Name() << "\"!" << std::endl;
-								return false;
+							arma::sp_cx_mat C_SS;
+							
+							// Get a Hilbert space state vector of both the source state and the target state
+							arma::cx_vec S;
+							arma::cx_vec T;
+							j->second->GetState((*t)->SourceState(), S);
+							i->second->GetState((*t)->TargetState(), T);
+							
+							// Make sure the states are normalized
+							S /= arma::norm(S);
+							T /= arma::norm(T);
+
+							// Rotate Redfield influenced subspace creaction operator into correct frame
+							if (j_index < eigveclist.size()) {
+								arma::cx_mat& eigvec_j = eigveclist[j_index];
+								S = eigvec_j.t() * S;
 							}
+
+							// Obtain the creation operator
+							C = arma::conv_to<arma::sp_cx_mat>::from(T * S.t());
+
+							// Transform into SuperSpace
+							C_SS = arma::kron(C, C.t().st());
 
 							// Put it into the total Liouvillian:
 							//  - The row should be that of the current spin space (the target space)
 							//  - The column should be that of the source spin space (the spin system containing the Transition object)
-							L.submat(nextDimension, nextCDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextCDimension + (j->second->SpaceDimensions() * j->second->SpaceDimensions()) - 1) += C * (*t)->Rate();
+							L.submat(nextDimension, nextCDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1, nextCDimension + (j->second->SpaceDimensions() * j->second->SpaceDimensions()) - 1) += C_SS * (*t)->Rate();
 						}
 					}
 				}
@@ -1842,8 +1947,32 @@ namespace RunSection
 				return false;
 			}
 
+			// Loop through all states
+			arma::cx_mat P;
+			auto sstates = i->first->States();
+			for (auto j = sstates.cbegin(); j < sstates.cend(); j++)
+			{
+				if (!i->second->GetState((*j), P))
+				{
+					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
+					continue;
+				}
+
+				// Calculate the index for the j'th element
+				size_t i_index = std::distance(spaces.cbegin(), i);
+
+				// Rotate Redfield influenced subspace creaction operator into correct frame
+				if (i_index < eigveclist.size()) {
+					arma::cx_mat& eigvec_i = eigveclist[i_index];
+					P = eigvec_i.t() * P * eigvec_i;
+				}
+
+				// Return the yield for this state - note that no reaction rates are included here.
+				this->Data() << std::abs(arma::trace(P * rho_result)) << " ";
+			}
+
 			// Get the results
-			this->GatherResults(rho_result, *(i->first), *(i->second));
+			//this->GatherResults(rho_result, *(i->first), *(i->second));
 
 			// Move on to next spin space
 			nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());
@@ -1884,8 +2013,32 @@ namespace RunSection
 					return false;
 				}
 
+				// Loop through all states
+				arma::cx_mat P;
+				auto sstates = i->first->States();
+				for (auto j = sstates.cbegin(); j < sstates.cend(); j++)
+				{
+					if (!i->second->GetState((*j), P))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
+						continue;
+					}
+
+					// Calculate the index for the j'th element
+					size_t i_index = std::distance(spaces.cbegin(), i);
+
+					// Rotate Redfield influenced subspace creaction operator into correct frame
+					if (i_index < eigveclist.size()) {
+						arma::cx_mat& eigvec_i = eigveclist[i_index];
+						P = eigvec_i.t() * P * eigvec_i;
+					}
+
+					// Return the yield for this state - note that no reaction rates are included here.
+					this->Data() << std::abs(arma::trace(P * rho_result)) << " ";
+				}
+
 				// Get the results
-				this->GatherResults(rho_result, *(i->first), *(i->second));
+				//this->GatherResults(rho_result, *(i->first), *(i->second));
 
 				// Move on to next spin space
 				nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());

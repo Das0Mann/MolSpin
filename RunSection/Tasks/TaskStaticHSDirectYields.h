@@ -30,6 +30,7 @@ namespace RunSection
 			// Constructors / Destructors
 			TaskStaticHSDirectYields(const MSDParser::ObjectParser&, const RunSection&);	// Normal constructor
 			~TaskStaticHSDirectYields();													// Destructor
+			bool is_identity_matrix(arma::sp_cx_mat& matrix); // check if the matrix is an identity
 	};
 }
 
