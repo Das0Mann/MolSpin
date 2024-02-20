@@ -517,30 +517,120 @@ namespace RunSection
 											*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 										}
 
+										// Number of elments for SpecDens. Important for delete statemant later
+										if((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+										{
+											num_element = num_op * num_op;
+										}
+										else if((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+										{
+											num_element = num_op;
+										}
+
 										// Contructing dimension of ptr_SpecDens
 										delete[] ptr_SpecDens;
-										ptr_SpecDens = new arma::cx_mat *[num_op];
+										ptr_SpecDens = new arma::cx_mat *[num_element];
 
-										for (int l = 0; l < num_op; l++)
+										for (int l = 0; l < num_element; l++)
 										{
 											ptr_SpecDens[l] = new arma::cx_mat(domega);
 											*ptr_SpecDens[l] *= 0.0;
 										}
-
-										// Number of elments for SpecDens. Important for delete statemant later
-										num_element = num_op;
 
 										// TODO: Slippage Operator for multiexponential loop
 
 										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
 										{
-											// TODO: This if-statement routine is not correct set up here!
-											this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
+											this->Log() << "Setting up Redfield tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
+
+											// Counter for inner loop
+											int m = 0;
+											// Counter to check if some rows are 0 and must not be computed
+											double max_row_value;
+											// Do the autocorrelation terms for each of the 9 terms in the tensor
+											for (k = 0; k < num_op; k++)
+											{
+												for (s = 0; s < num_op; s++)
+												{
+													max_row_value = max(ampl_mat.row(m));
+
+													// Check if the maximum value is zero
+													if (max_row_value == 0.0)
+													{
+															this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+													}
+													else
+													{
+														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+														{
+
+															// ----------------------------------------------------------------
+															// CONSTRUCTING SPECTRAL DENSITY MATRIX
+															// ----------------------------------------------------------------
+
+															if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+															{
+																SpecDens *= 0.0;
+
+																if (!ConstructSpecDensSpecific(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
+																{
+																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																	continue;
+																}
+																
+																SpecDens *= (*interaction)->Prefactor();
+															}
+															else
+															{
+																SpecDens *= 0.0;
+
+																if (!ConstructSpecDensSpecific(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
+																{
+																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																	continue;
+																}
+
+																SpecDens *= (*interaction)->Prefactor();
+															}
+															*ptr_SpecDens[m] += SpecDens;
+														}
+
+														// -----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// -----------------------------------------------------------------
+
+														tmp_R *= 0.0;
+
+														if (!Redfieldtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														R += tmp_R;
+
+														if (k != s)
+														{
+															tmp_R *= 0.0;
+
+															if (!Redfieldtensor((*ptr_Tensors[s]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
+															{
+																this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+																continue;
+															}
+
+															R += tmp_R;
+														}
+													}
+
+													m = m + 1;
+												}
+											}
 										}
 										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
 										{
-											this->Log() << "Setting up Redfield tensor for each component (Axx, Axy, Axz, Ayx, ...) separately " << std::endl;
+											this->Log() << "Setting up Redfield tensor just for each operator seperartely. No cross-correlation. " << std::endl;
 
 											// Counter for inner loop
 											int m = 0;
@@ -810,18 +900,25 @@ namespace RunSection
 												*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
 											}
 
+											// Number of elments for SpecDens. Important for delete statemant later
+											if((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+											{
+												num_element = num_op * num_op;
+											}
+											else if((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+											{
+												num_element = num_op;
+											}
+
 											// Contructing dimension of ptr_SpecDens
 											delete[] ptr_SpecDens;
-											ptr_SpecDens = new arma::cx_mat *[(num_op * num_op)];
+											ptr_SpecDens = new arma::cx_mat *[num_element];
 
-											for (int l = 0; l < (num_op * num_op); l++)
+											for (int l = 0; l < num_element; l++)
 											{
 												ptr_SpecDens[l] = new arma::cx_mat(domega);
 												*ptr_SpecDens[l] *= 0.0;
 											}
-
-											// Number of elments for SpecDens. Important for delete statemant later
-											num_element = num_op * num_op;
 
 											// TODO: Slippage Operator for multiexponential loop
 
@@ -829,7 +926,7 @@ namespace RunSection
 
 											if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
 											{
-												this->Log() << "Setting up Redfield tensor for each component (Axx, Axy, Axz, Ayx, ...) separately " << std::endl;
+												this->Log() << "Setting up Redfield tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
 
 												// Counter for inner loop
 												int m = 0;
@@ -917,9 +1014,76 @@ namespace RunSection
 											}
 											if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
 											{
-												// TODO: This if-statement routine is not correct set up here!
+												this->Log() << "Setting up Redfield tensor just for each operator seperartely. No cross-correlation. " << std::endl;
 
-												this->Log() << "NOT IMPLEMENTED YET SORRY" << std::endl;
+												// Counter for inner loop
+												int m = 0;
+												// Counter to check if some rows are 0 and must not be computed
+												double max_row_value;
+
+												// Do the autocorrelation terms for each of the 3 terms
+												for (k = 0; k < num_op; k++)
+												{
+													max_row_value = max(ampl_mat.row(m));
+
+													// Check if the maximum value is zero
+													if (max_row_value == 0.0)
+													{
+														this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+													}
+													else
+													{
+														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+														{
+															// ----------------------------------------------------------------
+															// CONSTRUCTING SPECTRAL DENSITY MATRIX
+															// ----------------------------------------------------------------
+
+															if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+															{
+																SpecDens *= 0.0;
+
+																if (!ConstructSpecDensSpecific(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
+																{
+																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																	continue;
+																}
+
+																SpecDens *= (*interaction)->Prefactor();
+															}
+															else
+															{
+																SpecDens *= 0.0;
+
+																if (!ConstructSpecDensSpecific(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
+																{
+																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																	continue;
+																}
+
+																SpecDens *= (*interaction)->Prefactor();
+															}
+
+															*ptr_SpecDens[m] += SpecDens;
+														}
+
+														// -----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// -----------------------------------------------------------------
+
+														tmp_R *= 0.0;
+
+														if (!Redfieldtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the Redfield tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														R += tmp_R;
+													}
+
+													m = m + 1;
+												}
 											}
 											else
 											{
