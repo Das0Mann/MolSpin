@@ -832,7 +832,10 @@ namespace RunSection
                                 }
 			}
 			
-
+			// Obtain results
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
+			
 			arma::mat ans = arma::trapz(time, ExptValues);	
 			
 			for(int it = 0; it < num_transitions; it++)
@@ -854,7 +857,8 @@ namespace RunSection
 			
 		}	
 		return true;
-	}	
+	}
+
 	bool TaskDynamicHSStochYields::is_identity_matrix(arma::sp_cx_mat& matrix)
         {
                 // Check if the matrix is square.

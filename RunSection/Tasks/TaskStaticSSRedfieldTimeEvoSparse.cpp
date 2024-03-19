@@ -255,6 +255,8 @@ namespace RunSection
 					this->Log() << "coeff == " << coeff << std::endl;
 				(*interaction)->Properties()->Get("slip", slip);
 					this->Log() << "slip == " << slip << std::endl;
+				(*interaction)->Properties()->Get("def_specdens", def_specdens);
+					this->Log() << "def_specdens == " << def_specdens << std::endl;	
 				this->Log() <<"------------------------------------------" << std::endl;
 
 				// Check if def_multexpo keyword is used
@@ -307,12 +309,20 @@ namespace RunSection
 										}
 
 										// Put all tensors on pointer array
-										num_op = 3;
+										num_op = 9;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat *[num_op];
-										ptr_Tensors[0] = Sx1;
-										ptr_Tensors[1] = Sy1;
-										ptr_Tensors[2] = Sz1;
+										ptr_Tensors[0] = Sx1;  // Bx
+										ptr_Tensors[1] = Sx1;  // By
+										ptr_Tensors[2] = Sx1;  // Bz
+										ptr_Tensors[3] = Sy1;  // Bx
+										ptr_Tensors[4] = Sy1;  // By
+										ptr_Tensors[5] = Sy1;  // Bz
+										ptr_Tensors[6] = Sz1;  // Bx
+										ptr_Tensors[7] = Sz1;  // By
+										ptr_Tensors[8] = Sz1;  // Bz
+
+										//Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
 									}
 									else
 									{

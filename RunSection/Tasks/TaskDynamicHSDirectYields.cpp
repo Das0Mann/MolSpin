@@ -756,6 +756,9 @@ namespace RunSection
                                 }
 			}
 			
+			// Obtain results
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
 
 			arma::mat ans = arma::trapz(time, ExptValues);	
 			

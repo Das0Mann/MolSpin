@@ -1149,7 +1149,10 @@ namespace RunSection
 
 			arma::mat ans = arma::trapz(time, ExptValues);	
 			
-			
+			// Obtain results
+			//this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
+
 			int num_transitions = 4;	
 			for(int it = 0; it < num_transitions; it++)
                         {

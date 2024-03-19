@@ -759,31 +759,33 @@ namespace RunSection
 					}
 				}
 			}
-			else if (time_dependent_hamiltonian && time_dependent_transitions) {
+			else if (time_dependent_hamiltonian && time_dependent_transitions) 
+			{
 				// Case 3: both time_dependent_hamiltonian and time_dependent_transitions are true
 				arma::sp_cx_mat dK(4*Z,4*Z);
                                 arma::sp_cx_mat dH(4*Z, 4*Z);
 				if(propmethod == "autoexpm")
-                                {
-                                        // Propagation using autoexpm for matrix exponential
-                                        arma::mat M; // used for variable estimation
+                {
+                    // Propagation using autoexpm for matrix exponential
+                    arma::mat M; // used for variable estimation
 
-                                        // General Case
+                    // General Case
 
-                                        // Include the recombination operator K
-                                        H = H - arma::cx_double(0.0, 1.0)*K;
-                                        for(int k = 0; k < num_steps; k++)
-                                        {
-                                                // Set the current time
-                                                double current_time = k * dt;
-                                                time(k) = current_time;
+                    // Include the recombination operator K
+            	    H = H - arma::cx_double(0.0, 1.0)*K;
+                
+				    for(int k = 0; k < num_steps; k++)
+                    {
+                        // Set the current time
+                        double current_time = k * dt;
+                        time(k) = current_time;
 						
 						this->Data() << current_time;
 
-                                                // Set the currentime for the Dynamic Hamiltonian
-                                                space.SetTime(current_time);
+                        // Set the currentime for the Dynamic Hamiltonian
+                        space.SetTime(current_time);
 
-                                                auto transitions = (*i)->Transitions();
+                        auto transitions = (*i)->Transitions();
 
                                                 int idx = 0;
                                                 for(auto o = transitions.begin(); o != transitions.end(); o++)
@@ -865,6 +867,9 @@ namespace RunSection
                                                 B.col(itr) = prop_state;
                                         }
                                         ExptValues /= mc_samples;
+			// Obtain results
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
                                 	for(int k = 0; k < num_steps; k++)
                                         {
                                                 this->Data() << time(k);

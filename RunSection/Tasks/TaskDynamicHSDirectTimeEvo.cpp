@@ -782,7 +782,11 @@ namespace RunSection
                                                 }
                                                 B.col(itr) = prop_state;
                                         }
+
                                         ExptValues /= Z;
+			// Obtain results
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
 					for(int k = 0; k < num_steps; k++)
                                         {
                                                 this->Data() << time(k);

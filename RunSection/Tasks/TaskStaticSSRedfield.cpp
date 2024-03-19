@@ -251,6 +251,8 @@ namespace RunSection
 					this->Log() << "coeff == " << coeff << std::endl;
 				(*interaction)->Properties()->Get("slip", slip);
 					this->Log() << "slip == " << slip << std::endl;
+				(*interaction)->Properties()->Get("def_specdens", def_specdens);
+					this->Log() << "def_specdens == " << def_specdens << std::endl;					
 				this->Log() <<"------------------------------------------" << std::endl;
 
 				// Check if def_multexpo keyword is used
@@ -303,12 +305,20 @@ namespace RunSection
 										}
 
 										// Put all tensors on pointer array
-										num_op = 3;
+										num_op = 9;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = Sx1;
-										ptr_Tensors[1] = Sy1;
-										ptr_Tensors[2] = Sz1;
+										ptr_Tensors[0] = Sx1;  // Bx
+										ptr_Tensors[1] = Sx1;  // By
+										ptr_Tensors[2] = Sx1;  // Bz
+										ptr_Tensors[3] = Sy1;  // Bx
+										ptr_Tensors[4] = Sy1;  // By
+										ptr_Tensors[5] = Sy1;  // Bz
+										ptr_Tensors[6] = Sz1;  // Bx
+										ptr_Tensors[7] = Sz1;  // By
+										ptr_Tensors[8] = Sz1;  // Bz
+
+										//Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
 									}
 									else
 									{
@@ -417,9 +427,9 @@ namespace RunSection
 										{
 											// Norm
 											*ptr_Tensors[0] = (*ptr_Tensors[0]);
-											*ptr_Tensors[1] = -(*ptr_Tensors[1]);
+											*ptr_Tensors[1] = (*ptr_Tensors[1]);
 											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-											*ptr_Tensors[3] = (*ptr_Tensors[3]);
+											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
 											*ptr_Tensors[4] = (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = (*ptr_Tensors[5]);
 										}
@@ -467,7 +477,7 @@ namespace RunSection
 										// Do the autocorrelation terms for each of the 9 terms in the tensor
 										for (k = 0; k < num_op; k++)
 										{
-											for (s = 0; s < num_op; s++)
+											for (s = 0; k < num_op; s++)
 											{
 												max_row_value = max(ampl_mat.row(m));
 
@@ -480,7 +490,6 @@ namespace RunSection
 												{
 													for (int n = 0; n < (int)ampl_mat.n_cols; n++)
 													{
-
 														// ----------------------------------------------------------------
 														// CONSTRUCTING SPECTRAL DENSITY MATRIX
 														// ----------------------------------------------------------------
@@ -858,7 +867,6 @@ namespace RunSection
 													{
 														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
 														{
-
 															// ----------------------------------------------------------------
 															// CONSTRUCTING SPECTRAL DENSITY MATRIX
 															// ----------------------------------------------------------------
@@ -1030,7 +1038,7 @@ namespace RunSection
 						// ...
 					}
 				}
-				// Normal loops without multiple multiexponential lists
+// Normal loops without multiple multiexponential lists
 				else if ((*interaction)->Properties()->GetList("tau_c", tau_c_list))
 				{
 					if ((*interaction)->Properties()->GetList("g", ampl_list))
@@ -1186,9 +1194,9 @@ namespace RunSection
 									{
 										// Norm
 										*ptr_Tensors[0] = (*ptr_Tensors[0]);
-										*ptr_Tensors[1] = -(*ptr_Tensors[1]);
+										*ptr_Tensors[1] = (*ptr_Tensors[1]);
 										*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-										*ptr_Tensors[3] = (*ptr_Tensors[3]);
+										*ptr_Tensors[3] = -(*ptr_Tensors[3]);
 										*ptr_Tensors[4] = (*ptr_Tensors[4]);
 										*ptr_Tensors[5] = (*ptr_Tensors[5]);
 									}
@@ -2074,6 +2082,72 @@ namespace RunSection
 				}
 			}
 
+			int secular = 0;
+			this->Properties()->Get("secular", secular);
+
+			std::cout << R.is_symmetric() << std::endl;
+			std::cout << H_SS.is_symmetric() << std::endl;
+
+			if (secular == 1)
+			{
+				this->Log() << "Secular approximation is USED." << std::endl;
+														
+				double cutoff = 0.0;
+				this->Properties()->Get("cutoff", cutoff);
+				this->Log() << "Cutoff set to: " << cutoff << std::endl;
+														
+				int nn = domega.n_rows;
+
+				std::cout << domega << std::endl;
+
+				std::cout << "Elements of domega: " << nn << std::endl;
+				std::cout << "Elements of R.n_col: " << R.n_cols << std::endl;
+				std::cout << "Elements of R.n_row: " << R.n_rows << std::endl;
+														
+				int ra = 0;
+				int rb = 0;
+				int rc = 0;
+				int rd = 0;
+				int ii = 0;
+				int jj = 0;
+				int counter = 0;
+														
+				for (ra = 0; ra < nn; ra++)
+				{
+					for (rb = 0; rb < nn; rb++)
+					{
+						ii = ra * nn + rb;
+						// std::cout << "ii: " << ii << std::endl;
+
+						for (rc = 0; rc < nn; rc++)
+						{
+							for (rd = 0; rd < nn; rd++)
+							{
+								jj = rc * nn + rd;
+								// std::cout << "jj: " << jj << std::endl;
+
+								// std::cout << "domega(ra,rb): " << domega(ra,rb) << std::endl;
+								// std::cout << "domega(rc,rd): " << domega(rc,rd) << std::endl;
+								if (std::abs((domega(ra,rb) - domega(rc,rd))) >= cutoff)
+								{									
+									// std::cout << "Difference domega: " << std::abs(domega(ra,rb) - domega(rc,rd)) << std::endl;
+									// std::cout << "Deleted R element: " << R(ii,jj) << std::endl;		
+									R(ii,jj) *= 0.0;
+									counter += 1;
+								}
+								else
+								{
+									std::cout << "domega(ra,rb): " << domega(ra,rb) << std::endl;
+									std::cout << "domega(rc,rd): " << domega(rc,rd) << std::endl;
+								}
+
+							}
+						}
+					}
+				}
+				std::cout << "counter: " << counter << std::endl;
+			}
+
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
@@ -2247,12 +2321,12 @@ namespace RunSection
 		// old - version
 
 		// r = A1[a,c] * A2[d,b] * (S[c,a] + S[b,d])
-		//_redfieldtensor += arma::kron(((_op1)%_specdens.st()),(_op2).st());
-		//_redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
+		// _redfieldtensor += arma::kron(((_op1)%_specdens.st()),(_op2).st());
+		// _redfieldtensor += arma::kron((_op1),(((_op2).st())%_specdens)); // (A2 * S.T).T = A2.T * S
 		// if b == d: r -= sum(A1[a,:] * A2[:,c] * S[c,:])
-		//_redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
+		// _redfieldtensor -= arma::kron((_op1)*((_op2)%_specdens.st()),one);
 		// if a == c: r -= sum(A1[d,:] * S[:,d] * A2[:,b])
-		//_redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
+		// _redfieldtensor -= arma::kron(one,(((_op1)%_specdens.st())*(_op2)).st());
 
 		return true;
 	}

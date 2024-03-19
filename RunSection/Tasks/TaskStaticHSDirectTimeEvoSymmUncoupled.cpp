@@ -1122,6 +1122,10 @@ namespace RunSection
                                         double expected_value3 = std::exp(-kmin * current_time) * Ptzero.real() / Z1 / Z2;
                                         double expected_value4 = std::exp(-kmin * current_time) * Ptminus.real() / Z1 / Z2;
 					
+                                        // Obtain results
+			                //this->Data() << this->RunSettings()->CurrentStep() << " ";
+			                this->WriteStandardOutput(this->Data());
+
 					this->Data() << " " << expected_value1;
                                         this->Data() << " " << expected_value2;
                                         this->Data() << " " << expected_value3;
