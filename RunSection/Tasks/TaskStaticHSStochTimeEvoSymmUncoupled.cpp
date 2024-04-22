@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// TaskStaticHSStochTimeEvoSymmUncoupled implementation (RunSection module) by Gediminas Pazera
+// TaskStaticHSStochTimeEvoSymmUncoupled implementation (RunSection module) by Gediminas Pazera and Luca Gerhards
 // 
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.

@@ -183,18 +183,18 @@ namespace SpinAPI
 			bool BlRk2SphericalTensorTm2(const spin_ptr&, const spin_ptr&, arma::sp_cx_mat&) const;	// T(m=-2), sparse
 
 			// ------------------------------------------------
-			// New added functions for wavefucntion formalism and SSE
+			// New added functions for wavefucntion formalism and SSE (by Gediminas Pazera and Luca Gerhards)
 			// ------------------------------------------------
 			
 			arma::cx_colvec SUZstate(const int &spinmult, std::mt19937& generator); // returns stochastically determined SU(Z) state  	
-			arma::cx_colvec CoherentState(std::vector<SpinAPI::system_ptr>::const_iterator i, std::mt19937& generator);
-			arma::cx_mat HighamProp(arma::sp_cx_mat &H, arma::cx_mat& B, const std::complex<double> t, const std::string precision, arma::mat &M);
-			arma::mat SelectTaylorDegree(const arma::sp_cx_mat &H, const std::string precision, const int lengthB);
-			double normAmEst(const arma::sp_cx_mat &H, double m, std::mt19937& generator);
-			arma::cx_colvec KrylovExpmGeneral(const arma::sp_cx_mat &H, const arma::cx_colvec &b, const arma::cx_double dt, int KryDim, int HilbSize);
-			arma::cx_colvec KrylovExpmSymm(const arma::sp_cx_mat &H, const arma::cx_colvec &b, const arma::cx_double dt, int KryDim, int HilbSize);						
-			void ArnoldiProcess(const arma::sp_cx_mat& H, const arma::cx_colvec& b, arma::cx_mat& KryBasis, arma::cx_mat& Hessen, int KryDim, double& h_mplusone_m);	
-			void LanczosProcess(const arma::sp_cx_mat& H, const arma::cx_colvec& b, arma::cx_mat& KryBasis, arma::cx_mat& Hessen, int KryDim, double& h_mplusone_m);
+			arma::cx_colvec CoherentState(std::vector<SpinAPI::system_ptr>::const_iterator i, std::mt19937& generator); // returns stochastically determined coherent state 
+			arma::cx_mat HighamProp(arma::sp_cx_mat &H, arma::cx_mat& B, const std::complex<double> t, const std::string precision, arma::mat &M); // Propagation method using: https://doi.org/10.1137/100788860
+			arma::mat SelectTaylorDegree(const arma::sp_cx_mat &H, const std::string precision, const int lengthB); // Precision of Taylor series used for HighamProp
+			double normAmEst(const arma::sp_cx_mat &H, double m, std::mt19937& generator); // Used in SelectTaylorDegree to normalize
+			arma::cx_colvec KrylovExpmGeneral(const arma::sp_cx_mat &H, const arma::cx_colvec &b, const arma::cx_double dt, int KryDim, int HilbSize); // Krylov subspace method
+			arma::cx_colvec KrylovExpmSymm(const arma::sp_cx_mat &H, const arma::cx_colvec &b, const arma::cx_double dt, int KryDim, int HilbSize); // Krylov subspace method for symmetric decay						
+			void ArnoldiProcess(const arma::sp_cx_mat& H, const arma::cx_colvec& b, arma::cx_mat& KryBasis, arma::cx_mat& Hessen, int KryDim, double& h_mplusone_m); // Arnoldi process for propagation using Krylov subsspace
+			void LanczosProcess(const arma::sp_cx_mat& H, const arma::cx_colvec& b, arma::cx_mat& KryBasis, arma::cx_mat& Hessen, int KryDim, double& h_mplusone_m); // Lanczos process for propagation using Krylov subsspace
 
 			// ------------------------------------------------
 			// Hamiltonian representations in the space (SpinSpace_hamiltonians.cpp)

@@ -137,6 +137,7 @@ namespace RunSection
 			arma::cx_mat Iprojz;
 
 			std::vector<std::string> nuclei_list;
+			bool Dnp = false;
 			int m;
 
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
@@ -205,6 +206,23 @@ namespace RunSection
 								}
 
 							}
+							if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
+							{
+								this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl; 
+
+								std::cout << "rho: " << rho0 << std::endl;
+								std::cout << "Ix:" << std::real(arma::trace(Iprojx * rho0)) << std::endl;
+								std::cout << "Ix:" << Iprojx << std::endl;
+								std::cout << "KE" << Iprojy * rho0 << std::endl;
+								std::cout << "Iy:" << std::real(arma::trace(Iprojy * rho0)) << std::endl;
+								std::cout << "Iy:" << Iprojy << std::endl;
+								std::cout << "Iz:" << std::real(arma::trace(Iprojz * rho0)) << std::endl;
+								std::cout << "Iz:" << Iprojz << std::endl;
+								// Return the yield for this state - note that no reaction rates are included here.
+								this->Data() << std::real(arma::trace(Iprojx *  rho0)) << " ";
+								this->Data() << std::real(arma::trace(Iprojy *  rho0)) << " ";
+								this->Data() << std::real(arma::trace(Iprojz *  rho0)) << " ";
+							}
 							else
 							{
 								// Loop through all states
@@ -216,6 +234,10 @@ namespace RunSection
 										this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 										continue;
 									}
+
+									std::cout << "Ix:" << std::real(arma::trace(Iprojx * P * rho0)) << std::endl;
+									std::cout << "Iy:" << std::real(arma::trace(Iprojy * P * rho0)) << std::endl;
+									std::cout << "Iz:" << std::real(arma::trace(Iprojz * P * rho0)) << std::endl;
 
 									// Return the yield for this state - note that no reaction rates are included here.
 									this->Data() << std::real(arma::trace(Iprojx *  P * rho0)) << " ";

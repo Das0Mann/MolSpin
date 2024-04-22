@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// TaskDynamicHSDirectTimeEvo (RunSection module) by Gediminas Pazera
+// TaskDynamicHSDirectTimeEvo (RunSection module) by Gediminas Pazera and Luca Gerhards
 // ------------------
 // 
 // Very efficient quantum yield calculations in Hilbert Space, using Monte Carlo sampling.

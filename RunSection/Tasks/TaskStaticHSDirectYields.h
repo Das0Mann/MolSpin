@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// TaskStaticHSDirectYields (RunSection module) by Gediminas Pazera
+// TaskStaticHSDirectYields (RunSection module) by Gediminas Pazera and Luca Gerhards
 // ------------------
 // 
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
