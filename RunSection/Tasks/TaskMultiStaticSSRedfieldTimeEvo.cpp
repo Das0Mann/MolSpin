@@ -128,7 +128,7 @@ namespace RunSection
 
 				rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
 
-						// ---------------------------------------------------------------
+				// ---------------------------------------------------------------
 				// SETUP COMPLETE HAMILTONIAN
 				// ---------------------------------------------------------------
 				// Transform  H0 into superspace
@@ -315,24 +315,24 @@ namespace RunSection
 				{
 
 					// Chosen parameter in input file
-					this->Log() <<"------------------------------------------" << std::endl;
-					this->Log() <<"Chosen input parameter for interaction:  " << (*interaction)->Name() << std::endl;
-					this->Log() <<"------------------------------------------" << std::endl;
+					this->Log() << "------------------------------------------" << std::endl;
+					this->Log() << "Chosen input parameter for interaction:  " << (*interaction)->Name() << std::endl;
+					this->Log() << "------------------------------------------" << std::endl;
 					(*interaction)->Properties()->Get("terms", terms);
-						this->Log() <<"terms == " << terms << std::endl;
+					this->Log() << "terms == " << terms << std::endl;
 					(*interaction)->Properties()->Get("def_g", def_g);
-						this->Log() << "def_g == " << def_g << std::endl;
+					this->Log() << "def_g == " << def_g << std::endl;
 					(*interaction)->Properties()->Get("def_multexpo", def_multexpo);
-						this->Log() << "def_multexpo == " << def_multexpo << std::endl;
+					this->Log() << "def_multexpo == " << def_multexpo << std::endl;
 					(*interaction)->Properties()->Get("ops", ops);
-						this->Log() << "ops == " << ops << std::endl;
+					this->Log() << "ops == " << ops << std::endl;
 					(*interaction)->Properties()->Get("coeff", coeff);
-						this->Log() << "coeff == " << coeff << std::endl;
+					this->Log() << "coeff == " << coeff << std::endl;
 					(*interaction)->Properties()->Get("slip", slip);
-						this->Log() << "slip == " << slip << std::endl;
+					this->Log() << "slip == " << slip << std::endl;
 					(*interaction)->Properties()->Get("def_specdens", def_specdens);
-						this->Log() << "def_specdens == " << def_specdens << std::endl;	
-					this->Log() <<"------------------------------------------" << std::endl;
+					this->Log() << "def_specdens == " << def_specdens << std::endl;
+					this->Log() << "------------------------------------------" << std::endl;
 
 					// Check if def_multexpo keyword is used
 					if ((*interaction)->Properties()->Get("def_multexpo", def_multexpo) && def_multexpo == 1)
@@ -387,17 +387,17 @@ namespace RunSection
 											num_op = 9;
 											delete[] ptr_Tensors;
 											ptr_Tensors = new arma::cx_mat *[num_op];
-											ptr_Tensors[0] = Sx1;  // Bx
-											ptr_Tensors[1] = Sx1;  // By
-											ptr_Tensors[2] = Sx1;  // Bz
-											ptr_Tensors[3] = Sy1;  // Bx
-											ptr_Tensors[4] = Sy1;  // By
-											ptr_Tensors[5] = Sy1;  // Bz
-											ptr_Tensors[6] = Sz1;  // Bx
-											ptr_Tensors[7] = Sz1;  // By
-											ptr_Tensors[8] = Sz1;  // Bz
+											ptr_Tensors[0] = Sx1; // Bx
+											ptr_Tensors[1] = Sx1; // By
+											ptr_Tensors[2] = Sx1; // Bz
+											ptr_Tensors[3] = Sy1; // Bx
+											ptr_Tensors[4] = Sy1; // By
+											ptr_Tensors[5] = Sy1; // Bz
+											ptr_Tensors[6] = Sz1; // Bx
+											ptr_Tensors[7] = Sz1; // By
+											ptr_Tensors[8] = Sz1; // Bz
 
-											//Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
+											// Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
 										}
 										else
 										{
@@ -485,9 +485,10 @@ namespace RunSection
 
 												A.zeros();
 												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-																								
+
 												// Multiply by common prefactor (bohr magneton / hbar)
-												if((*interaction)->AddCommonPrefactor()){
+												if ((*interaction)->AddCommonPrefactor())
+												{
 													A *= (2.0023 * 8.794e+1);
 													A *= (*interaction)->Prefactor();
 												}
@@ -528,11 +529,11 @@ namespace RunSection
 										}
 
 										// Number of elments for SpecDens. Important for delete statemant later
-										if((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
 										{
 											num_element = num_op * num_op;
 										}
-										else if((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
 										{
 											num_element = num_op;
 										}
@@ -568,7 +569,7 @@ namespace RunSection
 													// Check if the maximum value is zero
 													if (max_row_value == 0.0)
 													{
-															this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+														this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
 													}
 													else
 													{
@@ -588,8 +589,8 @@ namespace RunSection
 																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 																	continue;
 																}
-																
-																SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+
+																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 															else
 															{
@@ -601,7 +602,7 @@ namespace RunSection
 																	continue;
 																}
 
-																SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 															*ptr_SpecDens[m] += SpecDens;
 														}
@@ -675,7 +676,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 														else
 														{
@@ -687,7 +688,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 
 														*ptr_SpecDens[m] += SpecDens;
@@ -868,9 +869,10 @@ namespace RunSection
 
 													A.zeros();
 													A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-																									
+
 													// Multiply by common prefactor (bohr magneton / hbar)
-													if((*interaction)->AddCommonPrefactor()){
+													if ((*interaction)->AddCommonPrefactor())
+													{
 														A *= (2.0023 * 8.794e+1);
 														A *= (*interaction)->Prefactor();
 													}
@@ -911,11 +913,11 @@ namespace RunSection
 											}
 
 											// Number of elments for SpecDens. Important for delete statemant later
-											if((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+											if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
 											{
 												num_element = num_op * num_op;
 											}
-											else if((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+											else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
 											{
 												num_element = num_op;
 											}
@@ -973,7 +975,7 @@ namespace RunSection
 																		continue;
 																	}
 
-																	SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+																	SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 																}
 																else
 																{
@@ -985,7 +987,7 @@ namespace RunSection
 																		continue;
 																	}
 
-																	SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+																	SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 																}
 																*ptr_SpecDens[m] += SpecDens;
 															}
@@ -1059,7 +1061,7 @@ namespace RunSection
 																	continue;
 																}
 
-																SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 															else
 															{
@@ -1071,7 +1073,7 @@ namespace RunSection
 																	continue;
 																}
 
-																SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 
 															*ptr_SpecDens[m] += SpecDens;
@@ -1264,9 +1266,10 @@ namespace RunSection
 
 											A.zeros();
 											A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-																							
+
 											// Multiply by common prefactor (bohr magneton / hbar)
-											if((*interaction)->AddCommonPrefactor()){
+											if ((*interaction)->AddCommonPrefactor())
+											{
 												A *= (2.0023 * 8.794e+1);
 												A *= (*interaction)->Prefactor();
 											}
@@ -1358,7 +1361,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 												else
 												{
@@ -1370,7 +1373,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 
 												// -----------------------------------------------------------------
@@ -1406,7 +1409,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1418,7 +1421,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 #pragma omp parallel for num_threads(threads)
@@ -1479,7 +1482,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 													else
 													{
@@ -1491,7 +1494,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 
 													// ----------------------------------------------------------------
@@ -1541,7 +1544,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1553,7 +1556,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 #pragma omp parallel for num_threads(threads)
@@ -1756,9 +1759,10 @@ namespace RunSection
 
 												A.zeros();
 												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-												
+
 												// Multiply by common prefactor (bohr magneton / hbar)
-												if((*interaction)->AddCommonPrefactor()){
+												if ((*interaction)->AddCommonPrefactor())
+												{
 													A *= (2.0023 * 8.794e+1);
 													A *= (*interaction)->Prefactor();
 												}
@@ -1849,7 +1853,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 													else
 													{
@@ -1861,11 +1865,11 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 
 													ampl_combined *= 0.0;
-													
+
 													// -----------------------------------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
 													// -----------------------------------------------------------------------------------------
@@ -1910,7 +1914,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1922,7 +1926,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ( (*interaction)->Prefactor() * (*interaction)->Prefactor());
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 #pragma omp parallel for num_threads(threads)
@@ -2042,10 +2046,10 @@ namespace RunSection
 				// Get the relaxation terms of other relaxation operators, assuming that they can just be added
 				arma::cx_mat O_SS;
 
-				for(auto t = i->first->operators_cbegin(); t != i->first->operators_cend(); t++)
+				for (auto t = i->first->operators_cbegin(); t != i->first->operators_cend(); t++)
 				{
 					i->second->UseSuperoperatorSpace(true);
-					if(i->second->RelaxationOperatorFrameChange((*t), eigen_vec , O_SS))
+					if (i->second->RelaxationOperatorFrameChange((*t), eigen_vec, O_SS))
 					{
 
 						i->second->UseSuperoperatorSpace(false);
@@ -2082,20 +2086,21 @@ namespace RunSection
 							// Prepare a creation operator
 							arma::sp_cx_mat C;
 							arma::sp_cx_mat C_SS;
-							
+
 							// Get a Hilbert space state vector of both the source state and the target state
 							arma::cx_vec S;
 							arma::cx_vec T;
 							j->second->GetState((*t)->SourceState(), S);
 							i->second->GetState((*t)->TargetState(), T);
-							
+
 							// Make sure the states are normalized
 							S /= arma::norm(S);
 							T /= arma::norm(T);
 
 							// Rotate Redfield influenced subspace creaction operator into correct frame
-							if (j_index < eigveclist.size()) {
-								arma::cx_mat& eigvec_j = eigveclist[j_index];
+							if (j_index < eigveclist.size())
+							{
+								arma::cx_mat &eigvec_j = eigveclist[j_index];
 								S = eigvec_j.t() * S;
 							}
 
@@ -2153,8 +2158,9 @@ namespace RunSection
 				size_t i_index = std::distance(spaces.cbegin(), i);
 
 				// Rotate Redfield influenced subspace creaction operator into correct frame
-				if (i_index < eigveclist.size()) {
-					arma::cx_mat& eigvec_i = eigveclist[i_index];
+				if (i_index < eigveclist.size())
+				{
+					arma::cx_mat &eigvec_i = eigveclist[i_index];
 					P = eigvec_i.t() * P * eigvec_i;
 				}
 
@@ -2163,7 +2169,7 @@ namespace RunSection
 			}
 
 			// Get the results
-			//this->GatherResults(rho_result, *(i->first), *(i->second));
+			// this->GatherResults(rho_result, *(i->first), *(i->second));
 
 			// Move on to next spin space
 			nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());
@@ -2219,8 +2225,9 @@ namespace RunSection
 					size_t i_index = std::distance(spaces.cbegin(), i);
 
 					// Rotate Redfield influenced subspace creaction operator into correct frame
-					if (i_index < eigveclist.size()) {
-						arma::cx_mat& eigvec_i = eigveclist[i_index];
+					if (i_index < eigveclist.size())
+					{
+						arma::cx_mat &eigvec_i = eigveclist[i_index];
 						P = eigvec_i.t() * P * eigvec_i;
 					}
 
@@ -2229,7 +2236,7 @@ namespace RunSection
 				}
 
 				// Get the results
-				//this->GatherResults(rho_result, *(i->first), *(i->second));
+				// this->GatherResults(rho_result, *(i->first), *(i->second));
 
 				// Move on to next spin space
 				nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());

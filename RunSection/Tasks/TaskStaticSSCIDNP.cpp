@@ -143,7 +143,6 @@ namespace RunSection
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			this->WriteStandardOutput(this->Data());
 
-
 			if (this->Properties()->GetList("nuclei_list", nuclei_list, ','))
 			{
 				for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
@@ -204,11 +203,10 @@ namespace RunSection
 									this->Data() << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
 									this->Data() << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
 								}
-
 							}
 							if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
 							{
-								this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl; 
+								this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl;
 
 								std::cout << "rho: " << rho0 << std::endl;
 								std::cout << "Ix:" << std::real(arma::trace(Iprojx * rho0)) << std::endl;
@@ -219,9 +217,9 @@ namespace RunSection
 								std::cout << "Iz:" << std::real(arma::trace(Iprojz * rho0)) << std::endl;
 								std::cout << "Iz:" << Iprojz << std::endl;
 								// Return the yield for this state - note that no reaction rates are included here.
-								this->Data() << std::real(arma::trace(Iprojx *  rho0)) << " ";
-								this->Data() << std::real(arma::trace(Iprojy *  rho0)) << " ";
-								this->Data() << std::real(arma::trace(Iprojz *  rho0)) << " ";
+								this->Data() << std::real(arma::trace(Iprojx * rho0)) << " ";
+								this->Data() << std::real(arma::trace(Iprojy * rho0)) << " ";
+								this->Data() << std::real(arma::trace(Iprojz * rho0)) << " ";
 							}
 							else
 							{
@@ -240,9 +238,9 @@ namespace RunSection
 									std::cout << "Iz:" << std::real(arma::trace(Iprojz * P * rho0)) << std::endl;
 
 									// Return the yield for this state - note that no reaction rates are included here.
-									this->Data() << std::real(arma::trace(Iprojx *  P * rho0)) << " ";
-									this->Data() << std::real(arma::trace(Iprojy *  P * rho0)) << " ";
-									this->Data() << std::real(arma::trace(Iprojz *  P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojx * P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojy * P * rho0)) << " ";
+									this->Data() << std::real(arma::trace(Iprojz * P * rho0)) << " ";
 								}
 							}
 						}
@@ -289,10 +287,12 @@ namespace RunSection
 						auto transitions = (*i)->Transitions();
 						for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
 						{
-							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Ix ";
-							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Iy ";
-							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield" << ".Iz ";
-
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield"
+									<< ".Ix ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield"
+									<< ".Iy ";
+							_stream << (*i)->Name() << "." << (*l)->Name() << "." << (*j)->Name() << ".yield"
+									<< ".Iz ";
 						}
 					}
 					else
