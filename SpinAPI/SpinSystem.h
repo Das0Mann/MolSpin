@@ -110,6 +110,7 @@ namespace SpinAPI
 			void GetActionTargets(std::map<std::string, RunSection::ActionScalar>&, std::map<std::string, RunSection::ActionVector>&) const;
 			std::string Name() const {return this->name;};
 			void Print(bool _printFullState = false);
+			double Temperature();
 	};
 	
 	using system_ptr = std::shared_ptr<SpinAPI::SpinSystem>;

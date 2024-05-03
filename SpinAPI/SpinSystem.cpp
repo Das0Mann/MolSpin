@@ -383,6 +383,15 @@ namespace SpinAPI
 		this->properties = _properties;
 		return true;
 	}
+
+	// Gets temperature from Properties object
+	double SpinSystem::Temperature()
+    {
+        double temperature;
+        this->properties->Get("temperature", temperature);    
+
+        return temperature;
+    }
 	
 	// Returns a list of initial states (if any was specified)
 	// Initial states will be specified as a comma-separated list.
@@ -391,7 +400,6 @@ namespace SpinAPI
 	{
 		// Create a vector object to hold all the states specified (if any)
 		std::vector<state_ptr> iniStates;
-		
 		// Check whether a properties object was given
 		if(this->properties != nullptr)
 		{
@@ -407,10 +415,11 @@ namespace SpinAPI
 					for(auto i = this->states.cbegin(); i != this->states.cend(); i++)
 						if((*i)->Name().compare(s) == 0)
 							iniStates.push_back( *i );
+					if(s == "Thermal" || s=="thermal")
+							iniStates.push_back(nullptr);
 				}
 			}
 		}
-		
 		return iniStates;
 	}
 	// -----------------------------------------------------

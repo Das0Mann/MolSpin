@@ -64,19 +64,44 @@ namespace RunSection
 			space.SetReactionOperatorType(this->reactionOperators);
 			
 			// Get the initial state
-			for(auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
-			{
-				arma::cx_mat tmp_rho0;
-				if(!space.GetState(*j, tmp_rho0))
-				{
-					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-					continue;
-				}
+            for(auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+            {
+				
+                arma::cx_mat tmp_rho0;
+				if((*j) == nullptr)
+                {
+					// Get temperature
+					double temperature = (*i)->Temperature();
+					// Get the Static Hamiltonian
+					arma::cx_mat static_H;
+					space.UseSuperoperatorSpace(false);
+					if(!space.StaticHamiltonian(static_H))
+					{
+						this->Log() << "Failed to obtain Static Hamiltonian in superspace." << std::endl;
+						continue;
+					}
+
+					// Get the initial state with thermal equilibrium
+                    if(!space.GetThermalState(tmp_rho0, static_H, temperature))
+                    {
+                        this->Log() << "Failed to obtain projection matrix onto thermal state, initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+                        continue;
+                    }
+					space.UseSuperoperatorSpace(true);
+                }
+                else
+                {
+                    if(!space.GetState(*j, tmp_rho0))
+                    {
+                        this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+                        continue;
+                    }
+                }
 				if(j == initial_states.cbegin())
 					rho0 = tmp_rho0;
 				else
 					rho0 += tmp_rho0;
-			}
+            }
 			rho0 /= arma::trace(rho0);	// The density operator should have a trace of 1
 			
 			// Convert initial state to superoperator space
