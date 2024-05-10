@@ -48,6 +48,7 @@ namespace MSDParser
 			bool GetList(const std::string&, std::vector<int>&, const char& _delimiter = ',') const;
 			bool GetList(const std::string&, std::vector<arma::vec>&, const char& _delimiter = ',') const;
 			bool GetMatrix(const std::string& _str, arma::mat& _out) const;
+			bool GetPulseSequence(const std::string& _str, std::vector<std::tuple<std::string, std::string, double, double>>& _out) const;
 			bool GetSpin(const std::string&, unsigned int&) const;	// Allows for notation such as "1/2"->1, "1"->2, "3/2"->3, etc.
 			
 			std::vector<std::pair<std::string, std::string>> GetFunction(std::string) const;	// TODO: Invent a better name for this method

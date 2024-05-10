@@ -56,6 +56,10 @@ namespace SpinAPI
 			{
 				this->type = OperatorType::RelaxationDephasing;
 			}
+			else if(str.compare("relaxationrandomfields") == 0)
+			{
+				this->type = OperatorType::RelaxationRandomFields;
+			}
 			else if(str.compare("unspecified") == 0)
 			{
 				this->type = OperatorType::Unspecified;

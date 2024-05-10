@@ -67,6 +67,7 @@ namespace SpinAPI
 		Unspecified,
 		RelaxationLindblad,		// Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
 		RelaxationDephasing,
+		RelaxationRandomFields,
 	};
 	
 	// Types of standard outputs based on ActionTargets, to be used to by the StandardOutput class

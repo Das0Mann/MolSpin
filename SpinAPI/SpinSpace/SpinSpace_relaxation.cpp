@@ -119,7 +119,49 @@ namespace SpinAPI
 
 			// Set the resulting operator
 			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationRandomFields)
+		{
+			// Adapted from Kattnig et al. (2016) DOI: 10.1088/1367-2630/18/6/063007
 
+			auto spins = _operator->Spins();
+
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());	// Total operator
+			arma::cx_mat E  = arma::eye<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Unity operator
+			arma::cx_mat PB;	// Operator from both sides (P * . * conj(P))
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+				
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+				
+				// Get the contribution from Sx
+				if(!this->SuperoperatorFromOperators(Sx, Sx.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate1() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sy
+				if(!this->SuperoperatorFromOperators(Sy, Sy.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate2() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sz
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
 		}
 		else if(_operator->Type() == OperatorType::Unspecified)
 		{
@@ -245,6 +287,54 @@ namespace SpinAPI
 
 			// Set the resulting operator
 			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationRandomFields)
+		{
+			// Adapted from Kattnig et al. (2016) DOI: 10.1088/1367-2630/18/6/063007
+
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());	// Total operator
+			arma::sp_cx_mat E  = arma::eye<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Unity operator
+			arma::sp_cx_mat PB;	// Operator from both sides (P * . * conj(P))
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+				
+				// Create the spin operators
+				this->CreateOperator((*i)->Sx(), (*i), Sx);
+				this->CreateOperator((*i)->Sy(), (*i), Sy);
+				this->CreateOperator((*i)->Sz(), (*i), Sz);
+				
+				// Get the contribution from Sx
+				if(!this->SuperoperatorFromOperators(Sx, Sx.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate1() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sy
+				if(!this->SuperoperatorFromOperators(Sy, Sy.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate2() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sz
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::Unspecified)
+		{
+			// Cannot construct operator if the type is not specified
+			return false;
 		}
 		else
 		{
@@ -378,6 +468,54 @@ namespace SpinAPI
 			_out = P;
 
 		}
+		else if(_operator->Type() == OperatorType::RelaxationRandomFields)
+		{
+			// Adapted from Kattnig et al. (2016) DOI: 10.1088/1367-2630/18/6/063007
+
+			auto spins = _operator->Spins();
+
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());	// Total operator
+			arma::cx_mat E  = arma::eye<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Unity operator
+			arma::cx_mat PB;	// Operator from both sides (P * . * conj(P))
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+				
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+
+				// Rotate into the eigenbasis of the spin system
+				Sx = _rotationmatrix.t() * Sx * _rotationmatrix;
+				Sy = _rotationmatrix.t() * Sy * _rotationmatrix;
+				Sz = _rotationmatrix.t() * Sz * _rotationmatrix;
+				
+				// Get the contribution from Sx
+				if(!this->SuperoperatorFromOperators(Sx, Sx.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate1() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sy
+				if(!this->SuperoperatorFromOperators(Sy, Sy.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate2() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sz
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
 		else if(_operator->Type() == OperatorType::Unspecified)
 		{
 			// Cannot construct operator if the type is not specified
@@ -510,6 +648,59 @@ namespace SpinAPI
 
 			// Set the resulting operator
 			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationRandomFields)
+		{
+			// Adapted from Kattnig et al. (2016) DOI: 10.1088/1367-2630/18/6/063007
+
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());	// Total operator
+			arma::sp_cx_mat E  = arma::eye<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Unity operator
+			arma::sp_cx_mat PB;	// Operator from both sides (P * . * conj(P))
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+				
+				// Create the spin operators
+				this->CreateOperator((*i)->Sx(), (*i), Sx);
+				this->CreateOperator((*i)->Sy(), (*i), Sy);
+				this->CreateOperator((*i)->Sz(), (*i), Sz);
+
+				// Rotate into the eigenbasis of the spin system
+				Sx = _rotationmatrix.t() * Sx * _rotationmatrix;
+				Sy = _rotationmatrix.t() * Sy * _rotationmatrix;
+				Sz = _rotationmatrix.t() * Sz * _rotationmatrix;
+				
+				// Get the contribution from Sx
+				if(!this->SuperoperatorFromOperators(Sx, Sx.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate1() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sy
+				if(!this->SuperoperatorFromOperators(Sy, Sy.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate2() * ((3/2) * E - PB);
+				
+				// Get the contribution from Sz
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
+					return false;
+				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::Unspecified)
+		{
+			// Cannot construct operator if the type is not specified
+			return false;
 		}
 		else
 		{

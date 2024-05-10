@@ -395,7 +395,7 @@ namespace MSDParser
                     tmp(i, j) = std::stod(token);
                 } catch (const std::exception& e) {
                     std::cout << "Invalid number format: " << token << std::endl;
-		    std::cout << "Please check your list carefully. Such numbers should not appear for a float format.";
+		    		std::cout << "Please check your list carefully. Such numbers should not appear for a float format.";
                     return false;
                 }
                 j++;
@@ -403,7 +403,7 @@ namespace MSDParser
         }
 
         // Step 11: Output the populated matrix for debugging.
-	//std::cout << tmp << std::endl;
+		//std::cout << tmp << std::endl;
 
         // Step 12: Handle small numbers close to zero.
         for (int i = 0; i < (int) strs.size(); i++) {
@@ -510,7 +510,93 @@ namespace MSDParser
 	// 	return true;
 	// }
 
+	// -----------------------------------------------------
+	// Specialized Get method to get a pulse sequence
+	// -----------------------------------------------------
+	// Attempt to find a pulse sequence
+    bool ObjectParser::GetPulseSequence(const std::string& _str, std::vector<std::tuple<std::string, std::string, double, double>>& _out) const
+    {
+		// Step 1: Output the initial message indicating the start of the reading process.
+        std::cout << "Starting with reading: " << _str << std::endl;
 
+        // Step 2: Initialize an empty vector to hold the split strings.
+        std::vector<std::string> strs;
+
+        // Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
+        if (!this->GetList(_str, strs, ','))
+            return false;
+
+        // Step 4: Check if the resulting list is empty and return false if it is.
+        if (strs.empty())
+            return false;
+
+        // Step 5: Initialize variable to keep track of the number of elements in each row.
+        size_t numElements = 0;
+
+        // Step 6: Create a lambda function to trim whitespace from both ends of a string.
+        auto trim = [](std::string& str) {
+            str.erase(0, str.find_first_not_of(' '));       // Prefix
+            str.erase(str.find_last_not_of(' ') + 1); // Suffix
+        };
+
+        // Step 7: Validate the number of elements in each row (numElements).
+        for (const std::string& str : strs) {
+            std::string modified_str = str;
+            // Remove square brackets
+            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
+            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
+
+            // Trim leading and trailing whitespaces
+            trim(modified_str);
+
+            std::istringstream stream(modified_str);
+            size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
+
+            // Check if the number of elements in each row is consistent
+            if (numElements == 0)
+                numElements = count;
+            else if (count != numElements)
+                return false;
+        }
+
+        // Step 8: Output the number of rows and columns.
+        std::cout << "Number of Pulses: " << strs.size() << std::endl;
+
+		// Step 9: Create two tuples/pair that store the two strings (pulse and direction) and the free evolution time frame (t1 and t2)
+		for (const std::string& str : strs) {
+			std::string modified_str = str;
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
+			trim(modified_str);
+
+			std::istringstream stream(modified_str);
+			std::vector<std::string> tokens;
+			std::string token;
+			while (stream >> token) {
+				tokens.push_back(token);
+			}
+
+			if (tokens.size() != 4) {
+				std::cerr << "Invalid number of elements in sequence. Expected 4, got " << tokens.size() << std::endl;
+				return false;
+			}
+
+			double t1, t2;
+			try {
+				t1 = std::stod(tokens[2]);
+				t2 = std::stod(tokens[3]);
+			} catch (const std::exception& e) {
+				std::cerr << "Error converting string to double: " << e.what() << std::endl;
+				return false;
+			}
+
+			_out.emplace_back(tokens[0], tokens[1], t1, t2);
+		}
+
+		std::cout << "Number of Pulses: " << _out.size() << std::endl;
+    	return true;
+
+	}
 	// -----------------------------------------------------
 	// Specialized Get method to get a spin quantum number
 	// -----------------------------------------------------
