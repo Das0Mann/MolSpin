@@ -304,19 +304,31 @@ namespace RunSection
 											return false;
 										}
 
+										// Build double-spin operators
+										*Sx1Sx2 = (*Sx1); // * Bx
+										*Sx1Sy2 = (*Sx1); // * By
+										*Sx1Sz2 = (*Sx1); //  *Bz
+										*Sy1Sx2 = (*Sy1); // * Bx
+										*Sy1Sy2 = (*Sy1); // * By
+										*Sy1Sz2 = (*Sy1); // * Bz
+										*Sz1Sx2 = (*Sz1); // * Bx
+										*Sz1Sy2 = (*Sz1); // * By
+										*Sz1Sz2 = (*Sz1); // * Bz
+
 										// Put all tensors on pointer array
 										num_op = 9;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::sp_cx_mat *[num_op];
-										ptr_Tensors[0] = Sx1; // Bx
-										ptr_Tensors[1] = Sx1; // By
-										ptr_Tensors[2] = Sx1; // Bz
-										ptr_Tensors[3] = Sy1; // Bx
-										ptr_Tensors[4] = Sy1; // By
-										ptr_Tensors[5] = Sy1; // Bz
-										ptr_Tensors[6] = Sz1; // Bx
-										ptr_Tensors[7] = Sz1; // By
-										ptr_Tensors[8] = Sz1; // Bz
+
+										ptr_Tensors[0] = Sx1Sx2;
+										ptr_Tensors[1] = Sx1Sy2;
+										ptr_Tensors[2] = Sx1Sz2;
+										ptr_Tensors[3] = Sy1Sx2;
+										ptr_Tensors[4] = Sy1Sy2;
+										ptr_Tensors[5] = Sy1Sz2;
+										ptr_Tensors[6] = Sz1Sx2;
+										ptr_Tensors[7] = Sz1Sy2;
+										ptr_Tensors[8] = Sz1Sz2;
 
 										// Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
 									}
