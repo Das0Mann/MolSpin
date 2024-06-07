@@ -12,6 +12,7 @@
 #include "Interaction.h"
 #include "Transition.h"
 #include "Operator.h"
+#include "Pulse.h"
 #include "State.h"
 #include "ObjectParser.h"
 #include "SpinSystem.h"
@@ -55,6 +56,12 @@ namespace SpinAPI
 		return this->operators;
 	}
 	
+	// Returns a list containing all the pulses in the SpinSystem
+	std::vector<pulse_ptr> SpinSystem::Pulses() const
+	{
+		return this->pulses;
+	}
+
 	// Returns a list containing all the states in the SpinSystem
 	std::vector<state_ptr> SpinSystem::States() const
 	{
@@ -103,6 +110,16 @@ namespace SpinAPI
 		return nullptr;
 	}
 	
+	// Returns the Pulse object with the given name
+	pulse_ptr SpinSystem::pulses_find(const std::string& _name) const
+	{
+		for(auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
+			if((*i)->Name().compare(_name) == 0)
+				return (*i);
+		
+		return nullptr;
+	}
+
 	// Returns the state object with given name
 	state_ptr SpinSystem::states_find(const std::string& _name) const
 	{
@@ -137,6 +154,12 @@ namespace SpinAPI
 	unsigned int SpinSystem::operators_size() const
 	{
 		return this->operators.size();
+	}
+	
+	// Returns the number of Pulse objects in the SpinSystem
+	unsigned int SpinSystem::pulses_size() const
+	{
+		return this->pulses.size();
 	}
 	
 	// Returns the number of State objects defined for the SpinSystem
@@ -183,7 +206,15 @@ namespace SpinAPI
 				return true;
 		return false;
 	}
-	
+
+	// Checks whether a pulse object is contained by the SpinSystem
+	bool SpinSystem::Contains(const pulse_ptr& _pulse) const
+	{
+		for(auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
+			if((*i) == _pulse)
+				return true;
+		return false;
+	}	
 	// Checks whether a state object is contained by the SpinSystem
 	bool SpinSystem::Contains(const state_ptr& _state) const
 	{
@@ -238,6 +269,16 @@ namespace SpinAPI
 			return false;
 		
 		this->operators.push_back(_operator);
+		return true;
+	}
+	
+	// Adds an Pulse object to the SpinSystem. The Interaction objects are not valid until SpinSystem::ValidateInteractions is called.
+	bool SpinSystem::Add(const pulse_ptr& _pulse)
+	{
+		if(this->Contains(_pulse))
+			return false;
+		
+		this->pulses.push_back(_pulse);
 		return true;
 	}
 	
@@ -303,7 +344,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Public Validation methods
 	// -----------------------------------------------------
-	// Prepares interaction objects and checks whether they are valid
+	// Prepares interaction_ptr objects and checks whether they are valid
 	std::vector<interaction_ptr> SpinSystem::ValidateInteractions()
 	{
 		std::vector<interaction_ptr> failedInteractions;
@@ -355,7 +396,28 @@ namespace SpinAPI
 		// TODO: Remove range failedOperators from this->operators
 		return failedOperators;
 	}
-	
+
+	// Prepares pulse_ptr objects and checks whether they are valid
+	std::vector<pulse_ptr> SpinSystem::ValidatePulses()
+	{
+		std::vector<pulse_ptr> failedPulses;
+		for(auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
+		{
+			if((*i)->ParseSpinGroups(this->spins))
+			{
+				if(!(*i)->IsValid())
+					failedPulses.push_back(*i);
+			}
+			else
+			{
+				failedPulses.push_back(*i);
+			}
+		}
+		
+		// TODO: Remove range failedInteractions from this->interactions
+		return failedPulses;
+	}
+
 	// Method that loads the state objects and checks whether they are valid
 	std::vector<state_ptr> SpinSystem::ValidateStates()
 	{
@@ -435,6 +497,10 @@ namespace SpinAPI
 		for(auto i = this->transitions.cbegin(); i != this->transitions.cend(); i++)
 			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
 		
+		// Get ActionTargets from all the Pulse objects, adding the name of the SpinSystem
+		for(auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
+			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
+
 		// Insert all the ActionScalars in the associated container
 		for(auto i = tmpVecScalars.cbegin(); i != tmpVecScalars.cend(); i++)
 		{
@@ -525,6 +591,19 @@ namespace SpinAPI
 			std::cout << ", is valid: " << (*i)->IsValid() << ")" << std::endl;
 		}
 		
+		// Information about pulses
+		std::cout << "\n# Pulses (" << this->pulses.size() << "):" << std::endl;
+		for(auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
+		{
+			std::cout << " - " << (*i)->Name() << " (type: ";
+			if((*i)->Type() == PulseType::Unspecified) {std::cout << "Unspecified";}
+			else if((*i)->Type() == PulseType::InstantPulse) {std::cout << "InstantPulse";}
+			else if((*i)->Type() == PulseType::LongPulse) {std::cout << "LongPulse";}
+			else if((*i)->Type() == PulseType::ShapedPulse) {std::cout << "ShapedPulse";}
+			else {std::cout << "unknown";}
+			std::cout << ", is valid: " << (*i)->IsValid() << ")" << std::endl;
+		}
+
 		// Information about states
 		std::cout << "\n# States (" << this->states.size() << "):" << std::endl;
 		if(_printFullState)

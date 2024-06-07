@@ -38,6 +38,11 @@ namespace SpinAPI
 	using operator_ptr = std::shared_ptr<Operator>;
 	#endif
 	
+	#ifndef MOD_SpinAPI_Pulse
+	class Pulse;
+	using pulse_ptr = std::shared_ptr<Pulse>;
+	#endif
+
 	#ifndef MOD_SpinAPI_State
 	class State;
 	using state_ptr = std::shared_ptr<State>;

@@ -38,6 +38,7 @@ namespace SpinAPI
 			std::vector<spin_ptr> spins;
 			std::vector<interaction_ptr> interactions;
 			std::vector<transition_ptr> transitions;
+			std::vector<pulse_ptr> pulses;
 			double time;					// The current time to use
 			unsigned int trajectoryStep;	// The current trajectory step to use
 			bool useTrajectoryStep;			// Set to true if trajectories should be used instead of time, where available

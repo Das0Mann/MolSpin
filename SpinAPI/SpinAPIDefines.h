@@ -70,6 +70,15 @@ namespace SpinAPI
 		RelaxationRandomFields,
 	};
 	
+		// The types of special operators defined in SpinAPI::Operator objects
+	enum class PulseType
+	{
+		Unspecified,
+		InstantPulse,		// Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
+		LongPulse,
+		ShapedPulse,
+	};
+	 
 	// Types of standard outputs based on ActionTargets, to be used to by the StandardOutput class
 	enum class StandardOutputType
 	{

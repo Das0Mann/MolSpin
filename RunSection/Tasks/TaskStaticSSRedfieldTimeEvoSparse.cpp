@@ -311,7 +311,7 @@ namespace RunSection
 										// Build double-spin operators
 										*Sx1Sx2 = (*Sx1); // * Bx
 										*Sx1Sy2 = (*Sx1); // * By
-										*Sx1Sz2 = (*Sx1); //  *Bz
+										*Sx1Sz2 = (*Sx1); // * Bz
 										*Sy1Sx2 = (*Sy1); // * Bx
 										*Sy1Sy2 = (*Sy1); // * By
 										*Sy1Sz2 = (*Sy1); // * Bz
