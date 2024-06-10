@@ -27,6 +27,7 @@ namespace MSDParser
 		Transition,
 		Operator,
 		State,
+		Pulse,
 		Output,
 		Task,
 		Action,

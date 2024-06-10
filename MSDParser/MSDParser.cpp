@@ -17,6 +17,7 @@
 #include "Transition.h"
 #include "Operator.h"
 #include "State.h"
+#include "Pulse.h"
 #include "StandardOutput.h"
 #include "SpinSystem.h"
 
@@ -86,6 +87,9 @@ namespace MSDParser
 						break;
 					case ObjectType::State:
 						(*i)->Add( std::make_shared<SpinAPI::State>(obj.Name(), obj.Contents()) );
+						break;
+					case ObjectType::Pulse:
+						(*i)->Add( std::make_shared<SpinAPI::Pulse>(obj.Name(), obj.Contents()) );
 						break;
 					case ObjectType::Properties:
 						if(!(*i)->SetProperties( std::make_shared<ObjectParser>(obj.Name(), obj.Contents()) ))
