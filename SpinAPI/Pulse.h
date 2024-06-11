@@ -28,7 +28,7 @@ namespace SpinAPI
             arma::vec rotationaxis;                                  // Direction around which a pulse should rotate
             double angle;                                           // Rotation around a certain direction with angler (deg)
             double pulsetime;                                       // Time of the applied pulse (ns)
-            double amplitude;                                       // Magnetic field strength of pulse (T)
+            arma::vec field;                                       // Magnetic field strength of pulse (T)
 
             // Helper method called by ParseSpinGroups
 			bool AddSpinList(const std::string&, const std::vector<spin_ptr>&, std::vector<spin_ptr>&, const std::vector<spin_ptr>* _crossCheck = nullptr);
@@ -60,7 +60,7 @@ namespace SpinAPI
             const arma::vec Rotationaxis() const;
             const double Angle() const;
             const double Pulsetime() const;
-            const double Amplitude() const;
+            const arma::vec Field() const;
 			
 			// Allow access to custom properties to be used for custom tasks
 			std::shared_ptr<const MSDParser::ObjectParser> Properties() const;

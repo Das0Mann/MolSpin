@@ -20,7 +20,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the pulse parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Pulse::Pulse(std::string _name, std::string _contents)	: properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), type(PulseType::Unspecified), group(), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), amplitude(1e-05) 
+	Pulse::Pulse(std::string _name, std::string _contents)	: properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), type(PulseType::Unspecified), group(), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}) 
 	{
         // Filling required parameter
 
@@ -49,11 +49,11 @@ namespace SpinAPI
 				
 			}
 
-			// Get Pulse amplitude
-			if(!this->properties->Get("amplitude", amplitude))
+			// Get Pulse field
+			if(!this->properties->Get("field", field))
 			{
-				std::cout << "Warning: Failed to obtain input for amplitude." << std::endl;
-				std::cout << "Using vector: " << amplitude << std::endl;
+				std::cout << "Warning: Failed to obtain input for the field." << std::endl;
+				std::cout << "Using vector: " << field << std::endl;
 			}
 		}
 		else
@@ -62,7 +62,7 @@ namespace SpinAPI
 		}
 	}
 	
-	Pulse::Pulse(const Pulse& _pulse)	: properties(_pulse.properties), type(_pulse.type), group(_pulse.group), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), amplitude(_pulse.amplitude)
+	Pulse::Pulse(const Pulse& _pulse)	: properties(_pulse.properties), type(_pulse.type), group(_pulse.group), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), field(_pulse.field)
 	{
 	}
 	
@@ -80,7 +80,7 @@ namespace SpinAPI
         this->rotationaxis = _pulse.rotationaxis;
         this->angle = _pulse.angle;
         this->pulsetime = _pulse.pulsetime;
-        this->amplitude = _pulse.amplitude;
+        this->field = _pulse.field;
 		
 		return (*this);
 	}
@@ -127,9 +127,9 @@ namespace SpinAPI
 	}
 
 	// Returns the amplitude of the pulse
-	const double Pulse::Amplitude() const
+	const arma::vec Pulse::Field() const
 	{
-		return this->amplitude;
+		return this->field;
 	}
 	
 	// Returns pulse type
