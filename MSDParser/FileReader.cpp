@@ -424,6 +424,10 @@ namespace MSDParser
 		{
 			return MSDFileObject(ObjectType::State,_name,_contents);
 		}
+		else if(_keyword.compare("pulse") == 0)
+        {
+            return MSDFileObject(ObjectType::Pulse,_name,_contents);
+        }
 		else if(_keyword.compare("task") == 0)
 		{
 			return MSDFileObject(ObjectType::Task,_name,_contents);
