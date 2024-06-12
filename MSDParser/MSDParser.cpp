@@ -156,6 +156,11 @@ namespace MSDParser
 			auto failedOperators = (*i)->ValidateOperators(this->systems);
 			for(auto j = failedOperators.cbegin(); j != failedOperators.cend(); j++)
 				std::cout << "Failed to load operator object " << (*j)->Name() << "!" << std::endl;
+			
+			// Load Spins into Pulses objects
+            auto failedpulses = (*i)->ValidatePulses();
+            for(auto j = failedpulses.cbegin(); j != failedpulses.cend(); j++)
+                std::cout << "Failed to load pulse " << (*j)->Name() << "!" << std::endl;
 		}
 		
 		// Put states into other objects - this can only be done now that all states have been loaded
