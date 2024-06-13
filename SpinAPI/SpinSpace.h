@@ -241,6 +241,12 @@ namespace SpinAPI
 			bool RelaxationOperatorFrameChange(const operator_ptr& _operator, arma::cx_mat _rotationmatrix, arma::sp_cx_mat& _out) const;
 			
 			// ------------------------------------------------
+			// Pulse operators (SpinSpace_pulses.cpp)
+			// ------------------------------------------------
+			bool PulseOperator(const pulse_ptr& _pulse, arma::cx_mat& _out) const;
+			bool CreateRotAngle(double _angle_deg, double &result) const;
+
+			// ------------------------------------------------
 			// Other public methods
 			// ------------------------------------------------
 			unsigned int SpaceDimensions() const;						// Returns the size of the spin space, depending on whether superspace is used or not

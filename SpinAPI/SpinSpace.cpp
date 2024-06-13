@@ -25,6 +25,7 @@
 #include "SpinSpace/SpinSpace_hamiltonians.cpp"
 #include "SpinSpace/SpinSpace_transitions.cpp"
 #include "SpinSpace/SpinSpace_relaxation.cpp"
+#include "SpinSpace/SpinSpace_pulses.cpp"
 
 namespace SpinAPI
 {

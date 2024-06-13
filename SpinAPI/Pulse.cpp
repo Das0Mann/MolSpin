@@ -111,7 +111,8 @@ namespace SpinAPI
 	// Returns the rotation axis
 	const arma::vec Pulse::Rotationaxis() const
 	{
-		return this->rotationaxis;
+		// Provide the normalized rotation axis
+		return (this->rotationaxis/arma::norm(this->rotationaxis));
 	}
 	
 	// Returns the rotation angle 
