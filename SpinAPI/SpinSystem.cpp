@@ -475,6 +475,25 @@ namespace SpinAPI
 		
 		return iniStates;
 	}
+
+	// Obtain the temperature for a temperature weighted density matrix
+	double SpinSystem::Temperature()
+    {
+        double temperature;
+        this->properties->Get("temperature", temperature);    
+
+        return temperature;
+    }
+
+	// Obtain the weights for a specifically weighted density matrix
+	std::vector<double> SpinSystem::Weights()
+    {
+        std::vector<double> weights;
+        this->properties->GetList("weights", weights);    
+
+        return weights;
+    }
+
 	// -----------------------------------------------------
 	// Other public methods
 	// -----------------------------------------------------

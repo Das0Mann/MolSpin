@@ -345,5 +345,25 @@ namespace SpinAPI
 		
 		return true;
 	}
+
+	// Sets the (dense) matrix to a projection operator onto the state within the given spin space
+	// Returns false if the given state entangles spins within the spin space with spins not contained in the spin space
+	bool SpinSpace::GetThermalState(arma::cx_mat& _mat, arma::cx_mat _H, double _Temperature) const
+	{
+		// Helper variables
+		arma::cx_mat result = arma::ones<arma::cx_mat>(1,1);
+		double Kb = 8.617333262*std::pow(10, -5); //Boltzmann const in eV/K
+		double hbar = 6.582119569*std::pow(10, -16); //Reduced planck constant in eVs/rads
+		double beta = hbar/(Kb * _Temperature);
+		beta *= std::pow(10, 9);
+
+		// Calculate thermal states here
+		result = (-beta)*_H;
+		result = arma::expmat(result);
+		result /= arma::trace(result);		
+		_mat = result;
+		
+		return true;
+	}
 }
 

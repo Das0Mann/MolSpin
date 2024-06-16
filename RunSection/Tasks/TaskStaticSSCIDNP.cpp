@@ -64,20 +64,55 @@ namespace RunSection
 			space.UseSuperoperatorSpace(true);
 			space.SetReactionOperatorType(this->reactionOperators);
 
-			// Get the initial state
-			for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+			std::vector<double> weights;
+			weights = (*i)->Weights();
+
+			if(weights.size() > 1)
 			{
-				arma::cx_mat tmp_rho0;
-				if (!space.GetState(*j, tmp_rho0))
+				this->Log() << "Using weighted density matrix for initial state. Be sure that the sum of weights equals to 1." << std::endl;
+				// Get the initial state
+				int counter = 0;
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
 				{
-					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-					continue;
+					arma::cx_mat tmp_rho0;
+					if (!space.GetState(*j, tmp_rho0))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+						continue;
+					}
+
+					if (j == initial_states.cbegin())
+					{
+						this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[0] << "\"." << std::endl;
+						rho0 = weights[0] * tmp_rho0;
+						counter += 1;
+					}
+					else
+					{
+						this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[counter] << "\"." << std::endl;
+						rho0 += weights[counter] * tmp_rho0;
+						counter += 1;
+					}
 				}
-				if (j == initial_states.cbegin())
-					rho0 = tmp_rho0;
-				else
-					rho0 += tmp_rho0;
 			}
+			else
+			{
+				// Get the initial state
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				{
+					arma::cx_mat tmp_rho0;
+					if (!space.GetState(*j, tmp_rho0))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+						continue;
+					}
+					if (j == initial_states.cbegin())
+						rho0 = tmp_rho0;
+					else
+						rho0 += tmp_rho0;
+				}
+			}
+
 			rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
 
 			// Convert initial state to superoperator space
@@ -119,8 +154,9 @@ namespace RunSection
 			}
 
 			// Perform the calculation
+			// Here it could be a problem of the right sign
 			this->Log() << "Ready to perform calculation." << std::endl;
-			arma::cx_vec result = solve(arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			arma::cx_vec result = solve(-1*arma::conv_to<arma::cx_mat>::from(A), rho0vec);
 			this->Log() << "Done with calculation." << std::endl;
 
 			// Convert the resulting density operator back to its Hilbert space representation
@@ -178,8 +214,9 @@ namespace RunSection
 							arma::cx_mat P;
 
 							// There are two result modes - either write results per transition or for each defined state
-							if (this->productYieldsOnly)
+							if (this->productYieldsOnly && Dnp == false)
 							{
+								std::cout << "Perfoming CIDSP calculation." << std::endl;
 								// Loop through all defind transitions
 								auto transitions = (*i)->Transitions();
 								for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
@@ -204,8 +241,9 @@ namespace RunSection
 									this->Data() << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
 								}
 							}
-							if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
+							else if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
 							{
+								std::cout << "Perfoming DNP calculation." << std::endl;
 								this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl;
 
 								std::cout << "rho: " << rho0 << std::endl;
@@ -223,6 +261,7 @@ namespace RunSection
 							}
 							else
 							{
+								std::cout << "Perfoming Double-Projection calculation." << std::endl;
 								// Loop through all states
 								auto states = (*i)->States();
 								for (auto j = states.cbegin(); j != states.cend(); j++)
