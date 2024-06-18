@@ -467,8 +467,15 @@ namespace SpinAPI
 				{
 					// Find the state with the given name
 					for(auto i = this->states.cbegin(); i != this->states.cend(); i++)
+					{
 						if((*i)->Name().compare(s) == 0)
 							iniStates.push_back( *i );
+					}
+
+					if (s.compare("Thermal") == 0 || s.compare("thermal") == 0)
+                    {
+                        iniStates.push_back(nullptr);
+                    }
 				}
 			}
 		}
