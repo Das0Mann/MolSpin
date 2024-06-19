@@ -65,8 +65,7 @@ namespace RunSection
 			space.SetReactionOperatorType(this->reactionOperators);
 
 			std::vector<double> weights;
-			weights = (*i)->Weights();
-			double temperature = (*i)->Temperature();			
+			weights = (*i)->Weights();		
 
 			if(weights.size() > 1)
 			{
@@ -102,16 +101,12 @@ namespace RunSection
 				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
 				{
 					arma::cx_mat tmp_rho0;
-					if ((*j)->Name() == "thermal" || (*j)->Name() == "Thermal")
-					{
-						std::cout << "KEK" << std::endl;
-					}
-					else if (!space.GetState(*j, tmp_rho0))
+					
+			 		if (!space.GetState(*j, tmp_rho0))
 					{
 						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 						continue;
 					}
-					
 					if (j == initial_states.cbegin())
 						rho0 = tmp_rho0;
 					else
