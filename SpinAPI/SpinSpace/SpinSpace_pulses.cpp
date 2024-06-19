@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////
 // SpinSpace class (SpinAPI Module)
 // ------------------
-// This source file contains methods for creating single-spin operators,
-// and for converting operators or vectors to/from Superspace.
-//
-// Molecular Spin Dynamics Software - developed by Luca Gerhards.
+// This source file contains methods for managing pulses
+// and having rotating functions.
+// Molecular Spin Dynamics Software - developed by Irina Anisimova and Pedro Alvarez.
 // (c) 2024 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////

@@ -117,7 +117,7 @@ namespace SpinAPI
 			bool GetState(const state_ptr&, arma::cx_vec&) const;			// Vector representing the state
 			bool GetState(const state_ptr&, arma::cx_mat&) const;			// Projection operator onto the state (dense matrix)
 			bool GetState(const state_ptr&, arma::sp_cx_mat&) const;		// Projection operator onto the state (sparse matrix)
-			bool GetThermalState(arma::cx_mat&, arma::cx_mat, double _Temperature) const;			// Projection operator onto the thermal equilibrium state (dense matrix)
+			bool GetThermalState(SpinAPI::SpinSpace& _space, double _Temperature, arma::cx_mat& _mat) const;			// Projection operator onto the thermal equilibrium state (dense matrix)
 			
 			// ------------------------------------------------
 			// Operators in the spin space (SpinSpace_operators.cpp)

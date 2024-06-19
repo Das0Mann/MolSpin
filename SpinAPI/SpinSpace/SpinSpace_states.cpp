@@ -345,11 +345,20 @@ namespace SpinAPI
 		
 		return true;
 	}
-
+	
 	// Sets the (dense) matrix to a projection operator onto the state within the given spin space
 	// Returns false if the given state entangles spins within the spin space with spins not contained in the spin space
-	bool SpinSpace::GetThermalState(arma::cx_mat& _mat, arma::cx_mat _H, double _Temperature) const
+	bool SpinSpace::GetThermalState(SpinAPI::SpinSpace& _space, double _Temperature, arma::cx_mat& _mat) const
 	{
+		_space.UseSuperoperatorSpace(false);
+		
+		arma::cx_mat H;
+		
+		if(!_space.Hamiltonian(H))
+		{
+			std::cout << "Failed to obtain Static Hamiltonian in superspace." << std::endl;
+		}
+		
 		// Helper variables
 		arma::cx_mat result = arma::ones<arma::cx_mat>(1,1);
 		double Kb = 8.617333262*std::pow(10, -5); //Boltzmann const in eV/K
@@ -358,7 +367,7 @@ namespace SpinAPI
 		beta *= std::pow(10, 9);
 
 		// Calculate thermal states here
-		result = (-beta)*_H;
+		result = (-beta)*H;
 		result = arma::expmat(result);
 		result /= arma::trace(result);		
 		_mat = result;
