@@ -87,7 +87,7 @@ $(PATH_RUNSECTION)/RunSection.o: $(PATH_RUNSECTION)/RunSection.cpp $(PATH_RUNSEC
 	$(CC) $(CFLAGS) $(SEARCHDIR_MOLSPIN) $(PATH_RUNSECTION)/RunSection.cpp -o $(PATH_RUNSECTION)/RunSection.o
 
 # The SpinSpace class has been split into multiple source files due to its complexity
-$(PATH_SPINAPI)/SpinSpace.o: $(PATH_SPINAPI)/SpinSpace.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_management.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_states.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_operators.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_hamiltonians.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_transitions.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_relaxation.cpp $(PATH_SPINAPI)/SpinSpace.h
+$(PATH_SPINAPI)/SpinSpace.o: $(PATH_SPINAPI)/SpinSpace.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_management.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_states.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_operators.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_hamiltonians.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_pulses.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_transitions.cpp $(PATH_SPINAPI)/SpinSpace/SpinSpace_relaxation.cpp $(PATH_SPINAPI)/SpinSpace.h
 	$(CC) $(CFLAGS) $(SEARCHDIR_MOLSPIN) $(PATH_SPINAPI)/SpinSpace.cpp -o $(PATH_SPINAPI)/SpinSpace.o
 # --------------------------------------------------------------------------
 # General compilation rule

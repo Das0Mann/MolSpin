@@ -70,7 +70,7 @@ namespace SpinAPI
 		RelaxationRandomFields,
 	};
 	
-		// The types of special operators defined in SpinAPI::Operator objects
+	// The types of special operators defined in SpinAPI::Operator objects
 	enum class PulseType
 	{
 		Unspecified,
