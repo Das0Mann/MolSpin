@@ -29,6 +29,8 @@ namespace SpinAPI
             double angle;                                           // Rotation around a certain direction with angler (deg)
             double pulsetime;                                       // Time of the applied pulse (ns)
             arma::vec field;                                       // Magnetic field strength of pulse (T)
+			double prefactor;										// An optional additional prefactor that can be specified in input file (default = 1.0)
+			bool addCommonPrefactor;								// Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 
             // Helper method called by ParseSpinGroups
 			bool AddSpinList(const std::string&, const std::vector<spin_ptr>&, std::vector<spin_ptr>&, const std::vector<spin_ptr>* _crossCheck = nullptr);
@@ -57,6 +59,8 @@ namespace SpinAPI
 			// Public property methods
 			PulseType Type() const {return this->type;};
 			std::vector<spin_ptr> Group() const {return this->group;};
+			const bool AddCommonPrefactor() const {return this->addCommonPrefactor;};
+			const double Prefactor() const;
             const arma::vec Rotationaxis() const;
             const double Angle() const;
             const double Pulsetime() const;

@@ -65,7 +65,7 @@ namespace RunSection
 			space.SetReactionOperatorType(this->reactionOperators);
 
 			std::vector<double> weights;
-			weights = (*i)->Weights();		
+			weights = (*i)->Weights();
 
 			if(weights.size() > 1)
 			{
@@ -100,9 +100,9 @@ namespace RunSection
 				// Get the initial state
 				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
 				{
+					(*j)->Name();
 					arma::cx_mat tmp_rho0;
-					
-			 		if (!space.GetState(*j, tmp_rho0))
+					if (!space.GetState(*j, tmp_rho0))
 					{
 						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 						continue;

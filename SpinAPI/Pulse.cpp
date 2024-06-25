@@ -3,7 +3,7 @@
 // ------------------
 // Base class for interactions.
 // 
-// Molecular Spin Dynamics Software - developed by Luca.
+// Molecular Spin Dynamics Software - developed by Luca Gerhards.
 // (c) 2024 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -20,9 +20,17 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the pulse parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Pulse::Pulse(std::string _name, std::string _contents)	: properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), type(PulseType::Unspecified), group(), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}) 
+	Pulse::Pulse(std::string _name, std::string _contents)	: properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), type(PulseType::Unspecified), group(), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}), prefactor(1.0), addCommonPrefactor(true) 
 	{
         // Filling required parameter
+		std::string str = "";
+
+		// Get the type of the pulse
+		this->properties->Get("type",str);
+		if(str.compare("instantpulse") == 0 || str.compare("InstantPulse") == 0)
+			this->type = PulseType::InstantPulse;
+		else if(str.compare("longpulse") == 0 || str.compare("LongPulse") == 0)
+			this->type = PulseType::LongPulse;
 
 		// Get rotation axis
 		if(!this->properties->Get("rotationaxis", rotationaxis))
@@ -39,7 +47,7 @@ namespace SpinAPI
 		}
 
 		// Check if we have an InstantPulse
-		if(this->type != PulseType::InstantPulse)
+		if(this->type == PulseType::LongPulse)
 		{
 			// Get pulse time
 			if(!this->properties->Get("pulsetime", pulsetime))
@@ -56,13 +64,18 @@ namespace SpinAPI
 				std::cout << "Using vector: " << field << std::endl;
 			}
 		}
+		else if(this->type == PulseType::ShapedPulse)
+		{
+			std::cout << "ShapedPulse not implemented yet, sorry. " << std::endl;
+		}
 		else
 		{
 			std::cout << "Using an Instantpulse; no pulsetime or amplitude is required. " << std::endl;
 		}
+
 	}
 	
-	Pulse::Pulse(const Pulse& _pulse)	: properties(_pulse.properties), type(_pulse.type), group(_pulse.group), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), field(_pulse.field)
+	Pulse::Pulse(const Pulse& _pulse)	: properties(_pulse.properties), type(_pulse.type), group(_pulse.group), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), field(_pulse.field), prefactor(_pulse.prefactor), addCommonPrefactor(_pulse.addCommonPrefactor)
 	{
 	}
 	
@@ -81,6 +94,8 @@ namespace SpinAPI
         this->angle = _pulse.angle;
         this->pulsetime = _pulse.pulsetime;
         this->field = _pulse.field;
+		this->prefactor = _pulse.prefactor;
+		this->addCommonPrefactor = _pulse.addCommonPrefactor;
 		
 		return (*this);
 	}
@@ -137,6 +152,12 @@ namespace SpinAPI
 	PulseType Type(const Pulse& _pulse)
 	{
 		return _pulse.Type();
+	}
+
+	// Returns the prefactor value
+	const double Pulse::Prefactor() const
+	{
+		return this->prefactor;
 	}
 	// -----------------------------------------------------
 	// Access to custom properties
