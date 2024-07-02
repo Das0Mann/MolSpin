@@ -67,6 +67,14 @@ namespace RunSection
 			std::vector<double> weights;
 			weights = (*i)->Weights();
 
+			// Normalize the weights
+			double sum_weights = std::accumulate(weights.begin(), weights.end(), 0.0);
+			if (sum_weights > 0) {
+				for (double &weight : weights) {
+					weight /= sum_weights;
+				}
+			}
+
 			if(weights.size() > 1)
 			{
 				this->Log() << "Using weighted density matrix for initial state. Be sure that the sum of weights equals to 1." << std::endl;
