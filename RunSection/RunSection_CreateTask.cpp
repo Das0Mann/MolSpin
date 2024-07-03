@@ -30,6 +30,8 @@
 #include "TaskMultiStaticSSRedfieldTimeEvo.h"
 //#include "TaskStaticRPOnlyHSSymDecRedfield.h"
 
+#include "TaskStaticSSNakajimaZwanzigTimeEvo.h"
+
 #include "TaskStaticSSSpectra.h"
 #include "TaskStaticSSCIDNP.h"
 
@@ -80,6 +82,9 @@ namespace RunSection
 		else if(_tasktype.compare("redfield-relaxation-timeevolution-sparse") ==0 || _tasktype.compare("Redfield-Relaxation-Timeevolution-Sparse") == 0) {task = std::make_shared<TaskStaticSSRedfieldTimeEvoSparse>(_obj, *this);}
 		else if(_tasktype.compare("multistaticss-redfield-timeevolution") ==0 || _tasktype.compare("redfield-multisystem") == 0) {task = std::make_shared<TaskMultiStaticSSRedfieldTimeEvo>(_obj, *this);}
 		//else if(_tasktype.compare("RP-Symmetricuncoupled-Redfield") ==0 || _tasktype.compare("rp-symmetricuncoupled-redfield") == 0) {task = std::make_shared<TaskStaticRPOnlyHSSymDecRedfield>(_obj, *this);}
+
+		// NEW (Added by Luca Gerhards): Including NZ-Relaxation Theory Task Class [TaskStaticSSNakajimaZwanzig.cpp] as CreateTask member.
+		else if(_tasktype.compare("nakajimazwanzig-relaxation-timeevolution") ==0 || _tasktype.compare("NakajimaZwanzig-Relaxation-timeevolution") == 0) {task = std::make_shared<TaskStaticSSNakajimaZwanzigTimeEvo>(_obj, *this);}
 
 		// NEW (ADDED by Luca Gerhards): Including spectroscopy task such as CIDNP
 		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0) {task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);}

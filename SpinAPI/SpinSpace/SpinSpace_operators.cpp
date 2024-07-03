@@ -367,13 +367,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = -1.0 * (arma::cx_double(0.0, 1.0) / sqrt(2.0)) * ((S1x * S2y) - (S1y * S2x));
 		return true;
@@ -394,13 +387,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = -0.5 * (S1z * S2x - S1x * S2y + (arma::cx_double(0.0, 1.0) * (S1z * S2y - S1y * S2z)));
@@ -423,13 +409,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = -0.5 * (S1z * S2x - S1x * S2y + (arma::cx_double(0.0, 1.0) * (S1z * S2y - S1y * S2z)));
@@ -454,10 +433,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.0 / sqrt(3.0)) * (S1x * _field(0) + S1y * _field(1) + S1z * _field(2));
 		return true;
@@ -476,10 +451,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.0 / sqrt(3.0)) * (S1x * _field(0) + S1y * _field(1) + S1z * _field(2));
 		return true;
@@ -497,10 +468,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
 
 		// Create the spherical tensor
 		_out = (1.00 / sqrt(6.0)) * ((3 * S1z * _field(2)) - (S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
@@ -522,10 +489,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.00 / sqrt(6.0)) * ((3 * S1z * _field(2)) - (S1x * _field(0) + S1y * _field(1) + S1z * _field(2)));
 		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
@@ -544,10 +507,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
 
 		// Create the spherical tensor
 		_out = -0.5 * (S1x * _field(2) + S1z * _field(0) + (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
@@ -568,10 +527,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = -0.5 * (S1x * _field(2) + S1z * _field(0) + (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
 		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -590,10 +545,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(2) + S1z * _field(0) - (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
@@ -614,10 +565,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(2) + S1z * _field(0) - (arma::cx_double(0.0, 1.00) * (S1y * _field(2) + S1z * _field(1))));
 		//_out = (S1m*S2z + S1z*S2m) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -636,10 +583,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) + (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
@@ -660,10 +603,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) + (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
 		//_out = S1p*S2p;
@@ -683,10 +622,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) - (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
 		//_out = S1m*S2m;
@@ -705,10 +640,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * _field(0) - S1y * _field(1) - (arma::cx_double(0.0, 1.0) * (S1x * _field(1) + S1y * _field(0))));
@@ -736,13 +667,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.0 / sqrt(3.0)) * (S1x * S2x + S1y * S2y + S1z * S2z);
 		return true;
@@ -764,13 +688,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.0 / sqrt(3.0)) * (S1x * S2x + S1y * S2y + S1z * S2z);
 		return true;
@@ -791,13 +708,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = (1.00 / sqrt(6.00)) * (3.00 * S1z * S2z - (S1x * S2x + S1y * S2y + S1z * S2z));
@@ -821,13 +731,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = (1.00 / sqrt(6.00)) * (3.00 * S1z * S2z - (S1x * S2x + S1y * S2y + S1z * S2z));
 		//_out = (S1p*S2m + S1m*S2p + 2.0*S1z*S2z) * 0.40824829;	// Factor of 1/sqrt(6) = 0.40824829
@@ -850,12 +753,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 		// Create the spherical tensor
 		_out = -0.5 * (S1x * S2z + S1z * S2x + (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
 		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -877,13 +774,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = -0.5 * (S1x * S2z + S1z * S2x + (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
@@ -907,13 +797,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2z + S1z * S2x - (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
 		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -935,13 +818,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2z + S1z * S2x - (arma::cx_double(0.00, 1.00) * (S1y * S2z + S1z * S2y)));
@@ -965,13 +841,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2x - S1y * S2y + (arma::cx_double(0.0, 1.0) * (S1x * S2y + S1y * S2x)));
 		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -993,13 +862,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2x - S1y * S2y + (arma::cx_double(0.0, 1.0) * (S1x * S2y + S1y * S2x)));
@@ -1023,13 +885,6 @@ namespace SpinAPI
 			return false;
 		}
 
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
-
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2x - S1y * S2y - (arma::cx_double(0.0, 1.0) * (S1x * S2y + S1y * S2x)));
 		//_out = (S1p*S2z + S1z*S2p) * 0.707106781;	// Factor of 1/sqrt(2) = 0.707106781
@@ -1051,13 +906,6 @@ namespace SpinAPI
 		{
 			return false;
 		}
-
-		S1x *= 2.0;
-		S1y *= 2.0;
-		S1z *= 2.0;
-		S2x *= 2.0;
-		S2y *= 2.0;
-		S2z *= 2.0;
 
 		// Create the spherical tensor
 		_out = 0.5 * (S1x * S2x - S1y * S2y - (arma::cx_double(0.0, 1.0) * (S1x * S2y + S1y * S2x)));
