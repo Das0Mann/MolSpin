@@ -117,15 +117,22 @@ namespace RunSection
 			ptr_eigen_vec[ic] = {&eigen_vec};
 
 			// ----------------------------------------------------------------
-			// CONSTRUCTING TRANSITION MATRIX "omega" OUT OF EIGENVALUES OF H0
+			// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
 			// ----------------------------------------------------------------
 
 			// Constructing diagonal matrix with eigenvalues of H0
 			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
-			// Rotate density operator in eigenbasis of H0
-			// rho0 = (eigen_vec.t() * rho0 * eigen_vec);
-			// rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
+			arma::cx_mat lambda;
+			arma::cx_mat U_eigenvec_matrix;
+
+			// Unit matrix
+			arma::cx_mat one;
+			one.set_size(size(H));
+			one.eye();
+
+			lambda = arma::cx_double(0.0, -1.0) * arma::kron(eig_val_mat, one) + arma::cx_double(0.0, 1.0) * arma::kron(one, eig_val_mat.t())
+			U_eigenvec_matrix = arma::kron(eigen_vec, eigen_vec.t());
 
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -166,11 +173,6 @@ namespace RunSection
 			SpecDens.set_size(size(domega));
 			SpecDens.zeros();
 
-			// Unit matrix
-			arma::cx_mat one;
-			one.set_size(size(domega));
-			one.eye();
-
 			// Correlation function set ups
 			std::vector<double> tau_c_list;
 			std::vector<double> ampl_list;
@@ -179,7 +181,6 @@ namespace RunSection
 			// Defining variables for parameter of user
 			int terms = 0;
 			int def_g = 0;
-			int def_specdens = 0;
 			int def_multexpo = 0;
 			int ops = 0;
 			int coeff = 0;
@@ -248,8 +249,6 @@ namespace RunSection
 				this->Log() << "ops == " << ops << std::endl;
 				(*interaction)->Properties()->Get("coeff", coeff);
 				this->Log() << "coeff == " << coeff << std::endl;
-				(*interaction)->Properties()->Get("def_specdens", def_specdens);
-				this->Log() << "def_specdens == " << def_specdens << std::endl;
 				this->Log() << "------------------------------------------" << std::endl;
 
 				// Check if def_multexpo keyword is used
@@ -301,16 +300,16 @@ namespace RunSection
 											return false;
 										}
 
-										// Build double-spin operators
-										*Sx1Sx2 = (*Sx1); // * Bx
-										*Sx1Sy2 = (*Sx1); // * By
-										*Sx1Sz2 = (*Sx1); // * Bz
-										*Sy1Sx2 = (*Sy1); // * Bx
-										*Sy1Sy2 = (*Sy1); // * By
-										*Sy1Sz2 = (*Sy1); // * Bz
-										*Sz1Sx2 = (*Sz1); // * Bx
-										*Sz1Sy2 = (*Sz1); // * By
-										*Sz1Sz2 = (*Sz1); // * Bz
+										// Build double-spin operators (already in correct Superspace size for NZ matrix)
+										*Sx1Sx2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bx
+										*Sx1Sy2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * By
+										*Sx1Sz2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bz
+										*Sy1Sx2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
+										*Sy1Sy2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
+										*Sy1Sz2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
+										*Sz1Sx2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bx
+										*Sz1Sy2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * By
+										*Sz1Sz2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bz
 
 										// Put all tensors on pointer array
 										num_op = 9;
@@ -397,12 +396,14 @@ namespace RunSection
 										num_op = 6;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = T0_rank_0;
-										ptr_Tensors[1] = T0_rank_2;
-										ptr_Tensors[2] = Tm1;
-										ptr_Tensors[3] = Tp1;
-										ptr_Tensors[4] = Tm2;
-										ptr_Tensors[5] = Tp2;
+										ptr_Tensors[0] = arma::kron(T0_rank_0, one) - arma::kron(one, T0_rank_0.t());
+										ptr_Tensors[1] = arma::kron(T0_rank_2, one) - arma::kron(one, T0_rank_2.t());
+										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
+										ptr_Tensors[2] = arma::kron(-Tm1, one) - arma::kron(one, -Tm1.t());
+										ptr_Tensors[3] = arma::kron(-Tp1, one) - arma::kron(one, -Tp1.t());
+
+										ptr_Tensors[4] = arma::kron(Tm2, one) - arma::kron(one, Tm2.t());
+										ptr_Tensors[5] = arma::kron(Tp2, one) - arma::kron(one, Tp2.t());
 
 										// Construct spatial spherical Tensors
 										SpinAPI::Tensor inTensor(0);
@@ -427,20 +428,10 @@ namespace RunSection
 											*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 											// Rank 2
 											*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-											*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+											*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+											*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-										}
-										else
-										{
-											// Norm
-											*ptr_Tensors[0] = (*ptr_Tensors[0]);
-											*ptr_Tensors[1] = -(*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-											*ptr_Tensors[3] = (*ptr_Tensors[3]);
-											*ptr_Tensors[4] = (*ptr_Tensors[4]);
-											*ptr_Tensors[5] = (*ptr_Tensors[5]);
 										}
 									}
 
@@ -465,8 +456,6 @@ namespace RunSection
 										ptr_SpecDens[l] = new arma::cx_mat(domega);
 										*ptr_SpecDens[l] *= 0.0;
 									}
-
-									// TODO: Slippage Operator for multiexponential loop
 
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
@@ -499,30 +488,16 @@ namespace RunSection
 														// CONSTRUCTING SPECTRAL DENSITY MATRIX
 														// ----------------------------------------------------------------
 
-														if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+														SpecDens *= 0.0;
+
+														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 														{
-															SpecDens *= 0.0;
-
-															if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-															{
-																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																continue;
-															}
-
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+															continue;
 														}
-														else
-														{
-															SpecDens *= 0.0;
 
-															if (!ConstructSpecDensSpecificTimeEvo(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-															{
-																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																continue;
-															}
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-														}
 														*ptr_SpecDens[m] += SpecDens;
 													}
 
@@ -585,30 +560,15 @@ namespace RunSection
 													// CONSTRUCTING SPECTRAL DENSITY MATRIX
 													// ----------------------------------------------------------------
 
-													if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+													SpecDens *= 0.0;
+
+													if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 													{
-														SpecDens *= 0.0;
-
-														if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+														continue;
 													}
-													else
-													{
-														SpecDens *= 0.0;
 
-														if (!ConstructSpecDensSpecificTimeEvo(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-													}
+													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 													*ptr_SpecDens[m] += SpecDens;
 												}
@@ -688,15 +648,15 @@ namespace RunSection
 											}
 
 											// Build double-spin operators
-											*Sx1Sx2 = (*Sx1) * (*Sx2);
-											*Sx1Sy2 = (*Sx1) * (*Sy2);
-											*Sx1Sz2 = (*Sx1) * (*Sz2);
-											*Sy1Sx2 = (*Sy1) * (*Sx2);
-											*Sy1Sy2 = (*Sy1) * (*Sy2);
-											*Sy1Sz2 = (*Sy1) * (*Sz2);
-											*Sz1Sx2 = (*Sz1) * (*Sx2);
-											*Sz1Sy2 = (*Sz1) * (*Sy2);
-											*Sz1Sz2 = (*Sz1) * (*Sz2);
+											*Sx1Sx2 = arma::kron((*Sx1) * (*Sx2), one) - arma::kron(one, ((*Sx1) * (*Sx2)).t());
+											*Sx1Sy2 = arma::kron((*Sx1) * (*Sy2), one) - arma::kron(one, ((*Sx1) * (*Sy2)).t());
+											*Sx1Sz2 = arma::kron((*Sx1) * (*Sz2), one) - arma::kron(one, ((*Sx1) * (*Sz2)).t());
+											*Sy1Sx2 = arma::kron((*Sy1) * (*Sx2), one) - arma::kron(one, ((*Sy1) * (*Sx2)).t());
+											*Sy1Sy2 = arma::kron((*Sy1) * (*Sy2), one) - arma::kron(one, ((*Sy1) * (*Sy2)).t());
+											*Sy1Sz2 = arma::kron((*Sy1) * (*Sz2), one) - arma::kron(one, ((*Sy1) * (*Sz2)).t());
+											*Sz1Sx2 = arma::kron((*Sz1) * (*Sx2), one) - arma::kron(one, ((*Sz1) * (*Sx2)).t());
+											*Sz1Sy2 = arma::kron((*Sz1) * (*Sy2), one) - arma::kron(one, ((*Sz1) * (*Sy2)).t());
+											*Sz1Sz2 = arma::kron((*Sz1) * (*Sz2), one) - arma::kron(one, ((*Sz1) * (*Sz2)).t());
 
 											// Put all tensors on pointer array
 											num_op = 9;
@@ -770,12 +730,14 @@ namespace RunSection
 											num_op = 6;
 											delete[] ptr_Tensors;
 											ptr_Tensors = new arma::cx_mat *[num_op];
-											ptr_Tensors[0] = T0_rank_0;
-											ptr_Tensors[1] = T0_rank_2;
-											ptr_Tensors[2] = Tm1;
-											ptr_Tensors[3] = Tp1;
-											ptr_Tensors[4] = Tm2;
-											ptr_Tensors[5] = Tp2;
+											ptr_Tensors[0] = arma::kron(T0_rank_0, one) - arma::kron(one, T0_rank_0.t());
+											ptr_Tensors[1] = arma::kron(T0_rank_2, one) - arma::kron(one, T0_rank_2.t());
+											// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
+											ptr_Tensors[2] = arma::kron(-Tm1, one) - arma::kron(one, -Tm1.t());
+											ptr_Tensors[3] = arma::kron(-Tp1, one) - arma::kron(one, -Tp1.t());
+
+											ptr_Tensors[4] = arma::kron(Tm2, one) - arma::kron(one, Tm2.t());
+											ptr_Tensors[5] = arma::kron(Tp2, one) - arma::kron(one, Tp2.t());
 
 											// Construct spatial spherical Tensors
 											SpinAPI::Tensor inTensor(0);
@@ -800,20 +762,10 @@ namespace RunSection
 												*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 												// Rank 2
 												*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-												*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-												*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+												*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+												*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 												*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 												*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-											}
-											else
-											{
-												// Norm
-												*ptr_Tensors[0] = (*ptr_Tensors[0]);
-												*ptr_Tensors[1] = (*ptr_Tensors[1]);
-												*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-												*ptr_Tensors[3] = -(*ptr_Tensors[3]);
-												*ptr_Tensors[4] = (*ptr_Tensors[4]);
-												*ptr_Tensors[5] = (*ptr_Tensors[5]);
 											}
 										}
 
@@ -838,8 +790,6 @@ namespace RunSection
 											ptr_SpecDens[l] = new arma::cx_mat(domega);
 											*ptr_SpecDens[l] *= 0.0;
 										}
-
-										// TODO: Slippage Operator for multiexponential loop
 
 										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
 
@@ -867,35 +817,20 @@ namespace RunSection
 													{
 														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
 														{
-
 															// ----------------------------------------------------------------
 															// CONSTRUCTING SPECTRAL DENSITY MATRIX
 															// ----------------------------------------------------------------
 
-															if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+															SpecDens *= 0.0;
+
+															if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 															{
-																SpecDens *= 0.0;
-
-																if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-																{
-																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																	continue;
-																}
-
-																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																continue;
 															}
-															else
-															{
-																SpecDens *= 0.0;
 
-																if (!ConstructSpecDensSpecificTimeEvo(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-																{
-																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																	continue;
-																}
+															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
-																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-															}
 															*ptr_SpecDens[m] += SpecDens;
 														}
 
@@ -958,30 +893,15 @@ namespace RunSection
 														// CONSTRUCTING SPECTRAL DENSITY MATRIX
 														// ----------------------------------------------------------------
 
-														if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+														SpecDens *= 0.0;
+
+														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 														{
-															SpecDens *= 0.0;
-
-															if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-															{
-																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																continue;
-															}
-
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+															continue;
 														}
-														else
-														{
-															SpecDens *= 0.0;
 
-															if (!ConstructSpecDensSpecificTimeEvo(0, static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), domega, SpecDens))
-															{
-																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																continue;
-															}
-
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-														}
+														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 														*ptr_SpecDens[m] += SpecDens;
 													}
@@ -1083,9 +1003,16 @@ namespace RunSection
 									num_op = 3;
 									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat *[num_op];
-									ptr_Tensors[0] = Sx1;
-									ptr_Tensors[1] = Sy1;
-									ptr_Tensors[2] = Sz1;
+									// Build double-spin operators (already in correct Superspace size for NZ matrix)
+									*Sx1Sx2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bx
+									*Sx1Sy2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * By
+									*Sx1Sz2 = arma:kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bz
+									*Sy1Sx2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
+									*Sy1Sy2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
+									*Sy1Sz2 = arma:kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
+									*Sz1Sx2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bx
+									*Sz1Sy2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * By
+									*Sz1Sz2 = arma:kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bz
 								}
 								else
 								{
@@ -1155,12 +1082,14 @@ namespace RunSection
 									num_op = 6;
 									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat *[num_op];
-									ptr_Tensors[0] = T0_rank_0;
-									ptr_Tensors[1] = T0_rank_2;
-									ptr_Tensors[2] = Tm1;
-									ptr_Tensors[3] = Tp1;
-									ptr_Tensors[4] = Tm2;
-									ptr_Tensors[5] = Tp2;
+									ptr_Tensors[0] = arma::kron(T0_rank_0, one) - arma::kron(one, T0_rank_0.t());
+									ptr_Tensors[1] = arma::kron(T0_rank_2, one) - arma::kron(one, T0_rank_2.t());
+									// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
+									ptr_Tensors[2] = arma::kron(-Tm1, one) - arma::kron(one, -Tm1.t());
+									ptr_Tensors[3] = arma::kron(-Tp1, one) - arma::kron(one, -Tp1.t());
+
+									ptr_Tensors[4] = arma::kron(Tm2, one) - arma::kron(one, Tm2.t());
+									ptr_Tensors[5] = arma::kron(Tp2, one) - arma::kron(one, Tp2.t());
 
 									// Construct spatial spherical Tensors
 									SpinAPI::Tensor inTensor(0);
@@ -1185,20 +1114,10 @@ namespace RunSection
 										*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 										// Rank 2
 										*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-										*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+										*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+										*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-									}
-									else
-									{
-										// Norm
-										*ptr_Tensors[0] = (*ptr_Tensors[0]);
-										*ptr_Tensors[1] = -(*ptr_Tensors[1]);
-										*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-										*ptr_Tensors[3] = (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = (*ptr_Tensors[5]);
 									}
 								}
 
@@ -1229,30 +1148,15 @@ namespace RunSection
 											// ----------------------------------------------------------------
 											ampl_combined = ampl_list[k] * ampl_list[k];
 
-											if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 											{
-												SpecDens *= 0.0;
-
-												if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+												continue;
 											}
-											else
-											{
-												SpecDens *= 0.0;
 
-												if (!ConstructSpecDensSpecificTimeEvo(0, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-											}
+											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 											// -----------------------------------------------------------------
 											// CONSTRUCTING R MATRIX
@@ -1276,31 +1180,15 @@ namespace RunSection
 										// ----------------------------------------------------------------
 										// CONSTRUCTING SPECTRAL DENSITY MATRIX
 										// ----------------------------------------------------------------
+										SpecDens *= 0.0;
 
-										if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
 										{
-											SpecDens *= 0.0;
-
-											if (!ConstructSpecDensGeneralTimeEvo(1, ampl_list, tau_c_list, domega, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+											continue;
 										}
-										else
-										{
-											SpecDens *= 0.0;
 
-											if (!ConstructSpecDensGeneralTimeEvo(0, ampl_list, tau_c_list, domega, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-										}
+										SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 #pragma omp parallel for num_threads(threads)
 										for (l = 0; l < threads; l++)
@@ -1351,29 +1239,14 @@ namespace RunSection
 
 												ampl_combined = ampl_list[k] * ampl_list[s];
 
-												if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+												SpecDens *= 0.0;
+												if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 												{
-													SpecDens *= 0.0;
-													if (!ConstructSpecDensSpecificTimeEvo(1, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-													{
-														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-														continue;
-													}
-
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+													continue;
 												}
-												else
-												{
-													SpecDens *= 0.0;
 
-													if (!ConstructSpecDensSpecificTimeEvo(0, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-													{
-														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-														continue;
-													}
-
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-												}
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
@@ -1412,30 +1285,15 @@ namespace RunSection
 										// ----------------------------------------------------------------
 
 										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-										if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+										SpecDens *= 0.0;
+
+										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
 										{
-											SpecDens *= 0.0;
-
-											if (!ConstructSpecDensGeneralTimeEvo(1, ampl_list, tau_c_list, domega, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+											continue;
 										}
-										else
-										{
-											SpecDens *= 0.0;
 
-											if (!ConstructSpecDensGeneralTimeEvo(0, ampl_list, tau_c_list, domega, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-										}
+										SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 #pragma omp parallel for num_threads(threads)
 										for (l = 0; l < threads; l++)
@@ -1537,15 +1395,15 @@ namespace RunSection
 										}
 
 										// Build double-spin operators
-										*Sx1Sx2 = (*Sx1) * (*Sx2);
-										*Sx1Sy2 = (*Sx1) * (*Sy2);
-										*Sx1Sz2 = (*Sx1) * (*Sz2);
-										*Sy1Sx2 = (*Sy1) * (*Sx2);
-										*Sy1Sy2 = (*Sy1) * (*Sy2);
-										*Sy1Sz2 = (*Sy1) * (*Sz2);
-										*Sz1Sx2 = (*Sz1) * (*Sx2);
-										*Sz1Sy2 = (*Sz1) * (*Sy2);
-										*Sz1Sz2 = (*Sz1) * (*Sz2);
+										*Sx1Sx2 = arma::kron((*Sx1) * (*Sx2), one) - arma::kron(one, ((*Sx1) * (*Sx2)).t());
+										*Sx1Sy2 = arma::kron((*Sx1) * (*Sy2), one) - arma::kron(one, ((*Sx1) * (*Sy2)).t());
+										*Sx1Sz2 = arma::kron((*Sx1) * (*Sz2), one) - arma::kron(one, ((*Sx1) * (*Sz2)).t());
+										*Sy1Sx2 = arma::kron((*Sy1) * (*Sx2), one) - arma::kron(one, ((*Sy1) * (*Sx2)).t());
+										*Sy1Sy2 = arma::kron((*Sy1) * (*Sy2), one) - arma::kron(one, ((*Sy1) * (*Sy2)).t());
+										*Sy1Sz2 = arma::kron((*Sy1) * (*Sz2), one) - arma::kron(one, ((*Sy1) * (*Sz2)).t());
+										*Sz1Sx2 = arma::kron((*Sz1) * (*Sx2), one) - arma::kron(one, ((*Sz1) * (*Sx2)).t());
+										*Sz1Sy2 = arma::kron((*Sz1) * (*Sy2), one) - arma::kron(one, ((*Sz1) * (*Sy2)).t());
+										*Sz1Sz2 = arma::kron((*Sz1) * (*Sz2), one) - arma::kron(one, ((*Sz1) * (*Sz2)).t());
 
 										// Put all tensors on pointer array
 										num_op = 9;
@@ -1619,12 +1477,14 @@ namespace RunSection
 										num_op = 6;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = T0_rank_0;
-										ptr_Tensors[1] = T0_rank_2;
-										ptr_Tensors[2] = Tm1;
-										ptr_Tensors[3] = Tp1;
-										ptr_Tensors[4] = Tm2;
-										ptr_Tensors[5] = Tp2;
+										ptr_Tensors[0] = arma::kron(T0_rank_0, one) - arma::kron(one, T0_rank_0.t());
+										ptr_Tensors[1] = arma::kron(T0_rank_2, one) - arma::kron(one, T0_rank_2.t());
+										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
+										ptr_Tensors[2] = arma::kron(-Tm1, one) - arma::kron(one, -Tm1.t());
+										ptr_Tensors[3] = arma::kron(-Tp1, one) - arma::kron(one, -Tp1.t());
+
+										ptr_Tensors[4] = arma::kron(Tm2, one) - arma::kron(one, Tm2.t());
+										ptr_Tensors[5] = arma::kron(Tp2, one) - arma::kron(one, Tp2.t());
 
 										// Construct spatial spherical Tensors
 										SpinAPI::Tensor inTensor(0);
@@ -1649,20 +1509,10 @@ namespace RunSection
 											*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 											// Rank 2
 											*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-											*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+											*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+											*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-										}
-										else
-										{
-											// Norm
-											*ptr_Tensors[0] = (*ptr_Tensors[0]);
-											*ptr_Tensors[1] = (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
-											*ptr_Tensors[4] = (*ptr_Tensors[4]);
-											*ptr_Tensors[5] = (*ptr_Tensors[5]);
 										}
 									}
 
@@ -1692,31 +1542,16 @@ namespace RunSection
 												// CONSTRUCTING SPECTRAL DENSITY MATRIX
 												// ----------------------------------------------------------------
 												ampl_combined = ampl_list[k] * ampl_list[k];
-												std::cout << "ampl_combined" << ampl_combined << std::endl;
-												if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 												{
-													SpecDens *= 0.0;
-
-													if (!ConstructSpecDensSpecificTimeEvo(1, static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-													{
-														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-														continue;
-													}
-
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+													continue;
 												}
-												else
-												{
-													SpecDens *= 0.0;
 
-													if (!ConstructSpecDensSpecificTimeEvo(0, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-													{
-														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-														continue;
-													}
-
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-												}
+												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 												// -----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
@@ -1741,30 +1576,15 @@ namespace RunSection
 											// CONSTRUCTING SPECTRAL DENSITY MATRIX
 											// ----------------------------------------------------------------
 
-											if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
 											{
-												SpecDens *= 0.0;
-
-												if (!ConstructSpecDensGeneralTimeEvo(1, ampl_list, tau_c_list, domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+												continue;
 											}
-											else
-											{
-												SpecDens *= 0.0;
 
-												if (!ConstructSpecDensGeneralTimeEvo(0, ampl_list, tau_c_list, domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-											}
+											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 #pragma omp parallel for num_threads(threads)
 											for (l = 0; l < threads; l++)
@@ -1815,29 +1635,15 @@ namespace RunSection
 
 													ampl_combined = ampl_list[k] * ampl_list[s];
 
-													if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+													SpecDens *= 0.0;
+
+													if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 													{
-														SpecDens *= 0.0;
-														if (!ConstructSpecDensSpecificTimeEvo(1, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+														continue;
 													}
-													else
-													{
-														SpecDens *= 0.0;
 
-														if (!ConstructSpecDensSpecificTimeEvo(0, ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), domega, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-													}
+													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 													// ----------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
@@ -1876,30 +1682,16 @@ namespace RunSection
 											// ----------------------------------------------------------------
 
 											this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-											if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
+
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
 											{
-												SpecDens *= 0.0;
-
-												if (!ConstructSpecDensGeneralTimeEvo(1, ampl_list, tau_c_list, domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+												continue;
 											}
-											else
-											{
-												SpecDens *= 0.0;
 
-												if (!ConstructSpecDensGeneralTimeEvo(0, ampl_list, tau_c_list, domega, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-											}
+											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 
 #pragma omp parallel for num_threads(threads)
 											for (l = 0; l < threads; l++)
@@ -2215,57 +2007,38 @@ namespace RunSection
 	}
 
 	// Construction Refield tensor
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::NakajimaZwanzigtensorTimeEvo(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, arma::cx_mat &_NakajimaZwanzigtensor)
+	bool TaskStaticSSNakajimaZwanzigTimeEvo::NakajimaZwanzigtensorTimeEvo(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, const arma::cx_mat _eigenvec arma::cx_mat &_NakajimaZwanzigtensor)
 	{
 
 		arma::cx_mat one = arma::eye<arma::cx_mat>(arma::size(_specdens));
 
 		_NakajimaZwanzigtensor *= 0.0;
 
+		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2
+		// J. Chem. Phys. 154, 084121 (2021) https://doi.org/10.1063/5.0040519
+
+		_NakajimaZwanzigtensor = -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2;
+
 		return true;
 	}
 
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensGeneralTimeEvo(const int &_spectral_function, const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
+	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensGeneralTimeEvo(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
-
-        arma::cx_mat _domega;
-
-		if (_spectral_function == 1)
-		{
-            // Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
+		// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
 #pragma omp for
-			for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
-			{
-				_specdens += (static_cast<std::complex<double>>(_ampl_list[ii]) * (static_cast<std::complex<double>>(_tau_c_list[ii]) / (arma::cx_double(1.00, 0.00) + (pow(_domega, 2) * (pow(static_cast<std::complex<double>>(_tau_c_list[ii]), 2))))));
-			}
-		}
-
-		if (_spectral_function == 0)
+		for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
 		{
-            // Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
-#pragma omp for
-			for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
-			{
-				_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii]) - (arma::cx_double(0.0, 1.0) * _domega)));
-			}
+			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - _omega);
 		}
 
 		return true;
 	}
 
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensSpecificTimeEvo(const int &_spectral_function, const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
+	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensSpecificTimeEvo(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
-		if (_spectral_function == 1)
-		{
-			// Solution  of spectral density : S = Ampl*(tau_c/(1+domega²*tauc²))
-			_specdens = (static_cast<std::complex<double>>(_ampl) * (static_cast<std::complex<double>>(_tau_c) / (arma::cx_double(1.00, 0.00) + (pow(_domega, 2) * (pow(static_cast<std::complex<double>>(_tau_c), 2))))));
-		}
 
-		if (_spectral_function == 0)
-		{
-			// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
-			_specdens = _ampl / ((arma::cx_double(1.00, 0.00) / _tau_c) - (arma::cx_double(0.0, 1.0) * _domega));
-		}
+		// Solution of spectral density: S = Ampl/(1/tau_c - i * domega)
+		_specdens = _ampl / ((1.00 / _tau_c) - _omega);
 
 		return true;
 	}
