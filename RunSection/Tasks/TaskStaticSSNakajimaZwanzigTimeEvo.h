@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// MolSpin - Nakajima Zwanzig Theory Task - developed by Luca Gerhards
+// MolSpin - Nakajima Zwanzig Theory Time Evolution Task - developed by Luca Gerhards
 // 
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.

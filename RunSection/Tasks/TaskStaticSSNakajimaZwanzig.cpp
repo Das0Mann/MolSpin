@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// MolSpin - Nakajima Zwanzig Theory Time Evolution Task - developed by Luca Gerhards
+// MolSpin - NakajimaZwanzig Theory Task - developed by Luca Gerhards
 //
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
@@ -8,9 +8,8 @@
 #include <iostream>
 #include <omp.h>
 #include <memory>
-#include "TaskStaticSSNakajimaZwanzigTimeEvo.h"
+#include "TaskStaticSSNakajimaZwanzig.h"
 #include "Transition.h"
-#include "Operator.h"
 #include "Settings.h"
 #include "State.h"
 #include "SpinSpace.h"
@@ -18,49 +17,40 @@
 #include "Spin.h"
 #include "Interaction.h"
 #include "ObjectParser.h"
+#include "Operator.h"
 
 namespace RunSection
 {
 	// -----------------------------------------------------
 	// TaskStaticSSNakajimaZwanzig Constructors and Destructor
 	// -----------------------------------------------------
-	TaskStaticSSNakajimaZwanzigTimeEvo::TaskStaticSSNakajimaZwanzigTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(1.0), totaltime(1.0e+4), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn)
+	TaskStaticSSNakajimaZwanzig::TaskStaticSSNakajimaZwanzig(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(false)
 	{
 	}
 
-	TaskStaticSSNakajimaZwanzigTimeEvo::~TaskStaticSSNakajimaZwanzigTimeEvo()
+	TaskStaticSSNakajimaZwanzig::~TaskStaticSSNakajimaZwanzig()
 	{
 	}
 	// -----------------------------------------------------
 	// TaskStaticSSNakajimaZwanzig protected methods
 	// -----------------------------------------------------
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::RunLocal()
+	bool TaskStaticSSNakajimaZwanzig::RunLocal()
 	{
-
-		this->Log() << "Running method StaticSSNakajimaZwanzigTimeEvolution." << std::endl;
-
-		// If this is the first step, write header to the data file
-		if (this->RunSettings()->CurrentStep() == 1)
+#pragma omp single
 		{
-			this->WriteHeader(this->Data());
+			this->Log() << "Running method StaticSSNakajimaZwanzig." << std::endl;
+
+			// If this is the first step, write first part of header to the data file
+			if (this->RunSettings()->CurrentStep() == 1)
+			{
+				this->WriteHeader(this->Data());
+			}
 		}
-
-		// Temporary results
-		arma::cx_mat rho0;
-		arma::cx_vec rho0vec;
-		arma::cx_mat eigen_vec; // To hold eigenvectors
-		arma::vec eigen_val;	// To hold eigenvalues
-		arma::cx_mat eig_val_mat;
-
-		// Obtain spin systems
-		auto systems = this->SpinSystems();
-		std::pair<arma::cx_mat, arma::cx_vec> P[systems.size()]; // Create array containing a propagator and the current state of each system
-		SpinAPI::SpinSpace spaces[systems.size()];				 // Keep a SpinSpace object for each spin system
-
-		arma::cx_mat *ptr_eigen_vec[systems.size()];
-
+		// ----------------------------------------------------------------
+		// SETTING UP SPIN SYSTEM AND GETTING DENSITY OPERATOR
+		// ----------------------------------------------------------------
 		// Loop through all SpinSystems
-		int ic = 0; // System counter
+		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			// Make sure we have an initial state
@@ -71,11 +61,13 @@ namespace RunSection
 				continue;
 			}
 
+			this->Log() << "\nStarting with SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+
 			// Obtain a SpinSpace to describe the system
 			SpinAPI::SpinSpace space(*(*i));
+			arma::cx_mat rho0;
 			space.UseSuperoperatorSpace(false);
 			space.SetReactionOperatorType(this->reactionOperators);
-			spaces[ic] = space;
 
 			// Get the initial state
 			for (auto j = initial_states.cbegin(); j < initial_states.cend(); j++)
@@ -91,6 +83,7 @@ namespace RunSection
 				else
 					rho0 += tmp_rho0;
 			}
+
 			rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
 
 			// ----------------------------------------------------------------
@@ -105,23 +98,34 @@ namespace RunSection
 				continue;
 			}
 
+  			// Get the reaction operators, and add them to "A"
+			arma::cx_mat K;
+
+			if (!space.TotalReactionOperator(K))
+			{
+				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
+			}
+
+            arma::cx_mat H_K;
+            H_K = arma::cx_double(0.0, 1.0) * H - K;
+
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
-
-			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H);
+		    arma::cx_mat eigen_vec; // To hold eigenvectors
+		    arma::vec eigen_val;	// To hold eigenvalues
+		    arma::cx_mat eig_val_mat;
+			
+            this->Log() << "Starting diagonalization..." << std::endl;
+			arma::eig_sym(eigen_val, eigen_vec, H_K);
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
-
-			// Put eigenbasis on pointer to sue for PState (projection operator) in final calculation
-			ptr_eigen_vec[ic] = {&eigen_vec};
 
 			// ----------------------------------------------------------------
 			// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
 			// ----------------------------------------------------------------
 
 			// Constructing diagonal matrix with eigenvalues of H0
-			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
+			eig_val_mat = arma::diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
 			arma::cx_mat lambda;
 			arma::cx_mat U_eigenvec_matrix;
@@ -503,7 +507,7 @@ namespace RunSection
 
 														SpecDens *= 0.0;
 
-														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+														if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 														{
 															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 															continue;
@@ -520,7 +524,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -562,7 +566,7 @@ namespace RunSection
 
 													SpecDens *= 0.0;
 
-													if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+													if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
@@ -579,7 +583,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -828,7 +832,7 @@ namespace RunSection
 
 															SpecDens *= 0.0;
 
-															if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+															if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 															{
 																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 																continue;
@@ -845,7 +849,7 @@ namespace RunSection
 
 														tmp_R *= 0.0;
 
-														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+														if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
 														{
 															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 															continue;
@@ -887,7 +891,7 @@ namespace RunSection
 
 														SpecDens *= 0.0;
 
-														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+														if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
 														{
 															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 															continue;
@@ -904,7 +908,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1161,7 +1165,7 @@ namespace RunSection
 
 											SpecDens *= 0.0;
 
-											if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+											if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 											{
 												this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 												continue;
@@ -1175,7 +1179,7 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1193,7 +1197,7 @@ namespace RunSection
 										// ----------------------------------------------------------------
 										SpecDens *= 0.0;
 
-										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+										if (!ConstructSpecDensGeneral(ampl_list, tau_c_list, lambda, SpecDens))
 										{
 											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 											continue;
@@ -1216,7 +1220,7 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1251,7 +1255,7 @@ namespace RunSection
 												ampl_combined = ampl_list[k] * ampl_list[s];
 
 												SpecDens *= 0.0;
-												if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+												if (!ConstructSpecDensSpecific(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 												{
 													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 													continue;
@@ -1265,7 +1269,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1285,7 +1289,7 @@ namespace RunSection
 										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
 										SpecDens *= 0.0;
 
-										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+										if (!ConstructSpecDensGeneral(ampl_list, tau_c_list, lambda, SpecDens))
 										{
 											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 											continue;
@@ -1310,7 +1314,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1538,7 +1542,7 @@ namespace RunSection
 
 												SpecDens *= 0.0;
 
-												if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+												if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 												{
 													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 													continue;
@@ -1552,7 +1556,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1571,7 +1575,7 @@ namespace RunSection
 
 											SpecDens *= 0.0;
 
-											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+											if (!ConstructSpecDensGeneral(ampl_list, tau_c_list, lambda, SpecDens))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1594,7 +1598,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1630,7 +1634,7 @@ namespace RunSection
 
 													SpecDens *= 0.0;
 
-													if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+													if (!ConstructSpecDensSpecific(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
@@ -1644,7 +1648,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1665,7 +1669,7 @@ namespace RunSection
 
 											SpecDens *= 0.0;
 
-											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+											if (!ConstructSpecDensGeneral(ampl_list, tau_c_list, lambda, SpecDens))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1690,7 +1694,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1754,17 +1758,6 @@ namespace RunSection
 			// Get a matrix to collect all the terms (the total Liouvillian)
 			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS;
 
-			// Get the reaction operators, and add them to "A"
-			arma::cx_mat K;
-
-			if (!space.TotalReactionOperator(K))
-			{
-				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
-			}
-
-			// Rotation into eigenbasis of H0
-			//K = (eigen_vec.t() * K * eigen_vec);
-
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
 			arma::cx_mat Krhs;
@@ -1800,193 +1793,166 @@ namespace RunSection
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
+            arma::cx_vec rho0vec;
 			// Transform density operator into superspace
 			if (!space.OperatorToSuperspace(rho0, rho0vec))
 			{
 				this->Log() << "Failed to convert initial state density operator to superspace." << std::endl;
 				continue;
 			}
-
+			
 			// ---------------------------------------------------------------
 			// DO PROPAGATION OF DENSITY OPERATOR
 			// ---------------------------------------------------------------
-			// Get the propagator and put it into the array together with the initial state
-			P[ic] = std::pair<arma::cx_mat, arma::cx_vec>(arma::expmat(A * this->timestep), rho0vec); //* this->timestep)
-			++ic;
-		}
-
-#pragma omp single
-		{
-			// Output results at the initial step (before calculations)
-			this->Data() << this->RunSettings()->CurrentStep() << " 0 "; // "0" refers to the time
-			this->WriteStandardOutput(this->Data());
-			ic = 0;
-			for (auto i = systems.cbegin(); i < systems.cend(); i++)
-			{
-				arma::cx_mat PState;
-				auto states = (*i)->States();
-
-				for (auto j = states.cbegin(); j < states.cend(); j++)
-				{
-					if (!spaces[ic].GetState((*j), PState))
-					{
-						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-						continue;
-					}
-
-					// Transform into eigenbasis of H0
-					//PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
-					this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
-				}
-
-				++ic;
-			}
-			this->Data() << std::endl;
-
 			// Perform the calculation
 			this->Log() << "Ready to perform calculation." << std::endl;
-			unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
-			for (unsigned int n = 1; n <= steps; n++)
+			arma::cx_vec result = solve(-1 * arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			this->Log() << "Done with calculation." << std::endl;
+
+			// Convert the resulting density operator back to its Hilbert space representation
+			if (!space.OperatorFromSuperspace(result, rho0))
 			{
-				// Write first part of the data output
+				this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
+				continue;
+			}
+
+			// ---------------------------------------------------------------
+			// CALCULATE QUANTUM YIELDS
+			// ---------------------------------------------------------------
+			// Obtain the results
+
+#pragma omp single
+			{
+				arma::cx_mat P;
+				double sum_yield;
+				sum_yield = 0.0;
+
 				this->Data() << this->RunSettings()->CurrentStep() << " ";
-				this->Data() << (static_cast<double>(n) * this->timestep) << " ";
 				this->WriteStandardOutput(this->Data());
 
-				// Loop through the systems again and progress a step
-				ic = 0;
-				for (auto i = systems.cbegin(); i < systems.cend(); i++)
+				// There are two result modes - either write results per transition or for each defined state
+				if (this->productYieldsOnly)
 				{
-					// Take a step "first" is propagator and "second" is current state
-					rho0vec = P[ic].first * P[ic].second;
-					P[ic].second = rho0vec;
-
-					// Convert the resulting density operator back to its Hilbert space representation
-					if (!spaces[ic].OperatorFromSuperspace(rho0vec, rho0))
+					// Loop through all defind transitions
+					auto transitions = (*i)->Transitions();
+					for (auto j = transitions.cbegin(); j < transitions.cend(); j++)
 					{
-						this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
-						continue;
-					}
+						// Make sure that there is a state object
+						if ((*j)->SourceState() == nullptr)
+							continue;
 
-					// Obtain the results
-					arma::cx_mat PState;
-					auto states = (*i)->States();
-					for (auto j = states.cbegin(); j < states.cend(); j++)
-					{
-						if (!spaces[ic].GetState((*j), PState))
+						if (!space.GetState((*j)->SourceState(), P))
 						{
 							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 							continue;
 						}
 
-						// Transform into eigenbasis of H0
-						//PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
-						this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
+						// Return the yield for this transition
+						this->Data() << (*j)->Rate() * std::abs(arma::trace(P * rho0)) << " ";
+						sum_yield += ((*j)->Rate() * std::abs(arma::trace(P * rho0)));
+					}
+					this->Data() << sum_yield << " ";
+					sum_yield *= 0.0;
+					P *= 0.0;
+				}
+				else
+				{
+					// Loop through all states
+					auto states = (*i)->States();
+					for (auto j = states.cbegin(); j < states.cend(); j++)
+					{
+						if (!space.GetState((*j), P))
+						{
+							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+							continue;
+						}
+
+						// Return the yield for this state - note that no reaction rates are included here.
+						this->Data() << std::abs(arma::trace(P * rho0)) << " ";
+						sum_yield += (std::abs(arma::trace(P * rho0)));
 					}
 
-					++ic;
+					this->Data() << sum_yield << " ";
+					sum_yield *= 0.0;
+					P *= 0.0;
 				}
 
-				// Terminate the line in the data file after iteration through all spin systems
-				this->Data() << std::endl;
+				this->Log() << "\nDone with SpinSystem \"" << (*i)->Name() << "\"" << std::endl;
+
+				// Clean every variable just to be sure
+				R *= 0.0;
+				A *= 0.0;
+				H *= 0.0;
+				P *= 0.0;
+				lambda *= 0.0;
+				H_SS *= 0.0;
+				K_SS *= 0.0;
+				eig_val_mat *= 0.0;
+				eigen_val *= 0.0;
+				eigen_vec *= 0.0;
+				SpecDens *= 0.0;
 			}
 		}
+
 		// Terminate the line in the data file after iteration through all spin systems
-		this->Log() << "\nDone with calculations!" << std::endl;
-		return true;
-	}
-
-	// --------------------------------------------------------------------------------------------------------------------------------------
-	// Validation of the required input
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::Validate()
-	{
-		double inputTimestep = 0.0;
-		double inputTotaltime = 0.0;
-
-		// Get timestep
-		if (this->Properties()->Get("timestep", inputTimestep))
-		{
-			if (std::isfinite(inputTimestep) && inputTimestep > 0.0)
-			{
-				this->timestep = inputTimestep;
-			}
-			else
-			{
-				// We can run the calculation if an invalid timestep was specified
-				return false;
-			}
-		}
-
-		// Get totaltime
-		if (this->Properties()->Get("totaltime", inputTotaltime))
-		{
-			if (std::isfinite(inputTotaltime) && inputTotaltime > 0.0)
-			{
-				this->totaltime = inputTotaltime;
-			}
-			else
-			{
-				// We can run the calculation if an invalid total time was specified
-				return false;
-			}
-		}
-
-		// Get the reaction operator type
-		std::string str;
-		if (this->Properties()->Get("reactionoperators", str))
-		{
-			if (str.compare("haberkorn") == 0)
-			{
-				this->reactionOperators = SpinAPI::ReactionOperatorType::Haberkorn;
-				this->Log() << "Setting reaction operator type to Haberkorn." << std::endl;
-			}
-			else if (str.compare("lindblad") == 0)
-			{
-				this->reactionOperators = SpinAPI::ReactionOperatorType::Lindblad;
-				this->Log() << "Setting reaction operator type to Lindblad." << std::endl;
-			}
-			else
-			{
-				this->Log() << "Warning: Unknown reaction operator type specified. Using default reaction operators." << std::endl;
-			}
-		}
+		this->Data() << std::endl;
 
 		return true;
 	}
+
+	// -----------------------FUNCTIONS-----------------------------------------------
 
 	// Writes the header of the data file (but can also be passed to other streams)
-	void TaskStaticSSNakajimaZwanzigTimeEvo::WriteHeader(std::ostream &_stream)
+	void TaskStaticSSNakajimaZwanzig::WriteHeader(std::ostream &_stream)
 	{
 		_stream << "Step ";
-		_stream << "Time(ns) ";
 		this->WriteStandardOutputHeader(_stream);
 
 		// Get header for each spin system
 		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
-			// Write each state name
-			auto states = (*i)->States();
-			for (auto j = states.cbegin(); j < states.cend(); j++)
-				_stream << (*i)->Name() << "." << (*j)->Name() << " ";
+			// Should yields be written per transition or per defined state?
+			if (this->productYieldsOnly)
+			{
+				// Write each transition name
+				auto transitions = (*i)->Transitions();
+				for (auto j = transitions.cbegin(); j < transitions.cend(); j++)
+					_stream << (*i)->Name() << "." << (*j)->Name() << ".yield ";
+			}
+			else
+			{
+				// Write each state name
+				auto states = (*i)->States();
+				for (auto j = states.cbegin(); j < states.cend(); j++)
+					_stream << (*i)->Name() << "." << (*j)->Name() << " ";
+			}
 		}
 		_stream << std::endl;
 	}
 
+	// Validation
+	bool TaskStaticSSNakajimaZwanzig::Validate()
+	{
+		this->Properties()->Get("transitionyields", this->productYieldsOnly);
+
+		return true;
+	}
+
 	// Construction Refield tensor
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::NakajimaZwanzigtensorTimeEvo(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, const arma::cx_mat _eigenvec, arma::cx_mat &_NakajimaZwanzigtensor)
+	bool TaskStaticSSNakajimaZwanzig::NakajimaZwanzigtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, const arma::cx_mat _eigenvec, arma::cx_mat &_NakajimaZwanzigtensor)
 	{
 		_NakajimaZwanzigtensor *= 0.0;
 
 		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2
 		// J. Chem. Phys. 154, 084121 (2021) https://doi.org/10.1063/5.0040519
 
-		_NakajimaZwanzigtensor = -1.00 * _op1.t() * _eigenvec * _specdens * _eigenvec.t() * _op2;
+		_NakajimaZwanzigtensor = -1.00 * _op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2;
 
 		return true;
 	}
 
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensGeneralTimeEvo(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
+	bool TaskStaticSSNakajimaZwanzig::ConstructSpecDensGeneral(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
 #pragma omp for
@@ -1998,7 +1964,7 @@ namespace RunSection
 		return true;
 	}
 
-	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensSpecificTimeEvo(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
+	bool TaskStaticSSNakajimaZwanzig::ConstructSpecDensSpecific(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
 		_specdens = _ampl / ((1.00 / _tau_c) - arma::cx_double(0.0, 1.0) * _omega);
