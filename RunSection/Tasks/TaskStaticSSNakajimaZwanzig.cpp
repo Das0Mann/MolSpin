@@ -107,7 +107,7 @@ namespace RunSection
 			}
 
             arma::cx_mat H_K;
-            H_K = arma::cx_double(0.0, 1.0) * H - K;
+            H_K = arma::cx_double(0.0, -1.0) * H - K;
 
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
@@ -1756,7 +1756,7 @@ namespace RunSection
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
-			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS;
+			arma::cx_mat A =  arma::cx_double(0.0, -1.0) * H_SS;
 
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
