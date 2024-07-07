@@ -117,8 +117,12 @@ namespace RunSection
 		    arma::cx_mat eig_val_mat;
 			
             this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H_K);
+			arma::eig_sym(eigen_val, eigen_vec, H);
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
+
+			// Rotate density operator in eigenbasis of H0
+			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
+			rho0 = rho0 / trace(rho0);
 
 			// ----------------------------------------------------------------
 			// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
@@ -135,8 +139,9 @@ namespace RunSection
 			one.set_size(arma::size(H));
 			one.eye();
 
-			lambda =  arma::kron(eig_val_mat, one) + arma::kron(one, eig_val_mat.t());
-			U_eigenvec_matrix = arma::kron(eigen_vec, eigen_vec.t());
+			lambda = arma::kron((-1.00 * arma::cx_double(0.0, 1.0) * eig_val_mat), one) + arma::kron(arma::cx_double(0.0, 1.0) * one, eig_val_mat.t());
+			//lambda = arma::kron(eig_val_mat,eig_val_mat.t());
+			U_eigenvec_matrix = arma::kron(eigen_vec, eigen_vec.st());
 
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -1002,9 +1007,9 @@ namespace RunSection
 									*Sy1Sx2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
 									*Sy1Sy2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
 									*Sy1Sz2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
-									*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bx
-									*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * By
-									*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bz
+									*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t()); // * Bx
+									*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t()); // * By
+									*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t()); // * Bz
 
 									// Put all tensors on pointer array
 									num_op = 9;
@@ -1088,14 +1093,22 @@ namespace RunSection
 										continue;
 									}
 
+									// Rotate into Eigenbasis of Hamiltonian
+									*T0_rank_0 = (eigen_vec.t() * (*T0_rank_0) * eigen_vec);
+									*T0_rank_2 = (eigen_vec.t() * (*T0_rank_2) * eigen_vec);
+									*Tm1 = (eigen_vec.t() * (-1 * (*Tm1)) * eigen_vec);
+									*Tp1 = (eigen_vec.t() * (-1 * (*Tp1)) * eigen_vec);
+									*Tm2 = (eigen_vec.t() * (*Tm2) * eigen_vec);
+									*Tp2 = (eigen_vec.t() * (*Tp2) * eigen_vec);
+
 									// Transfer spherical tensors into Superspace
-									*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-									*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
+									*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).st());
+									*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).st());
 									// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-									*Tm1_SS 		= arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-									*Tp1_SS 		= arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-									*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-									*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
+									*Tm1_SS 		= arma::kron((*Tm1), one) - arma::kron(one, ((*Tm1)).st());
+									*Tp1_SS 		= arma::kron((*Tp1), one) - arma::kron(one, ((*Tp1)).st());
+									*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).st());
+									*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).st());
 
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
@@ -1749,6 +1762,8 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
+			H = (eigen_vec.t() * H * eigen_vec);
+
 			// Transforming into superspace
 			space.SuperoperatorFromLeftOperator(H, lhs);
 			space.SuperoperatorFromRightOperator(H, rhs);
@@ -1756,12 +1771,14 @@ namespace RunSection
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
-			arma::cx_mat A =  arma::cx_double(0.0, -1.0) * H_SS;
-
+			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS; // arma::cx_double(0.0, -1.0) *
+	
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
 			arma::cx_mat Krhs;
 			arma::cx_mat K_SS;
+
+			K = (eigen_vec.t() * K * eigen_vec);
 
 			space.SuperoperatorFromLeftOperator(K, Klhs);
 			space.SuperoperatorFromRightOperator(K, Krhs);
@@ -1806,7 +1823,7 @@ namespace RunSection
 			// ---------------------------------------------------------------
 			// Perform the calculation
 			this->Log() << "Ready to perform calculation." << std::endl;
-			arma::cx_vec result = solve(-1 * arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			arma::cx_vec result = solve(arma::conv_to<arma::cx_mat>::from(A), rho0vec);
 			this->Log() << "Done with calculation." << std::endl;
 
 			// Convert the resulting density operator back to its Hilbert space representation
@@ -1847,6 +1864,8 @@ namespace RunSection
 							continue;
 						}
 
+
+						P = (eigen_vec.t() * P * eigen_vec);
 						// Return the yield for this transition
 						this->Data() << (*j)->Rate() * std::abs(arma::trace(P * rho0)) << " ";
 						sum_yield += ((*j)->Rate() * std::abs(arma::trace(P * rho0)));
@@ -1866,7 +1885,8 @@ namespace RunSection
 							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 							continue;
 						}
-
+						
+						P = (eigen_vec.t() * P * eigen_vec);
 						// Return the yield for this state - note that no reaction rates are included here.
 						this->Data() << std::abs(arma::trace(P * rho0)) << " ";
 						sum_yield += (std::abs(arma::trace(P * rho0)));
@@ -1947,7 +1967,7 @@ namespace RunSection
 		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2
 		// J. Chem. Phys. 154, 084121 (2021) https://doi.org/10.1063/5.0040519
 
-		_NakajimaZwanzigtensor = -1.00 * _op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2;
+		_NakajimaZwanzigtensor = _op1.t() * _specdens * _op2;
 
 		return true;
 	}
@@ -1958,7 +1978,7 @@ namespace RunSection
 #pragma omp for
 		for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
 		{
-			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - arma::cx_double(0.0, 1.0) * _omega);
+			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - _omega);
 		}
 
 		return true;
@@ -1967,7 +1987,9 @@ namespace RunSection
 	bool TaskStaticSSNakajimaZwanzig::ConstructSpecDensSpecific(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
-		_specdens = _ampl / ((1.00 / _tau_c) - arma::cx_double(0.0, 1.0) * _omega);
+		std::cout << "KEK" << std::endl;
+		//_specdens = _ampl * (_tau_c / (arma::cx_double(1.00, 0.00) + (pow(_omega, 2) * (pow(_tau_c, 2)))));
+		_specdens = _ampl / ((1.00 / _tau_c) - _omega);
 
 		return true;
 	}
