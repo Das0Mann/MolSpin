@@ -527,7 +527,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 														else
 														{
@@ -539,7 +539,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 														*ptr_SpecDens[m] += SpecDens;
 													}
@@ -613,7 +613,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 													else
 													{
@@ -625,7 +625,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 
 													*ptr_SpecDens[m] += SpecDens;
@@ -905,7 +905,7 @@ namespace RunSection
 																	continue;
 																}
 
-																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+																// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 															else
 															{
@@ -917,7 +917,7 @@ namespace RunSection
 																	continue;
 																}
 
-																SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+																// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 															}
 															*ptr_SpecDens[m] += SpecDens;
 														}
@@ -991,7 +991,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 														else
 														{
@@ -1003,7 +1003,7 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+															// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 														}
 
 														*ptr_SpecDens[m] += SpecDens;
@@ -1284,7 +1284,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1296,7 +1296,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 											// -----------------------------------------------------------------
@@ -1332,7 +1332,7 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 										}
 										else
 										{
@@ -1344,7 +1344,7 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 										}
 
 #pragma omp parallel for num_threads(threads)
@@ -1405,7 +1405,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 												else
 												{
@@ -1417,7 +1417,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 
 												// ----------------------------------------------------------------
@@ -1467,7 +1467,7 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 										}
 										else
 										{
@@ -1479,7 +1479,7 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 										}
 
 #pragma omp parallel for num_threads(threads)
@@ -1770,7 +1770,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 												else
 												{
@@ -1782,7 +1782,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+													// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 												}
 
 												// -----------------------------------------------------------------
@@ -1818,7 +1818,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1830,7 +1830,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 #pragma omp parallel for num_threads(threads)
@@ -1891,7 +1891,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 													else
 													{
@@ -1903,7 +1903,7 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+														// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 													}
 
 													// ----------------------------------------------------------------
@@ -1953,7 +1953,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 											else
 											{
@@ -1965,7 +1965,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
 											}
 
 #pragma omp parallel for num_threads(threads)
