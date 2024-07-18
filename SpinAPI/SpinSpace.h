@@ -15,7 +15,7 @@
 // any other classes, so every task can be implemented without the use of
 // SpinSpace - the SpinSpace class is just here to make life easier.
 //
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -117,7 +117,7 @@ namespace SpinAPI
 		bool GetState(const state_ptr &, arma::cx_vec &) const;											 // Vector representing the state
 		bool GetState(const state_ptr &, arma::cx_mat &) const;											 // Projection operator onto the state (dense matrix)
 		bool GetState(const state_ptr &, arma::sp_cx_mat &) const;										 // Projection operator onto the state (sparse matrix)
-		bool GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, arma::cx_mat &_mat) const; // Projection operator onto the thermal equilibrium state (dense matrix)
+		bool GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, arma::cx_mat &_mat) const; // Projection operator onto the thermal equilibrium state (dense matrix) [created by Pedro Alvarez]
 
 		// ------------------------------------------------
 		// Operators in the spin space (SpinSpace_operators.cpp)

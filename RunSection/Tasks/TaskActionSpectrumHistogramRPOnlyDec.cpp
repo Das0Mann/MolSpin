@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////
 // TaskActionSpectrumHistogramRPOnlyDec implementation (RunSection module)
 //
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // Task implemented by Siu Ying Wong and Luca Gerhards.
 // (c) 2022 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
@@ -52,27 +52,27 @@ namespace RunSection
 		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i != systems.cend(); i++)
 		{
-					// Get a list of subspaces, make sure that we have a pair of uncoupled radicals
+			// Get a list of subspaces, make sure that we have a pair of uncoupled radicals
 			auto subspaces = SpinAPI::CompleteSubspaces(*(*i));
-			if(subspaces.size() < 2)
+			if (subspaces.size() < 2)
 			{
 				this->Log() << "Failed to obtain radicals. The spin system does not have two uncoupled subspaces! Skipping SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 				continue;
 			}
-			
+
 			// Objects to hold the two unpaired electrons and their subspaces
 			SpinAPI::spin_ptr radical[2] = {nullptr, nullptr};
 			std::vector<SpinAPI::spin_ptr> subspace1;
 			std::vector<SpinAPI::spin_ptr> subspace2;
-			
+
 			// Find two subspaces with an electron
-			for(auto j = subspaces.cbegin(); j != subspaces.cend(); j++)
+			for (auto j = subspaces.cbegin(); j != subspaces.cend(); j++)
 			{
-				for(auto k = j->cbegin(); k != j->cend(); k++)
+				for (auto k = j->cbegin(); k != j->cend(); k++)
 				{
-					if((*k)->Type() == SpinAPI::SpinType::Electron)
+					if ((*k)->Type() == SpinAPI::SpinType::Electron)
 					{
-						if(radical[0] == nullptr)
+						if (radical[0] == nullptr)
 						{
 							radical[0] = (*k);
 							subspace1 = (*j);
@@ -82,74 +82,74 @@ namespace RunSection
 							radical[1] = (*k);
 							subspace2 = (*j);
 						}
-						
+
 						break;
 					}
 				}
 			}
-			
+
 			// Check whether we found a radical pair
-			if(radical[0] == nullptr || radical[1] == nullptr)
+			if (radical[0] == nullptr || radical[1] == nullptr)
 			{
 				this->Log() << "Failed to obtain radicals. Did not find two uncoupled electronic spins! Skipping SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 				continue;
 			}
-			
+
 			// Obtain SpinSpaces to describe the two subsystems
 			SpinAPI::SpinSpace spaces[2] = {SpinAPI::SpinSpace(subspace1), SpinAPI::SpinSpace(subspace2)};
 			spaces[0].UseSuperoperatorSpace(false);
 			spaces[1].UseSuperoperatorSpace(false);
 			spaces[0].Add((*i)->Interactions());
 			spaces[1].Add((*i)->Interactions());
-			
+
 			// Provide information about the radicals
 			this->Log() << "---------------------------------------" << std::endl;
 			this->Log() << "Found radical 1 with " << subspace1.size() << " spins:" << std::endl;
 			this->Log() << " - Unpaired Electron: " << radical[0]->Name() << std::endl;
 			this->Log() << " - Subspace dimensions: " << spaces[0].SpaceDimensions() << std::endl;
-			
-			if(subspace1.size() > 1)
+
+			if (subspace1.size() > 1)
 			{
 				this->Log() << " - Other spins:" << std::endl;
-				for(auto j = subspace1.cbegin(); j != subspace1.cend(); j++)
-					if((*j) != radical[0])
+				for (auto j = subspace1.cbegin(); j != subspace1.cend(); j++)
+					if ((*j) != radical[0])
 						this->Log() << "   - " << (*j)->Name() << std::endl;
 			}
 			else
 			{
 				this->Log() << " - There are no other spins." << std::endl;
 			}
-			
+
 			this->Log() << "\nFound radical 2 with " << subspace2.size() << " spins:" << std::endl;
 			this->Log() << " - Unpaired Electron: " << radical[1]->Name() << std::endl;
 			this->Log() << " - Subspace dimensions: " << spaces[1].SpaceDimensions() << std::endl;
-			
-			if(subspace2.size() > 1)
+
+			if (subspace2.size() > 1)
 			{
 				this->Log() << " - Other spins:" << std::endl;
-				for(auto j = subspace2.cbegin(); j != subspace2.cend(); j++)
-					if((*j) != radical[1])
+				for (auto j = subspace2.cbegin(); j != subspace2.cend(); j++)
+					if ((*j) != radical[1])
 						this->Log() << "   - " << (*j)->Name() << std::endl;
 			}
 			else
 			{
 				this->Log() << " - There are no other spins." << std::endl;
 			}
-			
+
 			this->Log() << "\nSpins not included in radicals: " << ((*i)->spins_size() - subspace1.size() - subspace2.size()) << " / " << (*i)->spins_size() << std::endl;
 			this->Log() << "---------------------------------------" << std::endl;
 			this->Log() << "Spins that are not included in the radicals are not considered in the calculations." << std::endl;
-			
+
 			// Matrices to hold spin operators, eigenvectors and eigenvalue-differences
 			arma::cx_mat eigenvectors[2]; // To hold eigenvectors
-			arma::vec eigenvalues[2];	   // To hold eigenvalues
+			arma::vec eigenvalues[2];	  // To hold eigenvalues
 
 			std::cout << spaces[0].HilbertSpaceDimensions() << std::endl;
 			std::cout << spaces[1].HilbertSpaceDimensions() << std::endl;
 			arma::cx_mat Id1;
-			Id1.eye(spaces[0].HilbertSpaceDimensions(),spaces[0].HilbertSpaceDimensions());
+			Id1.eye(spaces[0].HilbertSpaceDimensions(), spaces[0].HilbertSpaceDimensions());
 			arma::cx_mat Id2;
-			Id2.eye(spaces[1].HilbertSpaceDimensions(),spaces[1].HilbertSpaceDimensions());
+			Id2.eye(spaces[1].HilbertSpaceDimensions(), spaces[1].HilbertSpaceDimensions());
 
 			arma::sp_cx_mat transitionhamiltonancomplete = arma::kron(arma::conv_to<arma::sp_cx_mat>::from(Id1), arma::conv_to<arma::sp_cx_mat>::from(Id2));
 			transitionhamiltonancomplete.zeros();
@@ -157,25 +157,25 @@ namespace RunSection
 			arma::cx_mat tmptransitionhamiltonian[2];
 
 			// Fill the matrices (get Hamiltonian, diagonalize it, get spin operators...)
-			for(unsigned int r = 0; r < 2; r++)
+			for (unsigned int r = 0; r < 2; r++)
 			{
 				// Get the Hamiltonian of the first radical subspace
 				arma::cx_mat H;
-				
-				if(!spaces[r].Hamiltonian(H))
+
+				if (!spaces[r].Hamiltonian(H))
 				{
 					this->Log() << "Failed to obtain Hamiltonian for radical " << r << "." << std::endl;
 					continue;
 				}
-				
+
 				// Diagonalize Hamiltonian
-				if(!arma::eig_sym(eigenvalues[r],eigenvectors[r],H))
+				if (!arma::eig_sym(eigenvalues[r], eigenvectors[r], H))
 				{
 					this->Log() << "Failed to diagonalize Hamiltonian for radical " << r << "." << std::endl;
 					continue;
 				}
 
-				// Make transition hamiltonian with copy and pasted code. 
+				// Make transition hamiltonian with copy and pasted code.
 				arma::cx_mat transitionhamiltonian = arma::zeros<arma::cx_mat>(arma::size(H));
 				bool zeemanparametersalreadyfound = false;
 
@@ -262,51 +262,51 @@ namespace RunSection
 				std::cout << "tmphamiltonianloop " << tmptransitionhamiltonian[r].is_zero() << std::endl;
 			}
 
-				std::cout << "ID 1 " << Id1.is_zero() << std::endl;
-				std::cout << "ID 2 " << Id2.is_zero() << std::endl;
+			std::cout << "ID 1 " << Id1.is_zero() << std::endl;
+			std::cout << "ID 2 " << Id2.is_zero() << std::endl;
 
-				// ----------------------------------------------------------------
-				// GET ARRAY OF ENERGY GAPS, SIMILAR TO THE "domega" matrix
-				// ----------------------------------------------------------------
+			// ----------------------------------------------------------------
+			// GET ARRAY OF ENERGY GAPS, SIMILAR TO THE "domega" matrix
+			// ----------------------------------------------------------------
 
-				transitionhamiltonancomplete = arma::kron(arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[0]),arma::conv_to<arma::sp_cx_mat>::from(Id2)) + arma::kron(arma::conv_to<arma::sp_cx_mat>::from(Id1),arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[1]));
-				std::cout << "transitionhamiltonian " << transitionhamiltonancomplete.is_zero() << std::endl;
+			transitionhamiltonancomplete = arma::kron(arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[0]), arma::conv_to<arma::sp_cx_mat>::from(Id2)) + arma::kron(arma::conv_to<arma::sp_cx_mat>::from(Id1), arma::conv_to<arma::sp_cx_mat>::from(tmptransitionhamiltonian[1]));
+			std::cout << "transitionhamiltonian " << transitionhamiltonancomplete.is_zero() << std::endl;
 
-				// Get the all eigenvalues into one big space matrix
-				arma::vec totaleigenvalues;
-				totaleigenvalues = arma::kron(eigenvalues[0], arma::ones(spaces[1].HilbertSpaceDimensions())) + arma::kron(arma::ones(spaces[0].HilbertSpaceDimensions()), eigenvalues[1]);
+			// Get the all eigenvalues into one big space matrix
+			arma::vec totaleigenvalues;
+			totaleigenvalues = arma::kron(eigenvalues[0], arma::ones(spaces[1].HilbertSpaceDimensions())) + arma::kron(arma::ones(spaces[0].HilbertSpaceDimensions()), eigenvalues[1]);
 
-				std::cout << "eigenvalues " << totaleigenvalues.is_zero() << std::endl;
-				arma::vec energygaps = this->GetDifferencesRPOnlyDec(totaleigenvalues);
-				std::cout << "energygaps " << energygaps.is_zero() << std::endl;
+			std::cout << "eigenvalues " << totaleigenvalues.is_zero() << std::endl;
+			arma::vec energygaps = this->GetDifferencesRPOnlyDec(totaleigenvalues);
+			std::cout << "energygaps " << energygaps.is_zero() << std::endl;
 
-				// ----------------------------------------------------------------
-				// EVALUATE RESONANCE EFFECTS USING EIGENVECTORS OF H0
-				// ----------------------------------------------------------------
+			// ----------------------------------------------------------------
+			// EVALUATE RESONANCE EFFECTS USING EIGENVECTORS OF H0
+			// ----------------------------------------------------------------
 
-				// Produce the intial state
-				arma::cx_vec rho0vec = this->GetPopulationVector(spaces[0].SpaceDimensions(),spaces[1].SpaceDimensions(),eigenvectors[0],eigenvectors[1]);
-				std::cout << "rho0vec " << rho0vec.is_zero() << std::endl;
-			
-				arma::vec resonanceeffects = this->GetResonanceEffectsRPOnlyDec(rho0vec, transitionhamiltonancomplete);
-				std::cout << "resonanceeffects " << resonanceeffects.is_zero() << std::endl;
-				//std::cout << resonanceeffects << std::endl;
-				// ----------------------------------------------------------------
-				// BINNING PROCESS FOR HISTOGRAM
-				// ----------------------------------------------------------------
-				double upperlimit;
-				this->Properties()->Get("upper_limit", upperlimit);
-				double binwidth;
-				this->Properties()->Get("bin_width", binwidth);
-				bool useMHz;
-				this->Properties()->Get("units_in_MHz", useMHz);
+			// Produce the intial state
+			arma::cx_vec rho0vec = this->GetPopulationVector(spaces[0].SpaceDimensions(), spaces[1].SpaceDimensions(), eigenvectors[0], eigenvectors[1]);
+			std::cout << "rho0vec " << rho0vec.is_zero() << std::endl;
 
-				int numbins = arma::regspace(binwidth / 2, binwidth, upperlimit).size();
-				auto normalisedheights = GetNormalisedHistogramHeightsRPOnlyDec(energygaps, resonanceeffects, binwidth, numbins, useMHz);
-				std::cout << "normalisedheights " << normalisedheights.is_zero() << std::endl;
-				this->Data() << this->RunSettings()->CurrentStep() << " ";
-				
-				this->Data() << normalisedheights.st(); // already contains endl
+			arma::vec resonanceeffects = this->GetResonanceEffectsRPOnlyDec(rho0vec, transitionhamiltonancomplete);
+			std::cout << "resonanceeffects " << resonanceeffects.is_zero() << std::endl;
+			// std::cout << resonanceeffects << std::endl;
+			//  ----------------------------------------------------------------
+			//  BINNING PROCESS FOR HISTOGRAM
+			//  ----------------------------------------------------------------
+			double upperlimit;
+			this->Properties()->Get("upper_limit", upperlimit);
+			double binwidth;
+			this->Properties()->Get("bin_width", binwidth);
+			bool useMHz;
+			this->Properties()->Get("units_in_MHz", useMHz);
+
+			int numbins = arma::regspace(binwidth / 2, binwidth, upperlimit).size();
+			auto normalisedheights = GetNormalisedHistogramHeightsRPOnlyDec(energygaps, resonanceeffects, binwidth, numbins, useMHz);
+			std::cout << "normalisedheights " << normalisedheights.is_zero() << std::endl;
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+
+			this->Data() << normalisedheights.st(); // already contains endl
 		}
 		return true;
 	}
@@ -339,18 +339,18 @@ namespace RunSection
 		return differences;
 	}
 
-	arma::cx_vec TaskActionSpectrumHistogramRPOnlyDec::GetPopulationVector(const int& Z1, const int& Z2, const arma::cx_mat& V1, const arma::cx_mat& V2) 
+	arma::cx_vec TaskActionSpectrumHistogramRPOnlyDec::GetPopulationVector(const int &Z1, const int &Z2, const arma::cx_mat &V1, const arma::cx_mat &V2)
 	{
 		std::complex<double> i(0, 1);
 
-		arma::cx_mat Sx = { {std::complex<double>(0.0, 0.0), std::complex<double>(0.5, 0.0)}, 
-							{std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)} };
+		arma::cx_mat Sx = {{std::complex<double>(0.0, 0.0), std::complex<double>(0.5, 0.0)},
+						   {std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)}};
 
-		arma::cx_mat Sy = { {std::complex<double>(0.0, 0.0), std::complex<double>(0.0, -0.5)}, 
-							{std::complex<double>(0.0, 0.5), std::complex<double>(0.0, 0.0)} };
+		arma::cx_mat Sy = {{std::complex<double>(0.0, 0.0), std::complex<double>(0.0, -0.5)},
+						   {std::complex<double>(0.0, 0.5), std::complex<double>(0.0, 0.0)}};
 
-		arma::cx_mat Sz = { {std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)}, 
-							{std::complex<double>(0.0, 0.0), std::complex<double>(-0.5, 0.0)} };
+		arma::cx_mat Sz = {{std::complex<double>(0.5, 0.0), std::complex<double>(0.0, 0.0)},
+						   {std::complex<double>(0.0, 0.0), std::complex<double>(-0.5, 0.0)}};
 
 		int hilbertspace = Z1 * Z2;
 
@@ -359,11 +359,11 @@ namespace RunSection
 		Ps /= 4.0;
 
 		arma::cx_mat IdentityZ1;
-		IdentityZ1.set_size(Z1,Z1);
+		IdentityZ1.set_size(Z1, Z1);
 		IdentityZ1.eye();
-	
+
 		arma::cx_mat IdentityZ2;
-		IdentityZ2.set_size(Z2,Z2);
+		IdentityZ2.set_size(Z2, Z2);
 		IdentityZ2.eye();
 
 		// Radical 1 - span and rotate

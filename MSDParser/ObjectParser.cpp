@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////////
 // Object Parser implementations, provides easy access to properties for
 // the loaded objects.
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -25,13 +25,13 @@ namespace MSDParser
 		bool isKey = true;
 		auto i = _contents.cbegin();
 
-		while(i != _contents.cend())
+		while (i != _contents.cend())
 		{
-			if(isKey)
+			if (isKey)
 			{
-				if((*i) == '=')			// Finding '=' means we got the key and then need the value
+				if ((*i) == '=') // Finding '=' means we got the key and then need the value
 					isKey = false;
-				else if((*i) == ';')	// Finding ';' in a key is wrong, so skip the key
+				else if ((*i) == ';') // Finding ';' in a key is wrong, so skip the key
 					key.clear();
 				else
 					key += (*i);
@@ -39,15 +39,21 @@ namespace MSDParser
 			else
 			{
 				// Track parantheses such that a value of a matrix string, e.g. "1 2;3 4", also can be read (specifed by "matrix(...)" for Tensor objects)
-				if((*i) == '(') {++parantheses;}
-				else if((*i) == ')') {--parantheses;}
-				
-				if((*i) == ';' && parantheses < 1)
+				if ((*i) == '(')
+				{
+					++parantheses;
+				}
+				else if ((*i) == ')')
+				{
+					--parantheses;
+				}
+
+				if ((*i) == ';' && parantheses < 1)
 				{
 					// Make sure that neither the key nor the value is empty before using them
-					if(key.size() > 0 && value.size() > 0)
+					if (key.size() > 0 && value.size() > 0)
 						this->fields[key] = value;
-					
+
 					// Clear buffers and reset
 					key.clear();
 					value.clear();
@@ -58,262 +64,280 @@ namespace MSDParser
 					value += (*i);
 				}
 			}
-			
+
 			i++;
 		}
 	}
-	
+
 	// Copy-constructor
 	// Copies the values through the initializer list
-	ObjectParser::ObjectParser(const ObjectParser& _objParser) : fields(_objParser.fields), name(_objParser.name)
+	ObjectParser::ObjectParser(const ObjectParser &_objParser) : fields(_objParser.fields), name(_objParser.name)
 	{
 	}
-	
+
 	// Destructor
 	ObjectParser::~ObjectParser()
 	{
 	}
-	
+
 	// -----------------------------------------------------
 	// ObjectParser public Get method overloads
 	// -----------------------------------------------------
 	// Attemp to find a keyword matching the given name
-	bool ObjectParser::Get(const std::string& _str, std::string& _out) const
+	bool ObjectParser::Get(const std::string &_str, std::string &_out) const
 	{
 		auto i = this->fields.find(_str);
-		
-		if(i != this->fields.end())
+
+		if (i != this->fields.end())
 			_out = i->second;
 		else
- 			return false;
-		
+			return false;
+
 		return true;
 	}
-	
+
 	// Attemp to find a double with the given name
-	bool ObjectParser::Get(const std::string& _str, double& _out) const
+	bool ObjectParser::Get(const std::string &_str, double &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		double tmp;
-		
+
 		try
 		{
 			tmp = std::stod(str);
 		}
-		catch(const std::exception&) {return false;}
-		//vector<double>
+		catch (const std::exception &)
+		{
+			return false;
+		}
+		// vector<double>
 		_out = tmp;
-		//std::cout << _out << std::endl;
+		// std::cout << _out << std::endl;
 		return true;
 	}
-	
+
 	// Attemp to find an unsigned integer with the given name
-	bool ObjectParser::Get(const std::string& _str, unsigned int& _out) const
+	bool ObjectParser::Get(const std::string &_str, unsigned int &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		unsigned int tmp;
-		
+
 		try
 		{
-			if(std::stoi(str) < 0)
+			if (std::stoi(str) < 0)
 				return false;
 			tmp = static_cast<unsigned int>(std::stoi(str));
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// Attemp to find an integer with the given name
-	bool ObjectParser::Get(const std::string& _str, int& _out) const
+	bool ObjectParser::Get(const std::string &_str, int &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		int tmp;
-		
+
 		try
 		{
 			tmp = std::stoi(str);
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// Attemp to find a bool with the given name
-	bool ObjectParser::Get(const std::string& _str, bool& _out) const
+	bool ObjectParser::Get(const std::string &_str, bool &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
-		if(str.compare("true") == 0 || str.compare("yes") == 0 || str.compare("1") == 0)
+
+		if (str.compare("true") == 0 || str.compare("yes") == 0 || str.compare("1") == 0)
 			_out = true;
-		else if(str.compare("false") == 0 || str.compare("no") == 0 || str.compare("0") == 0)
+		else if (str.compare("false") == 0 || str.compare("no") == 0 || str.compare("0") == 0)
 			_out = false;
 		else
 			return false;
-		
+
 		return true;
 	}
-	
+
 	// Attemp to find a tensor with the given name
-	bool ObjectParser::Get(const std::string& _str, SpinAPI::Tensor& _out) const
+	bool ObjectParser::Get(const std::string &_str, SpinAPI::Tensor &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		std::string directory = "";
 		this->Get("FileReaderDirectory", directory);
-		
+
 		_out = SpinAPI::Tensor(str, directory);
 		return true;
 	}
-	
+
 	// Attemp to find a vector with the given name
-	bool ObjectParser::Get(const std::string& _str, arma::vec& _out) const
+	bool ObjectParser::Get(const std::string &_str, arma::vec &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		// Parse string and make sure that we have a 3D vector
 		arma::vec tmpVec = arma::vec(str);
-		if(tmpVec.n_elem != 3)
+		if (tmpVec.n_elem != 3)
 			return false;
-		
+
 		_out = tmpVec;
 		return true;
 	}
-	
+
 	// -----------------------------------------------------
 	// ObjectParser public GetList method overloads
 	// - Similar to Get, but allows multiple values to be specifed
 	// -----------------------------------------------------
 	// Attemp to find a keyword matching the given name
-	bool ObjectParser::GetList(const std::string& _str, std::vector<std::string>& _out, const char& _delimiter) const
+	bool ObjectParser::GetList(const std::string &_str, std::vector<std::string> &_out, const char &_delimiter) const
 	{
 		auto i = this->fields.find(_str);
-		
+
 		// If the keyword was found
-		if(i != this->fields.end())
+		if (i != this->fields.end())
 		{
-			
+
 			// Get all the values separated by the delimiter
 			std::istringstream stream(i->second);
-			for(std::string s; std::getline(stream, s, _delimiter); )
+			for (std::string s; std::getline(stream, s, _delimiter);)
 				_out.push_back(s);
-			
+
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
 	// Attemp to find a list of doubles with the given name
-	bool ObjectParser::GetList(const std::string& _str, std::vector<double>& _out, const char& _delimiter) const
+	bool ObjectParser::GetList(const std::string &_str, std::vector<double> &_out, const char &_delimiter) const
 	{
 		// Get a list of strings from the keyword
 		std::vector<std::string> strs;
-		if(!this->GetList(_str, strs, _delimiter))
+		if (!this->GetList(_str, strs, _delimiter))
 			return false;
-		
+
 		std::vector<double> tmp;
 		tmp.reserve(strs.size());
-		
+
 		try
 		{
 			// Attemp to parse the values
-			for(auto i = strs.cbegin(); i != strs.cend(); i++)
-				tmp.push_back( std::stod(*i) );
+			for (auto i = strs.cbegin(); i != strs.cend(); i++)
+				tmp.push_back(std::stod(*i));
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// Attemp to find a list of unsigned integers with the given keyword
-	bool ObjectParser::GetList(const std::string& _str, std::vector<unsigned int>& _out, const char& _delimiter) const
+	bool ObjectParser::GetList(const std::string &_str, std::vector<unsigned int> &_out, const char &_delimiter) const
 	{
 		// Get a list of strings from the keyword
 		std::vector<std::string> strs;
-		if(!this->GetList(_str, strs, _delimiter))
+		if (!this->GetList(_str, strs, _delimiter))
 			return false;
-		
+
 		std::vector<unsigned int> tmp;
 		tmp.reserve(strs.size());
-		
+
 		try
 		{
 			// Attemp to parse the values
-			for(auto i = strs.cbegin(); i != strs.cend(); i++)
+			for (auto i = strs.cbegin(); i != strs.cend(); i++)
 			{
-				if(std::stoi(*i) < 0)
+				if (std::stoi(*i) < 0)
 					return false;
-				tmp.push_back( static_cast<unsigned int>(std::stoi(*i)) );
+				tmp.push_back(static_cast<unsigned int>(std::stoi(*i)));
 			}
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// Attemp to find a list of integers with the given keyword
-	bool ObjectParser::GetList(const std::string& _str, std::vector<int>& _out, const char& _delimiter) const
+	bool ObjectParser::GetList(const std::string &_str, std::vector<int> &_out, const char &_delimiter) const
 	{
 		// Get a list of strings from the keyword
 		std::vector<std::string> strs;
-		if(!this->GetList(_str, strs, _delimiter))
+		if (!this->GetList(_str, strs, _delimiter))
 			return false;
-		
+
 		std::vector<int> tmp;
 		tmp.reserve(strs.size());
-		
+
 		try
 		{
 			// Attemp to parse the values
-			for(auto i = strs.cbegin(); i != strs.cend(); i++)
-				tmp.push_back( std::stoi(*i) );
+			for (auto i = strs.cbegin(); i != strs.cend(); i++)
+				tmp.push_back(std::stoi(*i));
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// Attemp to find a list of vectors with the given keyword
-	bool ObjectParser::GetList(const std::string& _str, std::vector<arma::vec>& _out, const char& _delimiter) const
+	bool ObjectParser::GetList(const std::string &_str, std::vector<arma::vec> &_out, const char &_delimiter) const
 	{
 		// Get a list of strings from the keyword
 		std::vector<std::string> strs;
-		if(!this->GetList(_str, strs, _delimiter))
+		if (!this->GetList(_str, strs, _delimiter))
 			return false;
-		
+
 		std::vector<arma::vec> tmp;
 		tmp.reserve(strs.size());
-		
+
 		// Parse string and make sure that we have a 3D vector
-		for(auto i = strs.cbegin(); i != strs.cend(); i++)
+		for (auto i = strs.cbegin(); i != strs.cend(); i++)
 		{
 			arma::vec tmpVec = arma::vec(*i);
-			if(tmpVec.n_elem != 3)
+			if (tmpVec.n_elem != 3)
 				return false;
 			tmp.push_back(tmpVec);
 		}
-		
+
 		_out = tmp;
 		return true;
 	}
@@ -323,108 +347,118 @@ namespace MSDParser
 	// - Similar to Get, but allows multiple values to be specifed
 	// -----------------------------------------------------
 	// Attemp to find a keyword matching the given name	y
-    bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
-    {
-        // Step 1: Output the initial message indicating the start of the reading process.
-        std::cout << "Starting with reading: " << _str << std::endl;
+	bool ObjectParser::GetMatrix(const std::string &_str, arma::mat &_out) const
+	{
+		// Step 1: Output the initial message indicating the start of the reading process.
+		std::cout << "Starting with reading: " << _str << std::endl;
 
-        // Step 2: Initialize an empty vector to hold the split strings.
-        std::vector<std::string> strs;
+		// Step 2: Initialize an empty vector to hold the split strings.
+		std::vector<std::string> strs;
 
-        // Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
-        if (!this->GetList(_str, strs, ','))
-            return false;
+		// Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
+		if (!this->GetList(_str, strs, ','))
+			return false;
 
-        // Step 4: Check if the resulting list is empty and return false if it is.
-        if (strs.empty())
-            return false;
+		// Step 4: Check if the resulting list is empty and return false if it is.
+		if (strs.empty())
+			return false;
 
-        // Step 5: Initialize variable to keep track of the number of elements in each row.
-        size_t numElements = 0;
+		// Step 5: Initialize variable to keep track of the number of elements in each row.
+		size_t numElements = 0;
 
-        // Step 6: Create a lambda function to trim whitespace from both ends of a string.
-        auto trim = [](std::string& str) {
-            str.erase(0, str.find_first_not_of(' '));       // Prefix
-            str.erase(str.find_last_not_of(' ') + 1); // Suffix
-        };
+		// Step 6: Create a lambda function to trim whitespace from both ends of a string.
+		auto trim = [](std::string &str)
+		{
+			str.erase(0, str.find_first_not_of(' ')); // Prefix
+			str.erase(str.find_last_not_of(' ') + 1); // Suffix
+		};
 
-        // Step 7: Validate the number of elements in each row (numElements).
-        for (const std::string& str : strs) {
-            std::string modified_str = str;
-            // Remove square brackets
-            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
-            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
+		// Step 7: Validate the number of elements in each row (numElements).
+		for (const std::string &str : strs)
+		{
+			std::string modified_str = str;
+			// Remove square brackets
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
 
-            // Trim leading and trailing whitespaces
-            trim(modified_str);
+			// Trim leading and trailing whitespaces
+			trim(modified_str);
 
-            std::istringstream stream(modified_str);
-            size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
+			std::istringstream stream(modified_str);
+			size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
 
-            // Check if the number of elements in each row is consistent
-            if (numElements == 0)
-                numElements = count;
-            else if (count != numElements)
-                return false;
-        }
+			// Check if the number of elements in each row is consistent
+			if (numElements == 0)
+				numElements = count;
+			else if (count != numElements)
+				return false;
+		}
 
-        // Step 8: Output the number of rows and columns.
-        std::cout << "Number of rows: " << strs.size() << ", Number of columns: " << numElements << std::endl;
+		// Step 8: Output the number of rows and columns.
+		std::cout << "Number of rows: " << strs.size() << ", Number of columns: " << numElements << std::endl;
 
-        // Step 9: Create a temporary matrix to store the values.
-        arma::mat tmp(strs.size(), numElements);
+		// Step 9: Create a temporary matrix to store the values.
+		arma::mat tmp(strs.size(), numElements);
 
-        // Step 10: Populate the temporary matrix with values.
-        for (size_t i = 0; i < strs.size(); ++i) {
-            std::string str = strs[i];
-            // Remove square brackets
-            str.erase(std::remove(str.begin(), str.end(), '['), str.end());
-            str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
+		// Step 10: Populate the temporary matrix with values.
+		for (size_t i = 0; i < strs.size(); ++i)
+		{
+			std::string str = strs[i];
+			// Remove square brackets
+			str.erase(std::remove(str.begin(), str.end(), '['), str.end());
+			str.erase(std::remove(str.begin(), str.end(), ']'), str.end());
 
-            // Trim leading and trailing whitespaces
-            trim(str);
+			// Trim leading and trailing whitespaces
+			trim(str);
 
-            std::istringstream stream(str);
-            std::string token;
-            size_t j = 0;
+			std::istringstream stream(str);
+			std::string token;
+			size_t j = 0;
 
-            // Parse each value and populate the matrix
-            while (std::getline(stream, token, ' ')) {
-                trim(token);
-                try {
-                    tmp(i, j) = std::stod(token);
-                } catch (const std::exception& e) {
-                    std::cout << "Invalid number format: " << token << std::endl;
-		    		std::cout << "Please check your list carefully. Such numbers should not appear for a float format.";
-                    return false;
-                }
-                j++;
-            }
-        }
+			// Parse each value and populate the matrix
+			while (std::getline(stream, token, ' '))
+			{
+				trim(token);
+				try
+				{
+					tmp(i, j) = std::stod(token);
+				}
+				catch (const std::exception &e)
+				{
+					std::cout << "Invalid number format: " << token << std::endl;
+					std::cout << "Please check your list carefully. Such numbers should not appear for a float format.";
+					return false;
+				}
+				j++;
+			}
+		}
 
-        // Step 11: Output the populated matrix for debugging.
-		//std::cout << tmp << std::endl;
+		// Step 11: Output the populated matrix for debugging.
+		// std::cout << tmp << std::endl;
 
-        // Step 12: Handle small numbers close to zero.
-        for (int i = 0; i < (int) strs.size(); i++) {
-            for (int j = 0; j < (int) numElements; j++) {
-                if (std::abs(tmp(i, j)) <= 1e-20) {
-                    tmp(i, j) = 0.0;
-                }
-            }
-        }
+		// Step 12: Handle small numbers close to zero.
+		for (int i = 0; i < (int)strs.size(); i++)
+		{
+			for (int j = 0; j < (int)numElements; j++)
+			{
+				if (std::abs(tmp(i, j)) <= 1e-20)
+				{
+					tmp(i, j) = 0.0;
+				}
+			}
+		}
 
-        // Step 13: Assign the populated temporary matrix to the output matrix.
-        _out = tmp;
+		// Step 13: Assign the populated temporary matrix to the output matrix.
+		_out = tmp;
 
-        // Step 14: Output a message indicating the successful parsing.
-        std::cout << "Read the list of multiexponentials for " << _str << std::endl;
+		// Step 14: Output a message indicating the successful parsing.
+		std::cout << "Read the list of multiexponentials for " << _str << std::endl;
 
-        // Step 15: Return true to indicate successful parsing.
-        return true;
-    }
+		// Step 15: Return true to indicate successful parsing.
+		return true;
+	}
 
-	// Old version: less robust	
+	// Old version: less robust
 	// bool ObjectParser::GetMatrix(const std::string& _str, arma::mat& _out) const
 	// {
 	// 	std::cout << "Starting with reading: " << _str << std::endl;
@@ -437,7 +471,7 @@ namespace MSDParser
 	// 	// Step 2: Check if the list of strings is empty
 	// 	if (strs.empty())
 	// 		return false;
-		
+
 	// 	size_t numElements = 0;
 
 	// 	// Step 3: Iterate through each string in the list to determine the number of elements
@@ -495,7 +529,7 @@ namespace MSDParser
 	// 			if(tmp(i,j) <= 1e-20)
 	// 			{
 	// 				tmp(i,j) *= 0.0;
-	// 			}	
+	// 			}
 	// 		}
 	// 	}
 
@@ -514,56 +548,59 @@ namespace MSDParser
 	// Specialized Get method to get a pulse sequence
 	// -----------------------------------------------------
 	// Attempt to find a pulse sequence
-    bool ObjectParser::GetPulseSequence(const std::string& _str, std::vector<std::tuple<std::string, std::string, double, double>>& _out) const
-    {
+	bool ObjectParser::GetPulseSequence(const std::string &_str, std::vector<std::tuple<std::string, std::string, double, double>> &_out) const
+	{
 		// Step 1: Output the initial message indicating the start of the reading process.
-        std::cout << "Starting with reading: " << _str << std::endl;
+		std::cout << "Starting with reading: " << _str << std::endl;
 
-        // Step 2: Initialize an empty vector to hold the split strings.
-        std::vector<std::string> strs;
+		// Step 2: Initialize an empty vector to hold the split strings.
+		std::vector<std::string> strs;
 
-        // Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
-        if (!this->GetList(_str, strs, ','))
-            return false;
+		// Step 3: Populate 'strs' by splitting '_str' using the delimiter ','.
+		if (!this->GetList(_str, strs, ','))
+			return false;
 
-        // Step 4: Check if the resulting list is empty and return false if it is.
-        if (strs.empty())
-            return false;
+		// Step 4: Check if the resulting list is empty and return false if it is.
+		if (strs.empty())
+			return false;
 
-        // Step 5: Initialize variable to keep track of the number of elements in each row.
-        size_t numElements = 0;
+		// Step 5: Initialize variable to keep track of the number of elements in each row.
+		size_t numElements = 0;
 
-        // Step 6: Create a lambda function to trim whitespace from both ends of a string.
-        auto trim = [](std::string& str) {
-            str.erase(0, str.find_first_not_of(' '));       // Prefix
-            str.erase(str.find_last_not_of(' ') + 1); // Suffix
-        };
+		// Step 6: Create a lambda function to trim whitespace from both ends of a string.
+		auto trim = [](std::string &str)
+		{
+			str.erase(0, str.find_first_not_of(' ')); // Prefix
+			str.erase(str.find_last_not_of(' ') + 1); // Suffix
+		};
 
-        // Step 7: Validate the number of elements in each row (numElements).
-        for (const std::string& str : strs) {
-            std::string modified_str = str;
-            // Remove square brackets
-            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
-            modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
+		// Step 7: Validate the number of elements in each row (numElements).
+		for (const std::string &str : strs)
+		{
+			std::string modified_str = str;
+			// Remove square brackets
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
+			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
 
-            // Trim leading and trailing whitespaces
-            trim(modified_str);
+			// Trim leading and trailing whitespaces
+			trim(modified_str);
 
-            std::istringstream stream(modified_str);
-            size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
+			std::istringstream stream(modified_str);
+			size_t count = std::count(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), ' ') + 1;
 
-            // Check if the number of elements in each row is consistent
-            if (numElements == 0)
-                numElements = count;
-            else if (count != numElements)
-                return false;
-        }
+			// Check if the number of elements in each row is consistent
+			if (numElements == 0)
+				numElements = count;
+			else if (count != numElements)
+				return false;
+		}
 
-        // Step 8: Output the number of rows and columns.
-        std::cout << "Number of Pulses: " << strs.size() << std::endl;
+		// Step 8: Output the number of rows and columns.
+		std::cout << "Number of Pulses: " << strs.size() << std::endl;
 
 		// Step 9: Create two tuples/pair that store the two strings (pulse and direction) and the free evolution time frame (t1 and t2)
-		for (const std::string& str : strs) {
+		for (const std::string &str : strs)
+		{
 			std::string modified_str = str;
 			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
 			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
@@ -572,20 +609,25 @@ namespace MSDParser
 			std::istringstream stream(modified_str);
 			std::vector<std::string> tokens;
 			std::string token;
-			while (stream >> token) {
+			while (stream >> token)
+			{
 				tokens.push_back(token);
 			}
 
-			if (tokens.size() != 4) {
+			if (tokens.size() != 4)
+			{
 				std::cerr << "Invalid number of elements in sequence. Expected 4, got " << tokens.size() << std::endl;
 				return false;
 			}
 
 			double t1, t2;
-			try {
+			try
+			{
 				t1 = std::stod(tokens[2]);
 				t2 = std::stod(tokens[3]);
-			} catch (const std::exception& e) {
+			}
+			catch (const std::exception &e)
+			{
 				std::cerr << "Error converting string to double: " << e.what() << std::endl;
 				return false;
 			}
@@ -594,70 +636,71 @@ namespace MSDParser
 		}
 
 		std::cout << "Number of Pulses: " << _out.size() << std::endl;
-    	return true;
-
+		return true;
 	}
 	// -----------------------------------------------------
 	// Specialized Get method to get a spin quantum number
 	// -----------------------------------------------------
 	// Attempt to find a spin quantum number with the given name
-	bool ObjectParser::GetSpin(const std::string& _str, unsigned int& _out) const
+	bool ObjectParser::GetSpin(const std::string &_str, unsigned int &_out) const
 	{
 		std::string str("");
-		if(!this->Get(_str,str))
+		if (!this->Get(_str, str))
 			return false;
-		
+
 		unsigned int tmp;
-		
+
 		try
 		{
 			int tmp2 = -1;
-			
+
 			// Check whether the spin is written in the form "1/2", "2/2", "3/2", etc.
-			if(str.size() > 2 && (*(str.cend()-1) == '2' && *(str.cend()-2) == '/'))
+			if (str.size() > 2 && (*(str.cend() - 1) == '2' && *(str.cend() - 2) == '/'))
 			{
-				tmp2 = std::stoi(str.substr(0,str.size()-2).c_str());
+				tmp2 = std::stoi(str.substr(0, str.size() - 2).c_str());
 			}
 			else
 			{
 				// Use a factor of two if the spin quantum number is not specified with "/2"
 				tmp2 = 2 * std::stoi(str.c_str());
 			}
-			
-			
-			if(std::stoi(str) < 0)
+
+			if (std::stoi(str) < 0)
 				return false;
 			tmp = static_cast<unsigned int>(tmp2);
 		}
-		catch(const std::exception&) {return false;}
-		
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
 		_out = tmp;
 		return true;
 	}
-	
+
 	// -----------------------------------------------------
 	// ObjectParser public GetFunction method
 	// -----------------------------------------------------
 	std::vector<std::pair<std::string, std::string>> ObjectParser::GetFunction(std::string _keyword) const
 	{
 		std::vector<std::pair<std::string, std::string>> result;
-		
+
 		// Loop through all the fields
-		for(auto i = this->fields.cbegin(); i != this->fields.cend(); i++)
+		for (auto i = this->fields.cbegin(); i != this->fields.cend(); i++)
 		{
 			// Search for parantheses
 			auto pstart = i->first.find_first_of("(");
-			if(pstart != std::string::npos)
+			if (pstart != std::string::npos)
 			{
 				// If the keyword was found, put it into the results collection
-				if(i->first.substr(0,pstart).compare(_keyword) == 0)
+				if (i->first.substr(0, pstart).compare(_keyword) == 0)
 				{
 					auto pend = i->first.find_first_of(")");
-					result.push_back(std::pair<std::string, std::string>(i->first.substr(pstart+1,pend-pstart-1), i->second));
+					result.push_back(std::pair<std::string, std::string>(i->first.substr(pstart + 1, pend - pstart - 1), i->second));
 				}
 			}
 		}
-		
+
 		return result;
 	}
 	// -----------------------------------------------------
@@ -669,4 +712,3 @@ namespace MSDParser
 	}
 	// -----------------------------------------------------
 }
-

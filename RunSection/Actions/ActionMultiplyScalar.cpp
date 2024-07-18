@@ -1,23 +1,22 @@
 /////////////////////////////////////////////////////////////////////////
 // ActionMultiplyScalar implementation (RunSection module)
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #include "ActionMultiplyScalar.h"
 #include "ObjectParser.h"
 
-
 namespace RunSection
 {
 	// -----------------------------------------------------
 	// ActionMultiplyScalar Constructors and Destructor
 	// -----------------------------------------------------
-	ActionMultiplyScalar::ActionMultiplyScalar(const MSDParser::ObjectParser& _parser, const std::map<std::string, ActionScalar>& _scalars, const std::map<std::string, ActionVector>& _vectors)	: Action(_parser,_scalars,_vectors), actionScalar(nullptr)
+	ActionMultiplyScalar::ActionMultiplyScalar(const MSDParser::ObjectParser &_parser, const std::map<std::string, ActionScalar> &_scalars, const std::map<std::string, ActionVector> &_vectors) : Action(_parser, _scalars, _vectors), actionScalar(nullptr)
 	{
 	}
-	
+
 	ActionMultiplyScalar::~ActionMultiplyScalar()
 	{
 	}
@@ -28,42 +27,44 @@ namespace RunSection
 	bool ActionMultiplyScalar::DoStep()
 	{
 		// Make sure we have an ActionScalar to act on
-		if(actionScalar == nullptr || !this->IsValid()) {return false;}
-		
+		if (actionScalar == nullptr || !this->IsValid())
+		{
+			return false;
+		}
+
 		// Retrieve the scalar we want to change
 		double d = actionScalar->Get();
-		
+
 		// Set the new scalar
 		return this->actionScalar->Set(d * this->Value());
 	}
-	
+
 	// Method to prepare the action and check whether it is valid
 	bool ActionMultiplyScalar::DoValidate()
 	{
 		// Get the ActionScalar name
 		std::string str;
-		if(!this->Properties()->Get("actionscalar", str) && !this->Properties()->Get("scalar", str))
+		if (!this->Properties()->Get("actionscalar", str) && !this->Properties()->Get("scalar", str))
 		{
 			std::cout << "ERROR: No ActionScalar specified for the MultiplyScalar action \"" << this->Name() << "\"!" << std::endl;
 			return false;
 		}
-		
+
 		// Attemp to set the ActionScalar
-		if(!this->Scalar(str, &(this->actionScalar)))
+		if (!this->Scalar(str, &(this->actionScalar)))
 		{
 			std::cout << "ERROR: Could not find ActionScalar \"" << str << "\" specified for the MultiplyScalar action \"" << this->Name() << "\"!" << std::endl;
 			return false;
 		}
-		
+
 		// Readonly ActionTargets cannot be acted on
-		if(this->actionScalar->IsReadonly())
+		if (this->actionScalar->IsReadonly())
 		{
 			std::cout << "ERROR: Readonly ActionScalar \"" << str << "\" specified for the MultiplyScalar action \"" << this->Name() << "\"! Cannot act on this scalar!" << std::endl;
 			return false;
 		}
-		
+
 		return true;
 	}
 	// -----------------------------------------------------
 }
-

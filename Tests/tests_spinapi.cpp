@@ -1,9 +1,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // MolSpin Unit Testing Module
-// 
+//
 // Unit test functions for the SpinAPI module.
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 //////////////////////////////////////////////////////////////////////////////
@@ -23,22 +23,22 @@ bool test_spinapi_spinclass_spin_quantum_number()
 	std::string spin1_name = "testspin1";
 	std::string spin1_contents = "spin=1/2;";
 	SpinAPI::Spin spin1(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "testspin2";
 	std::string spin2_contents = "spin=1;";
 	SpinAPI::Spin spin2(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "testspin3";
 	std::string spin3_contents = "spin=3/2;";
 	SpinAPI::Spin spin3(spin3_name, spin3_contents);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= (spin1.S() == 1);
 	isCorrect &= (spin2.S() == 2);
 	isCorrect &= (spin3.S() == 3);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -52,22 +52,22 @@ bool test_spinapi_spinclass_multiplicity_from_s()
 	std::string spin1_name = "testspin1";
 	std::string spin1_contents = "spin=1/2;";
 	SpinAPI::Spin spin1(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "testspin2";
 	std::string spin2_contents = "spin=1;";
 	SpinAPI::Spin spin2(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "testspin3";
 	std::string spin3_contents = "spin=3/2;";
 	SpinAPI::Spin spin3(spin3_name, spin3_contents);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= (spin1.Multiplicity() == 2);
 	isCorrect &= (spin2.Multiplicity() == 3);
 	isCorrect &= (spin3.Multiplicity() == 4);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -79,18 +79,18 @@ bool test_spinapi_spinclass_spinmatrices_spinonehalf()
 	std::string spin_name = "testspin";
 	std::string spin_contents = "spin=1/2;";
 	SpinAPI::Spin spin(spin_name, spin_contents);
-	
-	arma::cx_mat sx = 0.5*arma::cx_mat("0 1;1 0");
-	arma::cx_mat sy = 0.5*arma::cx_mat("0 (0,-1);(0,1) 0");
-	arma::cx_mat sz = 0.5*arma::cx_mat("1 0;0 -1");
-	
+
+	arma::cx_mat sx = 0.5 * arma::cx_mat("0 1;1 0");
+	arma::cx_mat sy = 0.5 * arma::cx_mat("0 (0,-1);(0,1) 0");
+	arma::cx_mat sz = 0.5 * arma::cx_mat("1 0;0 -1");
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_matrices(spin.Sx(), sx);
 	isCorrect &= equal_matrices(spin.Sy(), sy);
 	isCorrect &= equal_matrices(spin.Sz(), sz);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -100,20 +100,20 @@ bool test_spinapi_spinclass_spinmatrices_spinone()
 {
 	// Setup objects for the test
 	std::string spin_name = "testspin";
-	std::string spin_contents = "spin=1;";	// 1 in units of hbar
+	std::string spin_contents = "spin=1;"; // 1 in units of hbar
 	SpinAPI::Spin spin(spin_name, spin_contents);
-	
-	arma::cx_mat sx = sqrt(0.5)*arma::cx_mat("0 1 0;1 0 1;0 1 0");
-	arma::cx_mat sy = sqrt(0.5)*arma::cx_mat("0 (0,-1) 0;(0,1) 0 (0,-1);0 (0,1) 0");
+
+	arma::cx_mat sx = sqrt(0.5) * arma::cx_mat("0 1 0;1 0 1;0 1 0");
+	arma::cx_mat sy = sqrt(0.5) * arma::cx_mat("0 (0,-1) 0;(0,1) 0 (0,-1);0 (0,1) 0");
 	arma::cx_mat sz = arma::cx_mat("1 0 0;0 0 0;0 0 -1");
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_matrices(spin.Sx(), sx);
 	isCorrect &= equal_matrices(spin.Sy(), sy);
 	isCorrect &= equal_matrices(spin.Sz(), sz);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -123,21 +123,21 @@ bool test_spinapi_spinclass_spinmatrices_spinthreehalf()
 {
 	// Setup objects for the test
 	std::string spin_name = "testspin";
-	std::string spin_contents = "spin=3/2;";	// 3/2 in units of hbar
+	std::string spin_contents = "spin=3/2;"; // 3/2 in units of hbar
 	SpinAPI::Spin spin(spin_name, spin_contents);
-	
+
 	// Note: Automatic type deduction fails here
-	arma::cx_mat sx = sqrt(3.0)*0.5*arma::cx_mat("0 1 0 0;1 0 0 0;0 0 0 1;0 0 1 0") + arma::cx_mat("0 0 0 0;0 0 1 0;0 1 0 0;0 0 0 0");
-	arma::cx_mat sy = sqrt(3.0)*0.5*arma::cx_mat("0 (0,-1) 0 0;(0,1) 0 0 0;0 0 0 (0,-1);0 0 (0,1) 0") + arma::cx_mat("0 0 0 0;0 0 (0,-1) 0;0 (0,1) 0 0;0 0 0 0");
-	arma::cx_mat sz = 0.5*arma::cx_mat("3 0 0 0;0 1 0 0;0 0 -1 0;0 0 0 -3");
-	
+	arma::cx_mat sx = sqrt(3.0) * 0.5 * arma::cx_mat("0 1 0 0;1 0 0 0;0 0 0 1;0 0 1 0") + arma::cx_mat("0 0 0 0;0 0 1 0;0 1 0 0;0 0 0 0");
+	arma::cx_mat sy = sqrt(3.0) * 0.5 * arma::cx_mat("0 (0,-1) 0 0;(0,1) 0 0 0;0 0 0 (0,-1);0 0 (0,1) 0") + arma::cx_mat("0 0 0 0;0 0 (0,-1) 0;0 (0,1) 0 0;0 0 0 0");
+	arma::cx_mat sz = 0.5 * arma::cx_mat("3 0 0 0;0 1 0 0;0 0 -1 0;0 0 0 -3");
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_matrices(spin.Sx(), sx);
 	isCorrect &= equal_matrices(spin.Sy(), sy);
 	isCorrect &= equal_matrices(spin.Sz(), sz);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -150,12 +150,12 @@ bool test_spinapi_interaction_fieldstatic()
 	std::string name = "test1";
 	std::string contents = "type=singlespin;prefactor=42.24;field=0 42 0;";
 	SpinAPI::Interaction I(name, contents);
-	
+
 	auto field = arma::vec("0 42 0");
 	double prefactor = 42.24;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_vec(I.Field(), field);
 	isCorrect &= equal_double(I.Prefactor(), prefactor);
@@ -163,7 +163,7 @@ bool test_spinapi_interaction_fieldstatic()
 	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
 	isCorrect &= !I.HasTimeDependence();
 	isCorrect &= IsStatic(I);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -176,15 +176,15 @@ bool test_spinapi_interaction_fieldlinearpolarization()
 	std::string name = "test1";
 	std::string contents = "type=singlespin;fieldtype=linearpolarization;field=1 0 0;frequency=0.159154943e+6;phase=24;";
 	SpinAPI::Interaction I(name, contents);
-	
+
 	auto field = arma::vec("1 0 0");
 	double frequency = 0.159154943e+6;
 	double phase = 24;
 	double testtime = 4.234e-5;
 	auto testtimefield = field * cos(frequency * testtime + phase);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_vec(I.Field(), field * cos(phase));
 	isCorrect &= I.SetTime(testtime);
@@ -193,7 +193,7 @@ bool test_spinapi_interaction_fieldlinearpolarization()
 	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
 	isCorrect &= I.HasTimeDependence();
 	isCorrect &= !IsStatic(I);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -206,7 +206,7 @@ bool test_spinapi_interaction_fieldcircularpolarization_perpendicular()
 	std::string name = "test1";
 	std::string contents = "type=singlespin;fieldtype=circularpolarization;field=1 0 1;axis=0 0 1;frequency=0.159154943e+6;phase=24;perpendicularoscillations=true;";
 	SpinAPI::Interaction I(name, contents);
-	
+
 	double frequency = 0.159154943e+6;
 	double phase = 24;
 
@@ -229,7 +229,7 @@ bool test_spinapi_interaction_fieldcircularpolarization_perpendicular()
 	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
 	isCorrect &= I.HasTimeDependence();
 	isCorrect &= !IsStatic(I);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -243,7 +243,7 @@ bool test_spinapi_interaction_fieldcircularpolarization_tilted()
 	std::string name = "test1";
 	std::string contents = "type=singlespin;fieldtype=circularpolarization;field=1 0 1;axis=0 0 1;frequency=0.159154943e+6;phase=24;perpendicularoscillations=false;";
 	SpinAPI::Interaction I(name, contents);
-	
+
 	double frequency = 0.159154943e+6;
 	double phase = 24;
 	double outofplane_angle = 45.0 / 180.0 * M_PI;
@@ -260,7 +260,7 @@ bool test_spinapi_interaction_fieldcircularpolarization_tilted()
 	testfield2(2) = 1.0;
 
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_vec(I.Field(), testfield1);
 	isCorrect &= I.SetTime(testtime);
@@ -269,7 +269,7 @@ bool test_spinapi_interaction_fieldcircularpolarization_tilted()
 	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
 	isCorrect &= I.HasTimeDependence();
 	isCorrect &= !IsStatic(I);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -282,15 +282,15 @@ bool test_spinapi_state()
 	std::string spin1_name = "spin1";
 	std::string spin1_contents = "spin=1/2;";
 	auto spin1 = std::make_shared<SpinAPI::Spin>(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "spin2";
 	std::string spin2_contents = "spin=1/2;";
 	auto spin2 = std::make_shared<SpinAPI::Spin>(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "spin3";
 	std::string spin3_contents = "spin=1/2;";
 	auto spin3 = std::make_shared<SpinAPI::Spin>(spin3_name, spin3_contents);
-	
+
 	std::string spin4_name = "spin4";
 	std::string spin4_contents = "spin=1/2;";
 	auto spin4 = std::make_shared<SpinAPI::Spin>(spin4_name, spin4_contents);
@@ -300,15 +300,15 @@ bool test_spinapi_state()
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	std::string state_name = "state1";
 	std::string state_contents = "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;";
 	SpinAPI::State state(state_name, state_contents);
-	
+
 	SpinAPI::CompleteState cstate;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state.ParseFromSystem(spinsys);
 	isCorrect &= state.IsCoupled(spin1);
@@ -323,7 +323,7 @@ bool test_spinapi_state()
 	isCorrect &= cstate[2].second[1].first == 1;
 	isCorrect &= equal_double(std::real(cstate[0].second[0].second), 1.0);
 	isCorrect &= equal_double(std::imag(cstate[2].second[1].second), -2.0);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -335,22 +335,22 @@ bool test_spinapi_tensorclass_basics()
 	std::string t4str = "anisotropic(1 1 1)+isotropic(4)";
 	arma::mat testmat1to4 = arma::mat("5 0 0;0 5 0;0 0 5");
 	arma::mat testmat5 = arma::mat("1 2 3;2 5 6;3 6 9");
-	
+
 	SpinAPI::Tensor t1(5.0);
-	SpinAPI::Tensor t2(0,5,5,5);
+	SpinAPI::Tensor t2(0, 5, 5, 5);
 	SpinAPI::Tensor t3(testmat1to4);
 	SpinAPI::Tensor t4(t4str);
 	SpinAPI::Tensor t5(testmat5);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_matrices(t1.LabFrame(), testmat1to4);
 	isCorrect &= equal_matrices(t2.LabFrame(), testmat1to4);
 	isCorrect &= equal_matrices(t3.LabFrame(), testmat1to4);
 	isCorrect &= equal_matrices(t4.LabFrame(), testmat1to4);
 	isCorrect &= equal_matrices(t5.LabFrame(), testmat5);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -366,10 +366,10 @@ bool test_spinapi_subspacefuncs_union()
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
 	auto spin5 = std::make_shared<SpinAPI::Spin>("spin5", "spin=1/2;");
 	auto spin6 = std::make_shared<SpinAPI::Spin>("spin6", "spin=1/2;");
-	
-	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");					// Subspace: spins 1, 3 and 4
-	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=doublespin;group1=spin5;group2=spin6;");						// Subspace: spins 5 and 6
-	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin2,spin3;group2=spin4,spin5,spin6");	// Should not change anything as it is a single-spin interaction (group2 should be ignored)
+
+	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");					 // Subspace: spins 1, 3 and 4
+	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=doublespin;group1=spin5;group2=spin6;");						 // Subspace: spins 5 and 6
+	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin2,spin3;group2=spin4,spin5,spin6"); // Should not change anything as it is a single-spin interaction (group2 should be ignored)
 
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
@@ -382,34 +382,34 @@ bool test_spinapi_subspacefuncs_union()
 	spinsys.Add(interaction2);
 	spinsys.Add(interaction3);
 	spinsys.ValidateInteractions();
-	
+
 	auto spaces = SpinAPI::CompleteSubspaces(spinsys);
 	std::vector<SpinAPI::spin_ptr> spaces_union;
 	spaces_union.reserve(6);
-	
+
 	// Get the union of the subspaces
-	for(auto i = spaces.begin(); i != spaces.end(); i++)
+	for (auto i = spaces.begin(); i != spaces.end(); i++)
 	{
 		// Make sure that the capacity is large enough
-		if(spaces_union.capacity() < spaces_union.size() + i->size())
+		if (spaces_union.capacity() < spaces_union.size() + i->size())
 			spaces_union.reserve(spaces_union.size() + i->size());
-		
+
 		// Insert new elements in the back
 		spaces_union.insert(spaces_union.end(), i->begin(), i->end());
 	}
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
-	isCorrect &= (spaces.size() == 3);				// There are 3 subspaces: [1,3,4], [2], [5,6]
-	isCorrect &= (spaces_union.size() == 6);		// We should have 6 spins in the union of the subspaces, [1-6]
+	isCorrect &= (spaces.size() == 3);		 // There are 3 subspaces: [1,3,4], [2], [5,6]
+	isCorrect &= (spaces_union.size() == 6); // We should have 6 spins in the union of the subspaces, [1-6]
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin1) != spaces_union.cend());
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin2) != spaces_union.cend());
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin3) != spaces_union.cend());
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin4) != spaces_union.cend());
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin5) != spaces_union.cend());
 	isCorrect &= (std::find(spaces_union.cbegin(), spaces_union.cend(), spin6) != spaces_union.cend());
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -425,10 +425,10 @@ bool test_spinapi_subspacefuncs_intersections()
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
 	auto spin5 = std::make_shared<SpinAPI::Spin>("spin5", "spin=1/2;");
 	auto spin6 = std::make_shared<SpinAPI::Spin>("spin6", "spin=1/2;");
-	
-	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");						// Subspace: spins 1, 3 and 4
-	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=doublespin;group1=spin5;group2=spin6;");							// Subspace: spins 5 and 6
-	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin2,spin3;group2=spin4,spin5,spin6");	// Should not change anything as it is a single-spin interaction (group2 should be ignored)
+
+	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");					 // Subspace: spins 1, 3 and 4
+	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=doublespin;group1=spin5;group2=spin6;");						 // Subspace: spins 5 and 6
+	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin2,spin3;group2=spin4,spin5,spin6"); // Should not change anything as it is a single-spin interaction (group2 should be ignored)
 
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
@@ -441,36 +441,45 @@ bool test_spinapi_subspacefuncs_intersections()
 	spinsys.Add(interaction2);
 	spinsys.Add(interaction3);
 	spinsys.ValidateInteractions();
-	
+
 	auto spaces = SpinAPI::CompleteSubspaces(spinsys);
-	
+
 	// Make sure we know which subspace is which
-	std::vector<SpinAPI::spin_ptr>* set1 = nullptr;		// Will contain [1,3,4]
-	std::vector<SpinAPI::spin_ptr>* set2 = nullptr;		// Will contain [2]
-	std::vector<SpinAPI::spin_ptr>* set3 = nullptr;		// Will contain [5,6]
-	for(auto i = spaces.begin(); i != spaces.end(); i++)
+	std::vector<SpinAPI::spin_ptr> *set1 = nullptr; // Will contain [1,3,4]
+	std::vector<SpinAPI::spin_ptr> *set2 = nullptr; // Will contain [2]
+	std::vector<SpinAPI::spin_ptr> *set3 = nullptr; // Will contain [5,6]
+	for (auto i = spaces.begin(); i != spaces.end(); i++)
 	{
-		if(i->size() == 3) {set1 = &(*i);}
-		else if(i->size() == 1) {set2 = &(*i);}
-		else if(i->size() == 2) {set3 = &(*i);}
+		if (i->size() == 3)
+		{
+			set1 = &(*i);
+		}
+		else if (i->size() == 1)
+		{
+			set2 = &(*i);
+		}
+		else if (i->size() == 2)
+		{
+			set3 = &(*i);
+		}
 	}
-	
+
 	// Make sure that each subspace was found
 	// Note that if all subspaces was found, we cannot have any extra subspaces due to the size check below
-	if(set1 == nullptr || set2 == nullptr || set3 == nullptr)
+	if (set1 == nullptr || set2 == nullptr || set3 == nullptr)
 		return false;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
-	isCorrect &= (spaces.size() == 3);				// There are 3 subspaces: [1,3,4], [2], [5,6]
+	isCorrect &= (spaces.size() == 3); // There are 3 subspaces: [1,3,4], [2], [5,6]
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin1) != (*set1).cend());
 	isCorrect &= (std::find((*set2).cbegin(), (*set2).cend(), spin2) != (*set2).cend());
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin3) != (*set1).cend());
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin4) != (*set1).cend());
 	isCorrect &= (std::find((*set3).cbegin(), (*set3).cend(), spin5) != (*set3).cend());
 	isCorrect &= (std::find((*set3).cbegin(), (*set3).cend(), spin6) != (*set3).cend());
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -484,7 +493,7 @@ bool test_spinapi_subspacefuncs_intersections2()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("electron2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("nucleus1", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("nucleus2", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=hyperfine;group1=electron1;group2=nucleus1;tensor=isotropic(5e-4);");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=hyperfine;group1=electron1;group2=nucleus2;tensor=anisotropic(1e-4, 1e-4, 1e-3);");
 
@@ -496,32 +505,38 @@ bool test_spinapi_subspacefuncs_intersections2()
 	spinsys.Add(interaction1);
 	spinsys.Add(interaction2);
 	spinsys.ValidateInteractions();
-	
+
 	auto spaces = SpinAPI::CompleteSubspaces(spinsys);
-	
+
 	// Make sure we know which subspace is which
-	std::vector<SpinAPI::spin_ptr>* set1 = nullptr;		// Will contain [1,3,4]
-	std::vector<SpinAPI::spin_ptr>* set2 = nullptr;		// Will contain [2]
-	for(auto i = spaces.begin(); i != spaces.end(); i++)
+	std::vector<SpinAPI::spin_ptr> *set1 = nullptr; // Will contain [1,3,4]
+	std::vector<SpinAPI::spin_ptr> *set2 = nullptr; // Will contain [2]
+	for (auto i = spaces.begin(); i != spaces.end(); i++)
 	{
-		if(i->size() == 3) {set1 = &(*i);}
-		else if(i->size() == 1) {set2 = &(*i);}
+		if (i->size() == 3)
+		{
+			set1 = &(*i);
+		}
+		else if (i->size() == 1)
+		{
+			set2 = &(*i);
+		}
 	}
-	
+
 	// Make sure that each subspace was found
 	// Note that if all subspaces was found, we cannot have any extra subspaces due to the size check below
-	if(set1 == nullptr || set2 == nullptr)
+	if (set1 == nullptr || set2 == nullptr)
 		return false;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
-	isCorrect &= (spaces.size() == 2);				// There are 3 subspaces: [1,3,4], [2]
+	isCorrect &= (spaces.size() == 2); // There are 3 subspaces: [1,3,4], [2]
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin1) != (*set1).cend());
 	isCorrect &= (std::find((*set2).cbegin(), (*set2).cend(), spin2) != (*set2).cend());
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin3) != (*set1).cend());
 	isCorrect &= (std::find((*set1).cbegin(), (*set1).cend(), spin4) != (*set1).cend());
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -535,8 +550,8 @@ bool test_spinapi_subspacefuncs_extendbyinteraction()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
-	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");					// Subspace: spins 1, 3 and 4
+
+	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;"); // Subspace: spins 1, 3 and 4
 
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
@@ -545,18 +560,18 @@ bool test_spinapi_subspacefuncs_extendbyinteraction()
 	spinsys.Add(spin4);
 	spinsys.Add(interaction1);
 	spinsys.ValidateInteractions();
-	
+
 	std::vector<SpinAPI::spin_ptr> space;
 	space.push_back(spin1);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= (space.size() == 1);
 	isCorrect &= interaction1->CompleteSet(space);
 	isCorrect &= (space.size() == 3);
 	isCorrect &= !interaction1->CompleteSet(space);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -570,7 +585,7 @@ bool test_spinapi_subspacefuncs_extendbytransition()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto spinsys = std::make_shared<SpinAPI::SpinSystem>("System");
 	auto state = std::make_shared<SpinAPI::State>("state1", "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;");
 	auto transition1 = std::make_shared<SpinAPI::Transition>("transition1", "sourcestate=state1;rate=1;", spinsys);
@@ -581,15 +596,15 @@ bool test_spinapi_subspacefuncs_extendbytransition()
 	spinsys->Add(spin4);
 	spinsys->Add(state);
 	spinsys->Add(transition1);
-	
+
 	std::vector<std::shared_ptr<SpinAPI::SpinSystem>> spinsystems;
 	spinsystems.push_back(spinsys);
-	
+
 	std::vector<SpinAPI::spin_ptr> space;
 	space.push_back(spin1);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state->ParseFromSystem(*spinsys);
 	isCorrect &= ((spinsys->ValidateTransitions(spinsystems)).size() == 0);
@@ -597,7 +612,7 @@ bool test_spinapi_subspacefuncs_extendbytransition()
 	isCorrect &= transition1->CompleteSet(space);
 	isCorrect &= (space.size() == 3);
 	isCorrect &= !transition1->CompleteSet(space);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -611,28 +626,27 @@ bool test_spinapi_subspacefuncs_extendbystate()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
 
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::State state("state1", "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;");
-	
+
 	std::vector<SpinAPI::spin_ptr> space;
 	space.push_back(spin1);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state.ParseFromSystem(spinsys);
 	isCorrect &= (space.size() == 1);
 	isCorrect &= state.CompleteSet(space);
 	isCorrect &= (space.size() == 3);
 	isCorrect &= !state.CompleteSet(space);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -648,11 +662,11 @@ bool test_spinapi_subspacefuncs_extendbyspinsys()
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
 	auto spin5 = std::make_shared<SpinAPI::Spin>("spin5", "spin=1/2;");
 	auto spin6 = std::make_shared<SpinAPI::Spin>("spin6", "spin=1/2;");
-	
+
 	auto spinsys = std::make_shared<SpinAPI::SpinSystem>("System");
-	auto state = std::make_shared<SpinAPI::State>("state1", "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;");		// Couple spins: 1, 2, 3
+	auto state = std::make_shared<SpinAPI::State>("state1", "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;"); // Couple spins: 1, 2, 3
 	auto transition1 = std::make_shared<SpinAPI::Transition>("transition1", "sourcestate=state1;rate=1;", spinsys);
-	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1;group2=spin5;");	// Couple spins: 1, 5
+	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1;group2=spin5;"); // Couple spins: 1, 5
 
 	spinsys->Add(spin1);
 	spinsys->Add(spin2);
@@ -664,23 +678,23 @@ bool test_spinapi_subspacefuncs_extendbyspinsys()
 	spinsys->Add(transition1);
 	spinsys->Add(interaction1);
 	spinsys->ValidateInteractions();
-	
+
 	std::vector<std::shared_ptr<SpinAPI::SpinSystem>> spinsystems;
 	spinsystems.push_back(spinsys);
-	
+
 	std::vector<SpinAPI::spin_ptr> space;
 	space.push_back(spin1);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state->ParseFromSystem(*spinsys);
 	isCorrect &= ((spinsys->ValidateTransitions(spinsystems)).size() == 0);
 	isCorrect &= (space.size() == 1);
 	isCorrect &= spinsys->CompleteSet(space);
-	isCorrect &= (space.size() == 4);			// Spins: 1, 2, 3, 5
+	isCorrect &= (space.size() == 4); // Spins: 1, 2, 3, 5
 	isCorrect &= !spinsys->CompleteSet(space);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -694,7 +708,7 @@ bool test_spinapi_spinspace_sparsevsdense_createoperator()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=zeeman;group1=spin1,spin2;");
 
@@ -706,15 +720,15 @@ bool test_spinapi_spinspace_sparsevsdense_createoperator()
 	spinsys.Add(interaction1);
 	spinsys.Add(interaction2);
 	spinsys.ValidateInteractions();
-	
+
 	SpinAPI::SpinSpace space(spinsys);
 	space.UseSuperoperatorSpace(false);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.CreateOperator(arma::conv_to<arma::cx_mat>::from(spin1->Sx()), spin1, denseM);
 	isCorrect &= space.CreateOperator(spin1->Sx(), spin1, sparseM);
@@ -725,7 +739,7 @@ bool test_spinapi_spinspace_sparsevsdense_createoperator()
 	isCorrect &= space.CreateOperator(arma::conv_to<arma::cx_mat>::from(spin3->Sz()), spin3, denseM);
 	isCorrect &= space.CreateOperator(spin3->Sz(), spin3, sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -739,7 +753,7 @@ bool test_spinapi_spinspace_sparsevsdense_hamiltonian()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=zeeman;group1=spin1,spin2;field=0.1 0.2 0.3;");
 
@@ -751,15 +765,15 @@ bool test_spinapi_spinspace_sparsevsdense_hamiltonian()
 	spinsys.Add(interaction1);
 	spinsys.Add(interaction2);
 	spinsys.ValidateInteractions();
-	
+
 	SpinAPI::SpinSpace space(spinsys);
 	space.UseSuperoperatorSpace(false);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.Hamiltonian(denseM);
 	isCorrect &= space.Hamiltonian(sparseM);
@@ -768,7 +782,7 @@ bool test_spinapi_spinspace_sparsevsdense_hamiltonian()
 	isCorrect &= space.Hamiltonian(denseM);
 	isCorrect &= space.Hamiltonian(sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -782,7 +796,7 @@ bool test_spinapi_spinspace_sparsevsdense_statichamiltonian()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=zeeman;group1=spin1,spin2;field=0.1 0.2 0.3;");
 	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin3;field=1 0 0;timedependence=oscillating;");
@@ -798,15 +812,15 @@ bool test_spinapi_spinspace_sparsevsdense_statichamiltonian()
 	spinsys.Add(interaction3);
 	spinsys.Add(interaction4);
 	spinsys.ValidateInteractions();
-	
+
 	SpinAPI::SpinSpace space(spinsys);
 	space.UseSuperoperatorSpace(false);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.StaticHamiltonian(denseM);
 	isCorrect &= space.StaticHamiltonian(sparseM);
@@ -815,7 +829,7 @@ bool test_spinapi_spinspace_sparsevsdense_statichamiltonian()
 	isCorrect &= space.StaticHamiltonian(denseM);
 	isCorrect &= space.StaticHamiltonian(sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -829,7 +843,7 @@ bool test_spinapi_spinspace_sparsevsdense_dynamichamiltonian()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=zeeman;group1=spin1,spin2;field=0.1 0.2 0.3;");
 	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin3;field=1 0 0;timedependence=oscillating;");
@@ -845,15 +859,15 @@ bool test_spinapi_spinspace_sparsevsdense_dynamichamiltonian()
 	spinsys.Add(interaction3);
 	spinsys.Add(interaction4);
 	spinsys.ValidateInteractions();
-	
+
 	SpinAPI::SpinSpace space(spinsys);
 	space.UseSuperoperatorSpace(false);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.DynamicHamiltonian(denseM);
 	isCorrect &= space.DynamicHamiltonian(sparseM);
@@ -862,7 +876,7 @@ bool test_spinapi_spinspace_sparsevsdense_dynamichamiltonian()
 	isCorrect &= space.DynamicHamiltonian(denseM);
 	isCorrect &= space.DynamicHamiltonian(sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -876,7 +890,7 @@ bool test_spinapi_spinspace_sparsevsdense_interactionoperator()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto interaction1 = std::make_shared<SpinAPI::Interaction>("interaction1", "type=doublespin;group1=spin1,spin3;group2=spin4;");
 	auto interaction2 = std::make_shared<SpinAPI::Interaction>("interaction2", "type=zeeman;group1=spin1,spin2;field=0.1 0.2 0.3;");
 	auto interaction3 = std::make_shared<SpinAPI::Interaction>("interaction3", "type=singlespin;group1=spin1,spin3;field=1 0 0;timedependence=oscillating;");
@@ -890,15 +904,15 @@ bool test_spinapi_spinspace_sparsevsdense_interactionoperator()
 	spinsys.Add(interaction2);
 	spinsys.Add(interaction3);
 	spinsys.ValidateInteractions();
-	
+
 	SpinAPI::SpinSpace space(spinsys);
 	space.UseSuperoperatorSpace(false);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.InteractionOperator(interaction1, denseM);
 	isCorrect &= space.InteractionOperator(interaction1, sparseM);
@@ -909,9 +923,9 @@ bool test_spinapi_spinspace_sparsevsdense_interactionoperator()
 	isCorrect &= space.InteractionOperator(interaction3, denseM);
 	isCorrect &= space.InteractionOperator(interaction3, sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	space.UseSuperoperatorSpace(true);
-	
+
 	isCorrect &= space.InteractionOperator(interaction1, denseM);
 	isCorrect &= space.InteractionOperator(interaction1, sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
@@ -921,7 +935,7 @@ bool test_spinapi_spinspace_sparsevsdense_interactionoperator()
 	isCorrect &= space.InteractionOperator(interaction3, denseM);
 	isCorrect &= space.InteractionOperator(interaction3, sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -935,35 +949,44 @@ bool test_spinapi_spinspace_sparsevsdense_operatortosuperspace()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::sp_cx_mat tmp;
 	arma::sp_cx_mat sparseM_HS;
-	if(!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS)) {return false;}
-	if(!space.CreateOperator(spin1->Sy(), spin2, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS))
+	{
+		return false;
+	}
+	if (!space.CreateOperator(spin1->Sy(), spin2, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
-	if(!space.CreateOperator(spin1->Sz(), spin3, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sz(), spin3, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
 	arma::cx_mat denseM_HS = arma::conv_to<arma::cx_mat>::from(sparseM_HS);
-	
+
 	arma::cx_vec sparseM_SSvec;
 	arma::cx_vec denseM_SSvec;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.OperatorToSuperspace(sparseM_HS, sparseM_SSvec);
 	isCorrect &= space.OperatorToSuperspace(denseM_HS, denseM_SSvec);
 	isCorrect &= equal_vec(sparseM_SSvec, denseM_SSvec);
 	isCorrect &= (denseM_SSvec.n_elem == denseM_HS.n_rows * denseM_HS.n_rows);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -977,36 +1000,45 @@ bool test_spinapi_spinspace_sparsevsdense_operatorfromsuperspace()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::sp_cx_mat tmp;
 	arma::sp_cx_mat HSMat;
-	if(!space.CreateOperator(spin1->Sx(), spin1, HSMat)) {return false;}
-	if(!space.CreateOperator(spin1->Sy(), spin2, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sx(), spin1, HSMat))
+	{
+		return false;
+	}
+	if (!space.CreateOperator(spin1->Sy(), spin2, tmp))
+	{
+		return false;
+	}
 	HSMat += tmp;
-	if(!space.CreateOperator(spin1->Sz(), spin3, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sz(), spin3, tmp))
+	{
+		return false;
+	}
 	HSMat += tmp;
 	arma::cx_vec SSVec;
 	space.OperatorToSuperspace(HSMat, SSVec);
-	
+
 	arma::sp_cx_mat sparseM_SSvec;
 	arma::cx_mat denseM_SSvec;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.OperatorFromSuperspace(SSVec, sparseM_SSvec);
 	isCorrect &= space.OperatorFromSuperspace(SSVec, denseM_SSvec);
 	isCorrect &= equal_matrices(sparseM_SSvec, denseM_SSvec);
 	isCorrect &= (SSVec.n_elem == denseM_SSvec.n_rows * denseM_SSvec.n_rows);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1020,33 +1052,39 @@ bool test_spinapi_spinspace_sparsevsdense_superoperatorfromoperators()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::sp_cx_mat sparseM_HS1;
 	arma::sp_cx_mat sparseM_HS2;
-	if(!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS1)) {return false;}
-	if(!space.CreateOperator(spin2->Sy(), spin2, sparseM_HS2)) {return false;}
+	if (!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS1))
+	{
+		return false;
+	}
+	if (!space.CreateOperator(spin2->Sy(), spin2, sparseM_HS2))
+	{
+		return false;
+	}
 	arma::cx_mat denseM_HS1 = arma::conv_to<arma::cx_mat>::from(sparseM_HS1);
 	arma::cx_mat denseM_HS2 = arma::conv_to<arma::cx_mat>::from(sparseM_HS2);
-	
+
 	arma::sp_cx_mat sparseM_SS;
 	arma::cx_mat denseM_SS;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.SuperoperatorFromOperators(sparseM_HS1, sparseM_HS2, sparseM_SS);
-	isCorrect &= space.SuperoperatorFromOperators(denseM_HS1,  denseM_HS2,  denseM_SS);
+	isCorrect &= space.SuperoperatorFromOperators(denseM_HS1, denseM_HS2, denseM_SS);
 	isCorrect &= equal_matrices(sparseM_SS, denseM_SS);
 	isCorrect &= (denseM_SS.n_rows == denseM_HS1.n_rows * denseM_HS2.n_rows);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1060,35 +1098,44 @@ bool test_spinapi_spinspace_sparsevsdense_superoperatorfromleftoperator()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::sp_cx_mat tmp;
 	arma::sp_cx_mat sparseM_HS;
-	if(!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS)) {return false;}
-	if(!space.CreateOperator(spin1->Sy(), spin2, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS))
+	{
+		return false;
+	}
+	if (!space.CreateOperator(spin1->Sy(), spin2, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
-	if(!space.CreateOperator(spin1->Sz(), spin3, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sz(), spin3, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
 	arma::cx_mat denseM_HS = arma::conv_to<arma::cx_mat>::from(sparseM_HS);
-	
+
 	arma::sp_cx_mat sparseM_SS;
 	arma::cx_mat denseM_SS;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.SuperoperatorFromLeftOperator(sparseM_HS, sparseM_SS);
 	isCorrect &= space.SuperoperatorFromLeftOperator(denseM_HS, denseM_SS);
 	isCorrect &= equal_matrices(sparseM_SS, denseM_SS);
 	isCorrect &= (denseM_SS.n_rows == denseM_HS.n_rows * denseM_HS.n_rows);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1102,35 +1149,44 @@ bool test_spinapi_spinspace_sparsevsdense_superoperatorfromrightoperator()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
 	spinsys.Add(spin3);
 	spinsys.Add(spin4);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::sp_cx_mat tmp;
 	arma::sp_cx_mat sparseM_HS;
-	if(!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS)) {return false;}
-	if(!space.CreateOperator(spin1->Sy(), spin2, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sx(), spin1, sparseM_HS))
+	{
+		return false;
+	}
+	if (!space.CreateOperator(spin1->Sy(), spin2, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
-	if(!space.CreateOperator(spin1->Sz(), spin3, tmp)) {return false;}
+	if (!space.CreateOperator(spin1->Sz(), spin3, tmp))
+	{
+		return false;
+	}
 	sparseM_HS += tmp;
 	arma::cx_mat denseM_HS = arma::conv_to<arma::cx_mat>::from(sparseM_HS);
-	
+
 	arma::sp_cx_mat sparseM_SS;
 	arma::cx_mat denseM_SS;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.SuperoperatorFromRightOperator(sparseM_HS, sparseM_SS);
 	isCorrect &= space.SuperoperatorFromRightOperator(denseM_HS, denseM_SS);
 	isCorrect &= equal_matrices(sparseM_SS, denseM_SS);
 	isCorrect &= (denseM_SS.n_rows == denseM_HS.n_rows * denseM_HS.n_rows);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1144,35 +1200,35 @@ bool test_spinapi_spinspace_sparsevsdense_reactionoperator()
 	auto spin2 = std::make_shared<SpinAPI::Spin>("spin2", "spin=1/2;");
 	auto spin3 = std::make_shared<SpinAPI::Spin>("spin3", "spin=1/2;");
 	auto spin4 = std::make_shared<SpinAPI::Spin>("spin4", "spin=1/2;");
-	
+
 	auto spinsys = std::make_shared<SpinAPI::SpinSystem>("System");
 	auto state = std::make_shared<SpinAPI::State>("state1", "spins(spin1,spin2,spin3)=|1/2,1/2,-1/2>-2i|1/2,-1/2,1/2>;");
 	auto transition = std::make_shared<SpinAPI::Transition>("transition1", "sourcestate=state1;rate=1;", spinsys);
-	
+
 	spinsys->Add(spin1);
 	spinsys->Add(spin2);
 	spinsys->Add(spin3);
 	spinsys->Add(spin4);
 	spinsys->Add(state);
 	spinsys->Add(transition);
-	
+
 	std::vector<std::shared_ptr<SpinAPI::SpinSystem>> spinsystems;
 	spinsystems.push_back(spinsys);
-	
+
 	SpinAPI::SpinSpace space(spinsys);
-	
+
 	arma::cx_mat denseM;
 	arma::sp_cx_mat sparseM;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state->ParseFromSystem(*spinsys);
 	isCorrect &= ((spinsys->ValidateTransitions(spinsystems)).size() == 0);
 	isCorrect &= space.ReactionOperator(transition, denseM);
 	isCorrect &= space.ReactionOperator(transition, sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1185,33 +1241,33 @@ bool test_spinapi_reorderbasis_densematrix()
 	std::string spin1_name = "spin1";
 	std::string spin1_contents = "spin=1/2;";
 	auto spin1 = std::make_shared<SpinAPI::Spin>(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "spin2";
 	std::string spin2_contents = "spin=1/2;";
 	auto spin2 = std::make_shared<SpinAPI::Spin>(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "spin3";
 	std::string spin3_contents = "spin=1;";
 	auto spin3 = std::make_shared<SpinAPI::Spin>(spin3_name, spin3_contents);
-	
+
 	std::vector<SpinAPI::spin_ptr> basis1;
 	basis1.push_back(spin1);
 	basis1.push_back(spin2);
 	basis1.push_back(spin3);
-	
+
 	std::vector<SpinAPI::spin_ptr> basis2;
 	basis2.push_back(spin3);
 	basis2.push_back(spin1);
 	basis2.push_back(spin2);
-	
+
 	SpinAPI::SpinSpace space1(basis1);
 	SpinAPI::SpinSpace space2(basis2);
 	arma::cx_mat A;
 	arma::cx_mat B;
-	arma::cx_mat O = arma::conv_to<arma::cx_mat>::from( spin1->Sx() );
-	
+	arma::cx_mat O = arma::conv_to<arma::cx_mat>::from(spin1->Sx());
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space1.CreateOperator(O, spin1, A);
 	isCorrect &= space2.CreateOperator(O, spin1, B);
@@ -1221,7 +1277,7 @@ bool test_spinapi_reorderbasis_densematrix()
 	isCorrect &= space2.CreateOperator(O, spin1, B);
 	isCorrect &= space2.ReorderBasis(A, basis1, basis2);
 	isCorrect &= equal_matrices(A, B);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1234,33 +1290,33 @@ bool test_spinapi_reorderbasis_sparsematrix()
 	std::string spin1_name = "spin1";
 	std::string spin1_contents = "spin=1/2;";
 	auto spin1 = std::make_shared<SpinAPI::Spin>(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "spin2";
 	std::string spin2_contents = "spin=1/2;";
 	auto spin2 = std::make_shared<SpinAPI::Spin>(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "spin3";
 	std::string spin3_contents = "spin=1;";
 	auto spin3 = std::make_shared<SpinAPI::Spin>(spin3_name, spin3_contents);
-	
+
 	std::vector<SpinAPI::spin_ptr> basis1;
 	basis1.push_back(spin1);
 	basis1.push_back(spin2);
 	basis1.push_back(spin3);
-	
+
 	std::vector<SpinAPI::spin_ptr> basis2;
 	basis2.push_back(spin3);
 	basis2.push_back(spin1);
 	basis2.push_back(spin2);
-	
+
 	SpinAPI::SpinSpace space1(basis1);
 	SpinAPI::SpinSpace space2(basis2);
 	arma::sp_cx_mat A;
 	arma::sp_cx_mat B;
 	arma::sp_cx_mat O = spin1->Sx();
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space1.CreateOperator(O, spin1, A);
 	isCorrect &= space2.CreateOperator(O, spin1, B);
@@ -1270,7 +1326,7 @@ bool test_spinapi_reorderbasis_sparsematrix()
 	isCorrect &= space2.CreateOperator(O, spin1, B);
 	isCorrect &= space2.ReorderBasis(A, basis1, basis2);
 	isCorrect &= equal_matrices(A, B);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1283,19 +1339,19 @@ bool test_spinapi_spinspace_spinmanagement1()
 	std::string spin1_name = "spin1";
 	std::string spin1_contents = "spin=1/2;";
 	auto spin1 = std::make_shared<SpinAPI::Spin>(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "spin2";
 	std::string spin2_contents = "spin=1/2;";
 	auto spin2 = std::make_shared<SpinAPI::Spin>(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "spin3";
 	std::string spin3_contents = "spin=1;";
 	auto spin3 = std::make_shared<SpinAPI::Spin>(spin3_name, spin3_contents);
-	
+
 	SpinAPI::SpinSpace space;
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.Add(spin1);
 	isCorrect &= space.Add(spin2);
@@ -1307,7 +1363,7 @@ bool test_spinapi_spinspace_spinmanagement1()
 	isCorrect &= space.Contains(spin3);
 	isCorrect &= space.Remove(spin1);
 	isCorrect &= !space.Contains(spin1);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -1320,32 +1376,32 @@ bool test_spinapi_spinspace_spinmanagement2()
 	std::string spin1_name = "spin1";
 	std::string spin1_contents = "spin=1/2;";
 	auto spin1 = std::make_shared<SpinAPI::Spin>(spin1_name, spin1_contents);
-	
+
 	std::string spin2_name = "spin2";
 	std::string spin2_contents = "spin=1/2;";
 	auto spin2 = std::make_shared<SpinAPI::Spin>(spin2_name, spin2_contents);
-	
+
 	std::string spin3_name = "spin3";
 	std::string spin3_contents = "spin=1;";
 	auto spin3 = std::make_shared<SpinAPI::Spin>(spin3_name, spin3_contents);
-	
+
 	SpinAPI::SpinSpace space;
-	
+
 	std::vector<SpinAPI::spin_ptr> v1;
 	v1.push_back(spin1);
 	v1.push_back(spin2);
 	v1.push_back(spin3);
-	
+
 	std::vector<SpinAPI::spin_ptr> v2;
 	v2.push_back(spin1);
 	v2.push_back(spin2);
-	
+
 	std::vector<SpinAPI::spin_ptr> v3;
 	v3.push_back(spin3);
 	v3.push_back(spin2);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= space.Add(v1);
 	isCorrect &= space.Contains(v2);
@@ -1357,13 +1413,13 @@ bool test_spinapi_spinspace_spinmanagement2()
 	isCorrect &= space.Contains(v1);
 	isCorrect &= space.Remove(v2);
 	isCorrect &= !space.Contains(v1);
-	
+
 	// Return the result
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
 // Add all the SpinAPI test cases
-void AddSpinAPITests(std::vector<test_case>& _cases)
+void AddSpinAPITests(std::vector<test_case> &_cases)
 {
 	_cases.push_back(test_case("SpinAPI::Spin::S()", test_spinapi_spinclass_spin_quantum_number));
 	_cases.push_back(test_case("SpinAPI::Spin::Multiplicity()", test_spinapi_spinclass_multiplicity_from_s));

@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////
 // TaskActionSpectrumHistogram implementation (RunSection module)
 //
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // Task implemented by Siu Ying Wong and Luca Gerhards.
 // (c) 2022 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
@@ -202,7 +202,7 @@ namespace RunSection
             // DIAGONALIZATION OF H0//
             // ----------------------------------------------------------------
             arma::cx_mat eigenvectors; // To hold eigenvectors
-            arma::vec eigenvalues;	   // To hold eigenvalues
+            arma::vec eigenvalues;     // To hold eigenvalues
 
             this->Log() << "Starting diagonalization..." << std::endl;
             arma::eig_sym(eigenvalues, eigenvectors, H);

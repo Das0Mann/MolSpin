@@ -2,8 +2,8 @@
 // Spin class (SpinAPI Module)
 // ------------------
 // Basic spin class to represent e.g. a radical.
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -17,29 +17,29 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Spin Constructors and Destructor
 	// -----------------------------------------------------
-	Spin::Spin(std::string _name, std::string _contents)	: tensor(2.0), type(SpinType::NotSpecified), properties(std::make_shared<MSDParser::ObjectParser>(_name,_contents)), s(1),
-																quantizationAxis1({ 1.0, 0.0, 0.0 }), quantizationAxis2({ 0.0, 1.0, 0.0 }), quantizationAxis3({ 0.0, 0.0, 1.0 }), trajectory(),
-																trjHasTime(false), trjHasQAxis1(false), trjHasQAxis2(false), trjHasQAxis3(false), trjTime(0),
-																trjQAxis1X(0), trjQAxis1Y(0), trjQAxis1Z(0), trjQAxis2X(0), trjQAxis2Y(0), trjQAxis2Z(0), trjQAxis3X(0), trjQAxis3Y(0), trjQAxis3Z(0)
+	Spin::Spin(std::string _name, std::string _contents) : tensor(2.0), type(SpinType::NotSpecified), properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), s(1),
+														   quantizationAxis1({1.0, 0.0, 0.0}), quantizationAxis2({0.0, 1.0, 0.0}), quantizationAxis3({0.0, 0.0, 1.0}), trajectory(),
+														   trjHasTime(false), trjHasQAxis1(false), trjHasQAxis2(false), trjHasQAxis3(false), trjTime(0),
+														   trjQAxis1X(0), trjQAxis1Y(0), trjQAxis1Z(0), trjQAxis2X(0), trjQAxis2Y(0), trjQAxis2Z(0), trjQAxis3X(0), trjQAxis3Y(0), trjQAxis3Z(0)
 	{
 		std::string str = "";
-		
+
 		// Get the spin quantum number and get the spin matrices
-		if(!this->properties->GetSpin("spin",s))
+		if (!this->properties->GetSpin("spin", s))
 		{
 			// If "spin" was specified, but with an invalid value (e.g. negative), then set spin to 0 as that will make Spin::IsValid return false
-			if(this->properties->Get("spin",str))
+			if (this->properties->Get("spin", str))
 				s = 0;
 		}
-		
+
 		// See if a tensor is specified
-		this->properties->Get("tensor",this->tensor);
-		
+		this->properties->Get("tensor", this->tensor);
+
 		// Get the type of the spin
-		this->properties->Get("type",str);
-		if(str.compare("electron") == 0 || str.compare("e") == 0)
+		this->properties->Get("type", str);
+		if (str.compare("electron") == 0 || str.compare("e") == 0)
 			this->type = SpinType::Electron;
-		else if(str.compare("nucleus") == 0 || str.compare("n") == 0)
+		else if (str.compare("nucleus") == 0 || str.compare("n") == 0)
 			this->type = SpinType::Nucleus;
 
 		// Is a trajectory specified?
@@ -86,16 +86,16 @@ namespace SpinAPI
 		if (!this->trjHasQAxis3 && this->properties->Get("quantizationaxis3", inAxis))
 			this->quantizationAxis3 = inAxis;
 	}
-	
-	Spin::Spin(const Spin& _spin)	: tensor(_spin.tensor), type(_spin.type), properties(std::make_shared<MSDParser::ObjectParser>(*(this->properties))), s(_spin.s),
-										quantizationAxis1(_spin.quantizationAxis1), quantizationAxis2(_spin.quantizationAxis2), quantizationAxis3(_spin.quantizationAxis3),
-										trajectory(_spin.trajectory), trjHasTime(_spin.trjHasTime), trjHasQAxis1(_spin.trjHasQAxis1), trjHasQAxis2(_spin.trjHasQAxis2),
-										trjHasQAxis3(_spin.trjHasQAxis3), trjTime(_spin.trjTime), trjQAxis1X(_spin.trjQAxis1X), trjQAxis1Y(_spin.trjQAxis1Y),
-										trjQAxis1Z(_spin.trjQAxis1Z), trjQAxis2X(_spin.trjQAxis2X), trjQAxis2Y(_spin.trjQAxis2Y), trjQAxis2Z(_spin.trjQAxis2Z),
-										trjQAxis3X(_spin.trjQAxis3X), trjQAxis3Y(_spin.trjQAxis3Y), trjQAxis3Z(_spin.trjQAxis3Z)
+
+	Spin::Spin(const Spin &_spin) : tensor(_spin.tensor), type(_spin.type), properties(std::make_shared<MSDParser::ObjectParser>(*(this->properties))), s(_spin.s),
+									quantizationAxis1(_spin.quantizationAxis1), quantizationAxis2(_spin.quantizationAxis2), quantizationAxis3(_spin.quantizationAxis3),
+									trajectory(_spin.trajectory), trjHasTime(_spin.trjHasTime), trjHasQAxis1(_spin.trjHasQAxis1), trjHasQAxis2(_spin.trjHasQAxis2),
+									trjHasQAxis3(_spin.trjHasQAxis3), trjTime(_spin.trjTime), trjQAxis1X(_spin.trjQAxis1X), trjQAxis1Y(_spin.trjQAxis1Y),
+									trjQAxis1Z(_spin.trjQAxis1Z), trjQAxis2X(_spin.trjQAxis2X), trjQAxis2Y(_spin.trjQAxis2Y), trjQAxis2Z(_spin.trjQAxis2Z),
+									trjQAxis3X(_spin.trjQAxis3X), trjQAxis3Y(_spin.trjQAxis3Y), trjQAxis3Z(_spin.trjQAxis3Z)
 	{
 	}
-	
+
 	Spin::~Spin()
 	{
 	}
@@ -103,7 +103,7 @@ namespace SpinAPI
 	// Operators
 	// -----------------------------------------------------
 	// Copy-assignment
-	const Spin& Spin::operator=(const Spin& _spin)
+	const Spin &Spin::operator=(const Spin &_spin)
 	{
 		this->tensor = _spin.tensor;
 		this->type = _spin.type;
@@ -128,7 +128,7 @@ namespace SpinAPI
 		this->trjQAxis3X = _spin.trjQAxis3X;
 		this->trjQAxis3Y = _spin.trjQAxis3Y;
 		this->trjQAxis3Z = _spin.trjQAxis3Z;
-		
+
 		return (*this);
 	}
 	// -----------------------------------------------------
@@ -157,14 +157,14 @@ namespace SpinAPI
 	{
 		return this->properties->Name();
 	}
-	
+
 	// The spin is valid if the spin quantum number has an allowed value
 	// A spin-0 is not allowed as it would not make sense (it has no spin-space dynamics)
 	bool Spin::IsValid()
 	{
-		if(s == 0)
+		if (s == 0)
 			return false;
-		
+
 		return true;
 	}
 	// -----------------------------------------------------
@@ -210,7 +210,7 @@ namespace SpinAPI
 
 		return true;
 	}
-	
+
 	// Sets the time for the Spin object and its tensor
 	bool Spin::SetTime(double _time)
 	{
@@ -236,8 +236,8 @@ namespace SpinAPI
 		}
 		else
 		{
-			double timestepBelow = this->trajectory.Get(row - 1, trjTime);				// Get time at previous step
-			double l = 1 - (timestepAbove - _time) / (timestepAbove - timestepBelow);	// Get linear interpolation factor, i.e. a number between 0 and 1, where 0 = previous time step and 1 = next time step in the trajectory
+			double timestepBelow = this->trajectory.Get(row - 1, trjTime);			  // Get time at previous step
+			double l = 1 - (timestepAbove - _time) / (timestepAbove - timestepBelow); // Get linear interpolation factor, i.e. a number between 0 and 1, where 0 = previous time step and 1 = next time step in the trajectory
 
 			// Get the axes
 			if (this->trjHasQAxis1)
@@ -268,7 +268,7 @@ namespace SpinAPI
 
 		return status;
 	}
-	
+
 	// Returns the length of the g-tensor trajectory
 	unsigned int Spin::TrajectoryLength() const
 	{
@@ -318,38 +318,38 @@ namespace SpinAPI
 	{
 		return (*(SxFromCollection(this->s)));
 	}
-	
+
 	// And similarly for the Sy spin matrix
 	const arma::sp_cx_mat Spin::Sy() const
 	{
 		return (*(SyFromCollection(this->s)));
 	}
-	
+
 	// And the Sz spin matrix
 	const arma::sp_cx_mat Spin::Sz() const
 	{
 		return (*(SzFromCollection(this->s)));
 	}
-	
+
 	// The S+ spin ladder operator
 	const arma::sp_cx_mat Spin::Sp() const
 	{
 		return (*(SpFromCollection(this->s)));
 	}
-	
+
 	// The S- spin ladder operator
 	const arma::sp_cx_mat Spin::Sm() const
 	{
 		return (*(SmFromCollection(this->s)));
 	}
-	
+
 	// Returns the transformed magnetic moment; (Sx,Sy,Sz)-vector multiplied by the tensor
 	const arma::sp_cx_mat Spin::Tx() const
 	{
 		// First quantization axis
 		arma::sp_cx_mat QASx = this->quantizationAxis1(0) * this->Sx() + this->quantizationAxis1(1) * this->Sy() + this->quantizationAxis1(2) * this->Sz();
 
-		if(IsIsotropic(this->tensor))
+		if (IsIsotropic(this->tensor))
 			return (QASx * this->tensor.Isotropic());
 
 		// Get the other quantization axes
@@ -357,47 +357,47 @@ namespace SpinAPI
 		arma::sp_cx_mat QASz = this->quantizationAxis3(0) * this->Sx() + this->quantizationAxis3(1) * this->Sy() + this->quantizationAxis3(2) * this->Sz();
 
 		auto mat = this->tensor.LabFrame();
-		return (QASx * mat(0,0) + QASy * mat(0,1) + QASz * mat(0,2));
+		return (QASx * mat(0, 0) + QASy * mat(0, 1) + QASz * mat(0, 2));
 	}
-	
+
 	// Returns the transformed magnetic moment; (Sx,Sy,Sz)-vector multiplied by the tensor
 	const arma::sp_cx_mat Spin::Ty() const
 	{
 		// Second quantization axis
 		arma::sp_cx_mat QASy = this->quantizationAxis2(0) * this->Sx() + this->quantizationAxis2(1) * this->Sy() + this->quantizationAxis2(2) * this->Sz();
 
-		if(IsIsotropic(this->tensor))
+		if (IsIsotropic(this->tensor))
 			return (QASy * this->tensor.Isotropic());
 
 		// Get the other quantization axes
 		arma::sp_cx_mat QASx = this->quantizationAxis1(0) * this->Sx() + this->quantizationAxis1(1) * this->Sy() + this->quantizationAxis1(2) * this->Sz();
 		arma::sp_cx_mat QASz = this->quantizationAxis3(0) * this->Sx() + this->quantizationAxis3(1) * this->Sy() + this->quantizationAxis3(2) * this->Sz();
-		
+
 		auto mat = this->tensor.LabFrame();
-		return (QASx * mat(1,0) + QASy * mat(1,1) + QASz * mat(1,2));
+		return (QASx * mat(1, 0) + QASy * mat(1, 1) + QASz * mat(1, 2));
 	}
-	
+
 	// Returns the transformed magnetic moment; (Sx,Sy,Sz)-vector multiplied by the tensor
 	const arma::sp_cx_mat Spin::Tz() const
 	{
 		// Third quantization axis
 		arma::sp_cx_mat QASz = this->quantizationAxis3(0) * this->Sx() + this->quantizationAxis3(1) * this->Sy() + this->quantizationAxis3(2) * this->Sz();
 
-		if(IsIsotropic(this->tensor))
+		if (IsIsotropic(this->tensor))
 			return (QASz * this->tensor.Isotropic());
 
 		// Get the other quantization axes
 		arma::sp_cx_mat QASx = this->quantizationAxis1(0) * this->Sx() + this->quantizationAxis1(1) * this->Sy() + this->quantizationAxis1(2) * this->Sz();
 		arma::sp_cx_mat QASy = this->quantizationAxis2(0) * this->Sx() + this->quantizationAxis2(1) * this->Sy() + this->quantizationAxis2(2) * this->Sz();
-		
+
 		auto mat = this->tensor.LabFrame();
-		return (QASx * mat(2,0) + QASy * mat(2,1) + QASz * mat(2,2));
+		return (QASx * mat(2, 0) + QASy * mat(2, 1) + QASz * mat(2, 2));
 	}
 	// -----------------------------------------------------
 	// Public method to create ActionTarget objects
 	// -----------------------------------------------------
 	// Create ActionTargets
-	void Spin::GetActionTargets(std::vector<RunSection::NamedActionScalar>& _scalars, std::vector<RunSection::NamedActionVector>& _vectors, std::string _system)
+	void Spin::GetActionTargets(std::vector<RunSection::NamedActionScalar> &_scalars, std::vector<RunSection::NamedActionVector> &_vectors, std::string _system)
 	{
 		// Get ActionTargets from the associated Tensor
 		this->tensor.GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
@@ -421,136 +421,135 @@ namespace SpinAPI
 	// Static private members
 	// -----------------------------------------------------
 	// Initialize the collections
-	std::map<unsigned int,std::shared_ptr<arma::sp_cx_mat>> Spin::SxCollection;
-	std::map<unsigned int,std::shared_ptr<arma::sp_cx_mat>> Spin::SyCollection;
-	std::map<unsigned int,std::shared_ptr<arma::sp_cx_mat>> Spin::SzCollection;
-	std::map<unsigned int,std::shared_ptr<arma::sp_cx_mat>> Spin::SpCollection;
-	std::map<unsigned int,std::shared_ptr<arma::sp_cx_mat>> Spin::SmCollection;
-	
+	std::map<unsigned int, std::shared_ptr<arma::sp_cx_mat>> Spin::SxCollection;
+	std::map<unsigned int, std::shared_ptr<arma::sp_cx_mat>> Spin::SyCollection;
+	std::map<unsigned int, std::shared_ptr<arma::sp_cx_mat>> Spin::SzCollection;
+	std::map<unsigned int, std::shared_ptr<arma::sp_cx_mat>> Spin::SpCollection;
+	std::map<unsigned int, std::shared_ptr<arma::sp_cx_mat>> Spin::SmCollection;
+
 	// Get the Sx matrix, or create it from S+ and S-
 	std::shared_ptr<arma::sp_cx_mat> Spin::SxFromCollection(unsigned int _s)
 	{
 		// Check whether the matrix has been created
-		if(Spin::SxCollection.count(_s) < 1)
+		if (Spin::SxCollection.count(_s) < 1)
 		{
 			// Sx can be created from S+ and S-
 			auto sp = Spin::SpFromCollection(_s);
 			auto sm = Spin::SmFromCollection(_s);
-			
+
 			// If S+ or S- could not be obtained, we cannot create Sx
-			if(sp == nullptr || sm == nullptr)
+			if (sp == nullptr || sm == nullptr)
 				return nullptr;
-			
+
 			// Create the matrix from S+ and S-
-			Spin::SxCollection[_s] = std::make_shared<arma::sp_cx_mat>( ((*sp) + (*sm)) / 2.0 );
+			Spin::SxCollection[_s] = std::make_shared<arma::sp_cx_mat>(((*sp) + (*sm)) / 2.0);
 		}
-		
+
 		// Return the matrix
 		return Spin::SxCollection[_s];
 	}
-	
+
 	// Get the Sy matrix, or create it from S+ and S-
 	std::shared_ptr<arma::sp_cx_mat> Spin::SyFromCollection(unsigned int _s)
 	{
 		// Check whether the matrix has been created
-		if(Spin::SyCollection.count(_s) < 1)
+		if (Spin::SyCollection.count(_s) < 1)
 		{
 			// Sy can be created from S+ and S-
 			auto sp = Spin::SpFromCollection(_s);
 			auto sm = Spin::SmFromCollection(_s);
-			
+
 			// If S+ or S- could not be obtained, we cannot create Sy
-			if(sp == nullptr || sm == nullptr)
+			if (sp == nullptr || sm == nullptr)
 				return nullptr;
-			
+
 			// Create the matrix from S+ and S-
-			Spin::SyCollection[_s] = std::make_shared<arma::sp_cx_mat>( ((*sp) - (*sm)) / arma::cx_double(0.0, 2.0) );
+			Spin::SyCollection[_s] = std::make_shared<arma::sp_cx_mat>(((*sp) - (*sm)) / arma::cx_double(0.0, 2.0));
 		}
-		
+
 		// Return the matrix
 		return Spin::SyCollection[_s];
 	}
-	
+
 	// Get the Sz matrix
 	std::shared_ptr<arma::sp_cx_mat> Spin::SzFromCollection(unsigned int _s)
 	{
 		// Check whether the matrix has been created
-		if(Spin::SzCollection.count(_s) < 1)
+		if (Spin::SzCollection.count(_s) < 1)
 		{
 			// Create and fill a vector containing the diagonal values
 			arma::cx_vec diagvec(_s + 1);
-			for(unsigned int i = 0; i < _s + 1; i++)
+			for (unsigned int i = 0; i < _s + 1; i++)
 				diagvec[i] = ((double)_s) / 2.0 - ((double)i);
-			
+
 			// Create the matrix and set the diagonal values
 			std::shared_ptr<arma::sp_cx_mat> tempmat = std::make_shared<arma::sp_cx_mat>(_s + 1, _s + 1);
 			tempmat->diag() = diagvec;
-			
+
 			// Put the matrix into the collection
 			Spin::SzCollection[_s] = tempmat;
 		}
-		
+
 		// Return the matrix
 		return Spin::SzCollection[_s];
 	}
-	
+
 	// Get the S+ matrix
 	std::shared_ptr<arma::sp_cx_mat> Spin::SpFromCollection(unsigned int _s)
 	{
 		// Check whether the matrix has been created
-		if(Spin::SpCollection.count(_s) < 1)
+		if (Spin::SpCollection.count(_s) < 1)
 		{
 			// Create a matrix and fill it will the right values
 			std::shared_ptr<arma::sp_cx_mat> tempmat = std::make_shared<arma::sp_cx_mat>(_s + 1, _s + 1);
-			double s = static_cast<double>(_s) / 2.0;	// Get "s" quantum number in units of hbar
-			for(unsigned int i = 1; i < _s + 1; i++)
+			double s = static_cast<double>(_s) / 2.0; // Get "s" quantum number in units of hbar
+			for (unsigned int i = 1; i < _s + 1; i++)
 			{
 				double m = s - static_cast<double>(i);
-				(*tempmat)(i-1,i) = sqrt( s*(s + 1.0) - m*(m + 1.0) );	// S+|s,m> = hbar * sqrt(s(s+1) - m(m+1))|s,m+1>
+				(*tempmat)(i - 1, i) = sqrt(s * (s + 1.0) - m * (m + 1.0)); // S+|s,m> = hbar * sqrt(s(s+1) - m(m+1))|s,m+1>
 			}
-			
+
 			// Put the matrix into the collection
 			Spin::SpCollection[_s] = tempmat;
 		}
-		
+
 		// Return the matrix
 		return Spin::SpCollection[_s];
 	}
-	
+
 	// Get the S- matrix
 	std::shared_ptr<arma::sp_cx_mat> Spin::SmFromCollection(unsigned int _s)
 	{
 		// Check whether the matrix has been created
-		if(Spin::SmCollection.count(_s) < 1)
+		if (Spin::SmCollection.count(_s) < 1)
 		{
 			// Create a matrix and fill it will the right values
 			std::shared_ptr<arma::sp_cx_mat> tempmat = std::make_shared<arma::sp_cx_mat>(_s + 1, _s + 1);
-			double s = static_cast<double>(_s) / 2.0;	// Get "s" quantum number in units of hbar
-			for(unsigned int i = 0; i < _s; i++)
+			double s = static_cast<double>(_s) / 2.0; // Get "s" quantum number in units of hbar
+			for (unsigned int i = 0; i < _s; i++)
 			{
 				double m = s - static_cast<double>(i);
-				(*tempmat)(i+1,i) = sqrt( s*(s + 1.0) - m*(m - 1.0) );	// S-|s,m> = hbar * sqrt(s(s+1) - m(m-1))|s,m-1>
+				(*tempmat)(i + 1, i) = sqrt(s * (s + 1.0) - m * (m - 1.0)); // S-|s,m> = hbar * sqrt(s(s+1) - m(m-1))|s,m-1>
 			}
-			
+
 			// Put the matrix into the collection
 			Spin::SmCollection[_s] = tempmat;
 		}
-		
+
 		// Return the matrix
 		return Spin::SmCollection[_s];
 	}
 	// -----------------------------------------------------
 	// Non-member non-friend functions
 	// -----------------------------------------------------
-	bool HasTrajectory(const Spin& _spin)
+	bool HasTrajectory(const Spin &_spin)
 	{
 		return (_spin.TrajectoryLength() > 0);
 	}
-	
-	bool IsIsotropic(const Spin& _spin)
+
+	bool IsIsotropic(const Spin &_spin)
 	{
 		return IsIsotropic(_spin.GetTensor());
 	}
 	// -----------------------------------------------------
 }
-

@@ -1,9 +1,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // MolSpin Unit Testing Module
-// 
+//
 // Unit test functions for the Action classes and ActionTargets.
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 //////////////////////////////////////////////////////////////////////////////
@@ -16,52 +16,52 @@
 //////////////////////////////////////////////////////////////////////////////
 // Tests the ActionTarget alias ActionScalar
 // First we define a check-function
-bool check_for_test_actiontargets_scalar(const double& _d) {return (_d < 100.0);}
+bool check_for_test_actiontargets_scalar(const double &_d) { return (_d < 100.0); }
 // And then we define the test itself
 bool test_actiontargets_scalar()
 {
 	// Setup objects for the test
 	double d = 42.0;
 	RunSection::ActionScalar as = RunSection::ActionScalar(d, &check_for_test_actiontargets_scalar);
-	
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= equal_double(d, as.Get());
 	isCorrect &= as.Set(10.01);
 	isCorrect &= equal_double(d, 10.01);
 	isCorrect &= equal_double(d, as.Get());
-	isCorrect &= !as.Set(100.01);	// Check function is false for values >100.0
+	isCorrect &= !as.Set(100.01); // Check function is false for values >100.0
 	isCorrect &= equal_double(d, 10.01);
 	isCorrect &= equal_double(d, as.Get());
-	
+
 	// Return the result
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
 // Tests the ActionTarget alias ActionVector
 // First we define a check-function
-bool check_for_test_actiontargets_vector(const arma::vec& _v) {return (!_v.has_nan() && !_v.has_inf() && _v.n_elem == 3);}
+bool check_for_test_actiontargets_vector(const arma::vec &_v) { return (!_v.has_nan() && !_v.has_inf() && _v.n_elem == 3); }
 // And then we define the test itself
 bool test_actiontargets_vector()
 {
 	// Setup objects for the test
 	arma::vec v("1 0 0");
 	RunSection::ActionVector av = RunSection::ActionVector(v, &check_for_test_actiontargets_vector);
-	
+
 	bool isCorrect = true;
 	arma::vec testvec1("0 42 120");
 	arma::vec testvec2("1 1");
-	
+
 	// Perform the test
 	isCorrect &= equal_vec(v, av.Get());
 	isCorrect &= av.Set(testvec1);
 	isCorrect &= equal_vec(v, testvec1);
 	isCorrect &= equal_vec(v, av.Get());
-	isCorrect &= !av.Set(testvec2);	// Check function is false for number of elements != 3
+	isCorrect &= !av.Set(testvec2); // Check function is false for number of elements != 3
 	isCorrect &= equal_vec(v, testvec1);
 	isCorrect &= equal_vec(v, av.Get());
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -75,7 +75,7 @@ bool test_action_addscalar()
 	double value3 = 82.0;
 	double value4 = 102.0;
 	double d = value1;
-	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr);	// The ActionScalar (without check function)
+	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr); // The ActionScalar (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
 	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
 	asMap.insert(RunSection::NamedActionScalar("testscalar", as));		// Add ActionScalar to the map with the name "testscalar"
@@ -83,10 +83,10 @@ bool test_action_addscalar()
 	std::string actioncontents = "scalar=testscalar;value=20;";
 	MSDParser::ObjectParser parser(actionname, actioncontents);
 	RunSection::ActionAddScalar action(parser, asMap, avMap);
-	RunSection::Action* action_ptr = &action;
-	
+	RunSection::Action *action_ptr = &action;
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_double(d, value1);
@@ -96,7 +96,7 @@ bool test_action_addscalar()
 	isCorrect &= equal_double(d, value3);
 	action.Step(4);
 	isCorrect &= equal_double(as.Get(), value4);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -110,7 +110,7 @@ bool test_action_multiplyscalar()
 	double value3 = 94.5;
 	double value4 = 141.75;
 	double d = value1;
-	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr);	// The ActionScalar (without check function)
+	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr); // The ActionScalar (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
 	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
 	asMap.insert(RunSection::NamedActionScalar("testscalar", as));		// Add ActionScalar to the map with the name "testscalar"
@@ -118,10 +118,10 @@ bool test_action_multiplyscalar()
 	std::string actioncontents = "scalar=testscalar;value=1.5;";
 	MSDParser::ObjectParser parser(actionname, actioncontents);
 	RunSection::ActionMultiplyScalar action(parser, asMap, avMap);
-	RunSection::Action* action_ptr = &action;
-	
+	RunSection::Action *action_ptr = &action;
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_double(d, value1);
@@ -131,7 +131,7 @@ bool test_action_multiplyscalar()
 	isCorrect &= equal_double(d, value3);
 	action.Step(4);
 	isCorrect &= equal_double(as.Get(), value4);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -145,18 +145,18 @@ bool test_action_addvector()
 	arma::vec value3("1 0 4");
 	arma::vec value4("1 0 6");
 	arma::vec v = value1;
-	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr);	// The ActionVector (without check function)
+	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr); // The ActionVector (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
 	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
 	avMap.insert(RunSection::NamedActionVector("testvec", av));			// Add ActionVector to the map with the name "testvec"
 	std::string actionname = "test";
-	std::string actioncontents = "vector=testvec;value=2;direction=0 0 100;";	// The "direction" vector should be normalized to 1
+	std::string actioncontents = "vector=testvec;value=2;direction=0 0 100;"; // The "direction" vector should be normalized to 1
 	MSDParser::ObjectParser parser(actionname, actioncontents);
 	RunSection::ActionAddVector action(parser, asMap, avMap);
-	RunSection::Action* action_ptr = &action;
-	
+	RunSection::Action *action_ptr = &action;
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_vec(v, value1);
@@ -166,7 +166,7 @@ bool test_action_addvector()
 	isCorrect &= equal_vec(v, value3);
 	action.Step(4);
 	isCorrect &= equal_vec(av.Get(), value4);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -180,7 +180,7 @@ bool test_action_scalevector()
 	arma::vec value3("4 0 0");
 	arma::vec value4("8 0 0");
 	arma::vec v = value1;
-	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr);	// The ActionVector (without check function)
+	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr); // The ActionVector (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
 	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
 	avMap.insert(RunSection::NamedActionVector("testvec", av));			// Add ActionVector to the map with the name "testvec"
@@ -188,10 +188,10 @@ bool test_action_scalevector()
 	std::string actioncontents = "vector=testvec;value=2;";
 	MSDParser::ObjectParser parser(actionname, actioncontents);
 	RunSection::ActionScaleVector action(parser, asMap, avMap);
-	RunSection::Action* action_ptr = &action;
-	
+	RunSection::Action *action_ptr = &action;
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_vec(v, value1);
@@ -201,7 +201,7 @@ bool test_action_scalevector()
 	isCorrect &= equal_vec(v, value3);
 	action.Step(4);
 	isCorrect &= equal_vec(av.Get(), value4);
-	
+
 	// Return the result
 	return isCorrect;
 }
@@ -215,7 +215,7 @@ bool test_action_rotatevector()
 	arma::vec value3("-1 0 0");
 	arma::vec value4("0 -1 0");
 	arma::vec v = value1;
-	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr);	// The ActionVector (without check function)
+	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr); // The ActionVector (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
 	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
 	avMap.insert(RunSection::NamedActionVector("testvec", av));			// Add ActionVector to the map with the name "testvec"
@@ -223,10 +223,10 @@ bool test_action_rotatevector()
 	std::string actioncontents = "vector=testvec;value=90;axis=0 0 1;";
 	MSDParser::ObjectParser parser(actionname, actioncontents);
 	RunSection::ActionRotateVector action(parser, asMap, avMap);
-	RunSection::Action* action_ptr = &action;
-	
+	RunSection::Action *action_ptr = &action;
+
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_vec(v, value1);
@@ -236,13 +236,13 @@ bool test_action_rotatevector()
 	isCorrect &= equal_vec(v, value3);
 	action.Step(4);
 	isCorrect &= equal_vec(av.Get(), value4);
-	
+
 	// Return the result
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
 // Add all the Action classes test cases
-void AddActionsTests(std::vector<test_case>& _cases)
+void AddActionsTests(std::vector<test_case> &_cases)
 {
 	_cases.push_back(test_case("RunSection::ActionScalar test with check function", test_actiontargets_scalar));
 	_cases.push_back(test_case("RunSection::ActionVector test with check function", test_actiontargets_vector));

@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////
 // FileReader implementations, used to read objects from MSD files.
 // 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////

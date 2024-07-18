@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////////////////////
-// SpinSpace class (SpinAPI Module)
+// SpinSpace class (SpinAPI Module) - developed by Irina Anisimova and Luca Gerhards.
 // ------------------
 // This source file contains methods for managing pulses
 // and having rotating functions.
-// Molecular Spin Dynamics Software - developed by Irina Anisimova and Pedro Alvarez.
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards..
 // (c) 2024 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -18,8 +18,7 @@ namespace SpinAPI
         // Create temporary matrix to hold the result
         arma::cx_mat tmp = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
-
-        if(_pulse->Type() == PulseType::InstantPulse)
+        if (_pulse->Type() == PulseType::InstantPulse)
         {
             // Create the rotation angle
             double angle;
@@ -64,7 +63,7 @@ namespace SpinAPI
                 _out = arma::expmat((arma::cx_double(0.0, -1.0) * angle * tmp));
             }
         }
-        else if(_pulse->Type() == PulseType::LongPulse)
+        else if (_pulse->Type() == PulseType::LongPulse)
         {
             // this is should be fuction CreateRotDirection
             arma::cx_mat Sx;
@@ -81,16 +80,16 @@ namespace SpinAPI
                 this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
                 this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
                 this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
-                
+
                 tmp += Sx * field(0) + Sy * field(1) + Sz * field(2);
             }
 
             // Multiply with the given prefactor (or 1.0 if none was specified)
-		    tmp *= _pulse->Prefactor();
+            tmp *= _pulse->Prefactor();
 
             // Multiply with common prefactor
-            if(_pulse->AddCommonPrefactor())
-            tmp *= 8.794e+1;
+            if (_pulse->AddCommonPrefactor())
+                tmp *= 8.794e+1;
 
             // Check whether we want a superspace or Hilbert space result
             if (this->useSuperspace)
@@ -99,17 +98,16 @@ namespace SpinAPI
                 arma::cx_mat rhs;
                 auto result = this->SuperoperatorFromLeftOperator(tmp, lhs);
                 result &= this->SuperoperatorFromRightOperator(tmp, rhs);
-                if(result)
+                if (result)
                     _out = lhs - rhs;
                 else
                     return false;
             }
             else
             {
-               	// We already have the result in the Hilbert space
-			    _out = tmp;
+                // We already have the result in the Hilbert space
+                _out = tmp;
             }
-
         }
 
         return true;

@@ -131,7 +131,7 @@ namespace RunSection
 			one.set_size(arma::size(H));
 			one.eye();
 
-			lambda =  arma::kron(eig_val_mat, one) + arma::kron(one, eig_val_mat.t());
+			lambda = arma::kron(eig_val_mat, one) + arma::kron(one, eig_val_mat.t());
 			U_eigenvec_matrix = arma::kron(eigen_vec, eigen_vec.t());
 
 			// ---------------------------------------------------------------
@@ -315,9 +315,12 @@ namespace RunSection
 										*Sy1Sx2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
 										*Sy1Sy2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
 										*Sy1Sz2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
-										*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bx
-										*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * By
-										*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bz
+										*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+										; // * Bx
+										*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+										; // * By
+										*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+										; // * Bz
 
 										// Put all tensors on pointer array
 										num_op = 9;
@@ -401,13 +404,13 @@ namespace RunSection
 										}
 
 										// Transfer spherical tensors into Superspace
-										*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-										*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
+										*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
+										*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
 										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-										*Tm1_SS 		= arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-										*Tp1_SS 		= arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-										*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-										*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
+										*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
+										*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
+										*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
+										*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;
@@ -727,13 +730,13 @@ namespace RunSection
 											}
 
 											// Transfer spherical tensors into Superspace
-											*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-											*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
+											*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
+											*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
 											// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-											*Tm1_SS 		= arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-											*Tp1_SS 		= arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-											*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-											*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
+											*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
+											*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
+											*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
+											*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
 
 											// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 											num_op = 6;
@@ -998,9 +1001,12 @@ namespace RunSection
 									*Sy1Sx2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
 									*Sy1Sy2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
 									*Sy1Sz2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
-									*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bx
-									*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * By
-									*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());; // * Bz
+									*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+									; // * Bx
+									*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+									; // * By
+									*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
+									; // * Bz
 
 									// Put all tensors on pointer array
 									num_op = 9;
@@ -1018,7 +1024,6 @@ namespace RunSection
 									ptr_Tensors[8] = Sz1Sz2;
 
 									// Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
-
 								}
 								else
 								{
@@ -1085,13 +1090,13 @@ namespace RunSection
 									}
 
 									// Transfer spherical tensors into Superspace
-									*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-									*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
+									*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
+									*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
 									// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-									*Tm1_SS 		= arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-									*Tp1_SS 		= arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-									*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-									*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
+									*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
+									*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
+									*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
+									*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
 
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
@@ -1460,13 +1465,13 @@ namespace RunSection
 										}
 
 										// Transfer spherical tensors into Superspace
-										*T0_rank_0_SS 	= arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-										*T0_rank_2_SS 	= arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
+										*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
+										*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
 										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-										*Tm1_SS 		= arma::kron(-1 * (*Tm1), one) - arma::kron(one, (-1 * (*Tm1)).t());
-										*Tp1_SS 		= arma::kron(-1 * (*Tp1), one) - arma::kron(one, (-1 * (*Tp1)).t());
-										*Tm2_SS			= arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-										*Tp2_SS			= arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
+										*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, (-1 * (*Tm1)).t());
+										*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, (-1 * (*Tp1)).t());
+										*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
+										*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
 
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;
@@ -1763,7 +1768,7 @@ namespace RunSection
 			}
 
 			// Rotation into eigenbasis of H0
-			//K = (eigen_vec.t() * K * eigen_vec);
+			// K = (eigen_vec.t() * K * eigen_vec);
 
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
@@ -1835,7 +1840,7 @@ namespace RunSection
 					}
 
 					// Transform into eigenbasis of H0
-					//PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
+					// PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
 					this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
 				}
 
@@ -1880,7 +1885,7 @@ namespace RunSection
 						}
 
 						// Transform into eigenbasis of H0
-						//PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
+						// PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
 						this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
 					}
 

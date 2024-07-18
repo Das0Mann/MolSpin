@@ -2,8 +2,8 @@
 // Defines (SpinAPI Module)
 // ------------------
 // Definitions used by the SpinAPI Module.
-// 
-// Molecular Spin Dynamics Software - developed by Claus Nielsen.
+//
+// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
@@ -19,14 +19,14 @@ namespace SpinAPI
 		Nucleus,
 		NotSpecified,
 	};
-	
+
 	// Used by the Trajectory class
 	enum class InterpolationType
 	{
-		Stepwise,	// Stepwise constant function
-		Linear,		// Linear interpolation
+		Stepwise, // Stepwise constant function
+		Linear,	  // Linear interpolation
 	};
-	
+
 	// Used by the Interaction class
 	enum class InteractionType
 	{
@@ -36,51 +36,51 @@ namespace SpinAPI
 		Exchange,
 		Zfs,
 	};
-	
+
 	// Used by the Interaction class to determine the time-dependence of the field for SingleSpin interactions
 	enum class InteractionFieldType
 	{
 		Static,
-		LinearPolarization,		// Monochromatic linearly polarized radiation, parameters: "frequency", "phase"
-		CircularPolarization,	// Monochromatic circularly polarized radiation, parameters: "frequency", "phase", "axis"
-		Trajectory,				// Time-dependence is given by a trajectory
+		LinearPolarization,	  // Monochromatic linearly polarized radiation, parameters: "frequency", "phase"
+		CircularPolarization, // Monochromatic circularly polarized radiation, parameters: "frequency", "phase", "axis"
+		Trajectory,			  // Time-dependence is given by a trajectory
 	};
-	
+
 	// Used by the Transition class
 	enum class TransitionType
 	{
 		Source,
 		Sink,
 	};
-	
+
 	// The types of supported reaction operators
 	enum class ReactionOperatorType
 	{
-		Unspecified,	// Used by the transition class - SpinAPI::SpinSpace will use the reaction operator type assigned to it if a transition has an unspecified reaction operator type
+		Unspecified, // Used by the transition class - SpinAPI::SpinSpace will use the reaction operator type assigned to it if a transition has an unspecified reaction operator type
 		Haberkorn,
 		Lindblad,
 	};
-	
+
 	// The types of special operators defined in SpinAPI::Operator objects
 	enum class OperatorType
 	{
 		Unspecified,
-		RelaxationLindblad,		// Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
+		RelaxationLindblad, // Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
 		RelaxationDephasing,
 		RelaxationRandomFields,
 		RelaxationT1,
 		RelaxationT2,
 	};
-	
+
 	// The types of special operators defined in SpinAPI::Operator objects
 	enum class PulseType
 	{
 		Unspecified,
-		InstantPulse,		// Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
+		InstantPulse, // Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
 		LongPulse,
 		ShapedPulse,
 	};
-	 
+
 	// Types of standard outputs based on ActionTargets, to be used to by the StandardOutput class
 	enum class StandardOutputType
 	{

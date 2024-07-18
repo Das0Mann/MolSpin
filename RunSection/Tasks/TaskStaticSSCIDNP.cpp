@@ -69,13 +69,15 @@ namespace RunSection
 
 			// Normalize the weights
 			double sum_weights = std::accumulate(weights.begin(), weights.end(), 0.0);
-			if (sum_weights > 0) {
-				for (double &weight : weights) {
+			if (sum_weights > 0)
+			{
+				for (double &weight : weights)
+				{
 					weight /= sum_weights;
 				}
 			}
 
-			if(weights.size() > 1)
+			if (weights.size() > 1)
 			{
 				this->Log() << "Using weighted density matrix for initial state. Be sure that the sum of weights equals to 1." << std::endl;
 				// Get the initial state
@@ -165,7 +167,7 @@ namespace RunSection
 			// Perform the calculation
 			// Here it could be a problem of the right sign
 			this->Log() << "Ready to perform calculation." << std::endl;
-			arma::cx_vec result = solve(-1*arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			arma::cx_vec result = solve(-1 * arma::conv_to<arma::cx_mat>::from(A), rho0vec);
 			this->Log() << "Done with calculation." << std::endl;
 
 			// Convert the resulting density operator back to its Hilbert space representation
