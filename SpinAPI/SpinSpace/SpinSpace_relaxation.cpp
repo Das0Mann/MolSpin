@@ -163,6 +163,73 @@ namespace SpinAPI
 			// Set the resulting operator
 			_out = P;
 		}
+		else if(_operator->Type() == OperatorType::RelaxationT1)
+		{
+			// Routine to calculate T1 relaxation (longitudinal)
+			auto spins = _operator->Spins();
+
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::cx_mat S_plus;
+			arma::cx_mat S_minus;
+			arma::cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sp()), (*i), S_plus);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sm()), (*i), S_minus);
+
+				// Get the contribution from T1 relaxation
+				if(!this->SuperoperatorFromOperators(S_plus, S_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(S_minus.t() * S_plus, PL) || !this->SuperoperatorFromRightOperator(S_minus.t() * S_plus, PR))
+					return false;
+
+				// \mathcal{L}_{T1}(\rho) = \frac{1}{T1} (2S_+ \rho S_- - \{S_-S_+, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationT2)
+		{
+			// Routine to calculate T2 relaxation (transverse)
+			auto spins = _operator->Spins();
+
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+
+				// Get the contribution from T2 relaxation
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
+					return false;
+				// \mathcal{L}_{T2}(\rho) = \frac{1}{T2} (2S_z \rho S_z - \{S_z^2, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
 		else if(_operator->Type() == OperatorType::Unspecified)
 		{
 			// Cannot construct operator if the type is not specified
@@ -326,6 +393,73 @@ namespace SpinAPI
 				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
 					return false;
 				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+				else if(_operator->Type() == OperatorType::RelaxationT1)
+		{
+			// Routine to calculate T1 relaxation (longitudinal)
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::sp_cx_mat S_plus;
+			arma::sp_cx_mat S_minus;
+			arma::sp_cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sp(), (*i), S_plus);
+				this->CreateOperator((*i)->Sm(), (*i), S_minus);
+
+				// Get the contribution from T1 relaxation
+				if(!this->SuperoperatorFromOperators(S_plus, S_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(S_minus.t() * S_plus, PL) || !this->SuperoperatorFromRightOperator(S_minus.t() * S_plus, PR))
+					return false;
+
+				// \mathcal{L}_{T1}(\rho) = \frac{1}{T1} (2S_+ \rho S_- - \{S_-S_+, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationT2)
+		{
+			// Routine to calculate T2 relaxation (transverse)
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::sp_cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sx(), (*i), Sx);
+				this->CreateOperator((*i)->Sy(), (*i), Sy);
+				this->CreateOperator((*i)->Sz(), (*i), Sz);
+
+				// Get the contribution from T2 relaxation
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
+					return false;
+				// \mathcal{L}_{T2}(\rho) = \frac{1}{T2} (2S_z \rho S_z - \{S_z^2, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
 			}
 
 			// Set the resulting operator
@@ -516,6 +650,82 @@ namespace SpinAPI
 			// Set the resulting operator
 			_out = P;
 		}
+				else if(_operator->Type() == OperatorType::RelaxationT1)
+		{
+			// Routine to calculate T1 relaxation (longitudinal)
+			auto spins = _operator->Spins();
+
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::cx_mat S_plus;
+			arma::cx_mat S_minus;
+			arma::cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sp()), (*i), S_plus);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sm()), (*i), S_minus);
+
+				// Rotate into the eigenbasis of the spin system
+				S_plus = _rotationmatrix.t() * S_plus * _rotationmatrix;
+				S_minus = _rotationmatrix.t() * S_minus * _rotationmatrix;
+
+				// Get the contribution from T1 relaxation
+				if(!this->SuperoperatorFromOperators(S_plus, S_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(S_minus.t() * S_plus, PL) || !this->SuperoperatorFromRightOperator(S_minus.t() * S_plus, PR))
+					return false;
+
+				// \mathcal{L}_{T1}(\rho) = \frac{1}{T1} (2S_+ \rho S_- - \{S_-S_+, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationT2)
+		{
+			// Routine to calculate T2 relaxation (transverse)
+			auto spins = _operator->Spins();
+
+			arma::cx_mat Sx;
+			arma::cx_mat Sy;
+			arma::cx_mat Sz;
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+
+				// Rotate into the eigenbasis of the spin system
+				Sx = _rotationmatrix.t() * Sx * _rotationmatrix;
+				Sy = _rotationmatrix.t() * Sy * _rotationmatrix;
+				Sz = _rotationmatrix.t() * Sz * _rotationmatrix;
+
+				// Get the contribution from T2 relaxation
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
+					return false;
+				// \mathcal{L}_{T2}(\rho) = \frac{1}{T2} (2S_z \rho S_z - \{S_z^2, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
 		else if(_operator->Type() == OperatorType::Unspecified)
 		{
 			// Cannot construct operator if the type is not specified
@@ -692,6 +902,82 @@ namespace SpinAPI
 				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB))
 					return false;
 				P += -1.0 * _operator->Rate3() * ((3/2) * E - PB);
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+						else if(_operator->Type() == OperatorType::RelaxationT1)
+		{
+			// Routine to calculate T1 relaxation (longitudinal)
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::sp_cx_mat S_plus;
+			arma::sp_cx_mat S_minus;
+			arma::sp_cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sp(), (*i), S_plus);
+				this->CreateOperator((*i)->Sm(), (*i), S_minus);
+
+				// Rotate into the eigenbasis of the spin system
+				S_plus = _rotationmatrix.t() * S_plus * _rotationmatrix;
+				S_minus = _rotationmatrix.t() * S_minus * _rotationmatrix;
+
+				// Get the contribution from T1 relaxation
+				if(!this->SuperoperatorFromOperators(S_plus, S_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(S_minus.t() * S_plus, PL) || !this->SuperoperatorFromRightOperator(S_minus.t() * S_plus, PR))
+					return false;
+
+				// \mathcal{L}_{T1}(\rho) = \frac{1}{T1} (2S_+ \rho S_- - \{S_-S_+, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if(_operator->Type() == OperatorType::RelaxationT2)
+		{
+			// Routine to calculate T2 relaxation (transverse)
+			auto spins = _operator->Spins();
+
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());  // Total operator
+			arma::sp_cx_mat PB;    // Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;    // The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;    // The right-hand operator (. * conj(P)*P)
+
+			for(auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if(!this->Contains(*i))
+					continue;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sx(), (*i), Sx);
+				this->CreateOperator((*i)->Sy(), (*i), Sy);
+				this->CreateOperator((*i)->Sz(), (*i), Sz);
+
+				// Rotate into the eigenbasis of the spin system
+				Sx = _rotationmatrix.t() * Sx * _rotationmatrix;
+				Sy = _rotationmatrix.t() * Sy * _rotationmatrix;
+				Sz = _rotationmatrix.t() * Sz * _rotationmatrix;
+
+				// Get the contribution from T2 relaxation
+				if(!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
+					return false;
+				// \mathcal{L}_{T2}(\rho) = \frac{1}{T2} (2S_z \rho S_z - \{S_z^2, \rho\})
+				P += (PB - (PL + PR)/2.0) * _operator->Rate1();
 			}
 
 			// Set the resulting operator

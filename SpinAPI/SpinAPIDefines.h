@@ -68,6 +68,8 @@ namespace SpinAPI
 		RelaxationLindblad,		// Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
 		RelaxationDephasing,
 		RelaxationRandomFields,
+		RelaxationT1,
+		RelaxationT2,
 	};
 	
 	// The types of special operators defined in SpinAPI::Operator objects

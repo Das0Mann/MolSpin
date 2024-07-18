@@ -449,9 +449,9 @@ namespace RunSection
 										{
 											// Norm
 											*ptr_Tensors[0] = (*ptr_Tensors[0]);
-											*ptr_Tensors[1] = -(*ptr_Tensors[1]);
+											*ptr_Tensors[1] = (*ptr_Tensors[1]);
 											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-											*ptr_Tensors[3] = (*ptr_Tensors[3]);
+											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
 											*ptr_Tensors[4] = (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = (*ptr_Tensors[5]);
 										}
@@ -1217,9 +1217,9 @@ namespace RunSection
 									{
 										// Norm
 										*ptr_Tensors[0] = (*ptr_Tensors[0]);
-										*ptr_Tensors[1] = -(*ptr_Tensors[1]);
+										*ptr_Tensors[1] = (*ptr_Tensors[1]);
 										*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-										*ptr_Tensors[3] = (*ptr_Tensors[3]);
+										*ptr_Tensors[3] = -(*ptr_Tensors[3]);
 										*ptr_Tensors[4] = (*ptr_Tensors[4]);
 										*ptr_Tensors[5] = (*ptr_Tensors[5]);
 									}
