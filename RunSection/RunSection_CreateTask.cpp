@@ -53,6 +53,8 @@
 
 #include "TaskStaticSSPump.h"
 
+#include "TaskStaticSSCopy.h" //added by Benji 
+
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
 {
@@ -216,6 +218,12 @@ namespace RunSection
 		else if (_tasktype.compare("staticss-pump") == 0)
 		{
 			task = std::make_shared<TaskStaticSSPump>(_obj, *this);
+		}
+
+		//NEW (ADDED by Benji Tigg)
+		else if(_tasktype.compare("staticsscopy") == 0)
+		{
+			task = std::make_shared<TaskStaticSSCopy>(_obj, *this);
 		}
 
 		// NOTE: To add a new task class, just add another "else if" here...

@@ -14,3 +14,6 @@ CMakeLists.txt.user
 build
 .idea
 .vscode
+
+#ignore personal msd files
+/msd files
