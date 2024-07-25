@@ -1759,7 +1759,7 @@ namespace RunSection
 												// CONSTRUCTING SPECTRAL DENSITY MATRIX
 												// ----------------------------------------------------------------
 												ampl_combined = ampl_list[k] * ampl_list[k];
-												std::cout << "ampl_combined" << ampl_combined << std::endl;
+
 												if ((*interaction)->Properties()->Get("def_specdens", def_specdens) && def_specdens == 1)
 												{
 													SpecDens *= 0.0;

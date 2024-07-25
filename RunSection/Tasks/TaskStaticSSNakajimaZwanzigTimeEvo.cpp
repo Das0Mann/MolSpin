@@ -49,7 +49,7 @@ namespace RunSection
 		arma::cx_mat rho0;
 		arma::cx_vec rho0vec;
 		arma::cx_mat eigen_vec; // To hold eigenvectors
-		arma::vec eigen_val;	// To hold eigenvalues
+		arma::cx_vec eigen_val;	// To hold eigenvalues
 		arma::cx_mat eig_val_mat;
 
 		// Obtain spin systems
@@ -61,6 +61,7 @@ namespace RunSection
 
 		// Loop through all SpinSystems
 		int ic = 0; // System counter
+
 		for (auto i = systems.cbegin(); i < systems.cend(); i++)
 		{
 			// Make sure we have an initial state
@@ -70,6 +71,8 @@ namespace RunSection
 				this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no initial state was specified." << std::endl;
 				continue;
 			}
+
+			this->Log() << "\nStarting with SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 
 			// Obtain a SpinSpace to describe the system
 			SpinAPI::SpinSpace space(*(*i));
@@ -91,6 +94,7 @@ namespace RunSection
 				else
 					rho0 += tmp_rho0;
 			}
+
 			rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
 
 			// ----------------------------------------------------------------
@@ -105,13 +109,29 @@ namespace RunSection
 				continue;
 			}
 
+
+			std::cout << "Hamiltonian:" << std::endl;
+			std::cout << H << std::endl;
+
+			// Get the reaction operators, and add them to "A"
+			arma::cx_mat K;
+
+			if (!space.TotalReactionOperator(K))
+			{
+				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
+			}
+
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
 
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H);
+			arma::eig_gen(eigen_val, eigen_vec, (H)); 
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
+
+			// Rotate density operator in eigenbasis of H0
+			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
+			rho0 = rho0 / trace(rho0);
 
 			// Put eigenbasis on pointer to sue for PState (projection operator) in final calculation
 			ptr_eigen_vec[ic] = {&eigen_vec};
@@ -121,18 +141,21 @@ namespace RunSection
 			// ----------------------------------------------------------------
 
 			// Constructing diagonal matrix with eigenvalues of H0
-			eig_val_mat = diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
+			eig_val_mat = arma::diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
 			arma::cx_mat lambda;
-			arma::cx_mat U_eigenvec_matrix;
 
 			// Unit matrix
 			arma::cx_mat one;
 			one.set_size(arma::size(H));
 			one.eye();
 
-			lambda = arma::kron(eig_val_mat, one) + arma::kron(one, eig_val_mat.t());
-			U_eigenvec_matrix = arma::kron(eigen_vec, eigen_vec.t());
+// std::complex<double>(0.0, 1.00) *  
+// std::complex<double>(0.0, -1.00) * 
+			lambda = arma::kron(arma::cx_double(0.0, -1.00) * eig_val_mat, one) + arma::kron(arma::cx_double(0.0, 1.00) * one, eig_val_mat.st());
+
+			std::cout << "Lambda:" << std::endl;
+			std::cout << lambda << std::endl;
 
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -223,14 +246,6 @@ namespace RunSection
 			arma::cx_mat *Tp2 = new arma::cx_mat;
 			arma::cx_mat *Tm2 = new arma::cx_mat;
 
-			// Spherical Tensors in Superspace
-			arma::cx_mat *T0_rank_0_SS = new arma::cx_mat;
-			arma::cx_mat *T0_rank_2_SS = new arma::cx_mat;
-			arma::cx_mat *Tp1_SS = new arma::cx_mat;
-			arma::cx_mat *Tm1_SS = new arma::cx_mat;
-			arma::cx_mat *Tp2_SS = new arma::cx_mat;
-			arma::cx_mat *Tm2_SS = new arma::cx_mat;
-
 			// arma::cx_mat ** Tensors_rotating = NULL;
 			int k;
 			int s;
@@ -308,19 +323,16 @@ namespace RunSection
 											return false;
 										}
 
-										// Build double-spin operators (already in correct Superspace size for NZ matrix)
-										*Sx1Sx2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bx
-										*Sx1Sy2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * By
-										*Sx1Sz2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bz
-										*Sy1Sx2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
-										*Sy1Sy2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
-										*Sy1Sz2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
-										*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-										; // * Bx
-										*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-										; // * By
-										*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-										; // * Bz
+										// Build double-spin operators
+										*Sx1Sx2 = (*Sx1); // * Bx
+										*Sx1Sy2 = (*Sx1); // * By
+										*Sx1Sz2 = (*Sx1); // * Bz
+										*Sy1Sx2 = (*Sy1); // * Bx
+										*Sy1Sy2 = (*Sy1); // * By
+										*Sy1Sz2 = (*Sy1); // * Bz
+										*Sz1Sx2 = (*Sz1); // * Bx
+										*Sz1Sy2 = (*Sz1); // * By
+										*Sz1Sz2 = (*Sz1); // * Bz
 
 										// Put all tensors on pointer array
 										num_op = 9;
@@ -403,25 +415,16 @@ namespace RunSection
 											continue;
 										}
 
-										// Transfer spherical tensors into Superspace
-										*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-										*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
-										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-										*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-										*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-										*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-										*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
-
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = T0_rank_0_SS;
-										ptr_Tensors[1] = T0_rank_2_SS;
-										ptr_Tensors[2] = Tm1_SS;
-										ptr_Tensors[3] = Tp1_SS;
-										ptr_Tensors[4] = Tm2_SS;
-										ptr_Tensors[5] = Tp2_SS;
+										ptr_Tensors[0] = T0_rank_0;
+										ptr_Tensors[1] = T0_rank_2;
+										ptr_Tensors[2] = Tm1;
+										ptr_Tensors[3] = Tp1;
+										ptr_Tensors[4] = Tm2;
+										ptr_Tensors[5] = Tp2;
 
 										// Construct spatial spherical Tensors
 										SpinAPI::Tensor inTensor(0);
@@ -446,11 +449,28 @@ namespace RunSection
 											*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 											// Rank 2
 											*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
-											*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
+											*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
+											*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
 											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 										}
+										else
+										{
+											// Norm
+											*ptr_Tensors[0] = (*ptr_Tensors[0]);
+											*ptr_Tensors[1] = (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+											*ptr_Tensors[4] = (*ptr_Tensors[4]);
+											*ptr_Tensors[5] = (*ptr_Tensors[5]);
+										}
+									}
+
+// Rotate tensors in eigenbasis of H0
+#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+									for (k = 0; k < num_op; k++)
+									{
+										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 									}
 
 									// Number of elments for SpecDens. Important for delete statemant later
@@ -512,8 +532,6 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 														*ptr_SpecDens[m] += SpecDens;
 													}
 
@@ -523,7 +541,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], eigen_vec, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -571,8 +589,6 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 													*ptr_SpecDens[m] += SpecDens;
 												}
 
@@ -582,7 +598,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], eigen_vec, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -651,15 +667,15 @@ namespace RunSection
 											}
 
 											// Build double-spin operators
-											*Sx1Sx2 = arma::kron((*Sx1) * (*Sx2), one) - arma::kron(one, ((*Sx1) * (*Sx2)).t());
-											*Sx1Sy2 = arma::kron((*Sx1) * (*Sy2), one) - arma::kron(one, ((*Sx1) * (*Sy2)).t());
-											*Sx1Sz2 = arma::kron((*Sx1) * (*Sz2), one) - arma::kron(one, ((*Sx1) * (*Sz2)).t());
-											*Sy1Sx2 = arma::kron((*Sy1) * (*Sx2), one) - arma::kron(one, ((*Sy1) * (*Sx2)).t());
-											*Sy1Sy2 = arma::kron((*Sy1) * (*Sy2), one) - arma::kron(one, ((*Sy1) * (*Sy2)).t());
-											*Sy1Sz2 = arma::kron((*Sy1) * (*Sz2), one) - arma::kron(one, ((*Sy1) * (*Sz2)).t());
-											*Sz1Sx2 = arma::kron((*Sz1) * (*Sx2), one) - arma::kron(one, ((*Sz1) * (*Sx2)).t());
-											*Sz1Sy2 = arma::kron((*Sz1) * (*Sy2), one) - arma::kron(one, ((*Sz1) * (*Sy2)).t());
-											*Sz1Sz2 = arma::kron((*Sz1) * (*Sz2), one) - arma::kron(one, ((*Sz1) * (*Sz2)).t());
+											*Sx1Sx2 = (*Sx1) * (*Sx2);
+											*Sx1Sy2 = (*Sx1) * (*Sy2);
+											*Sx1Sz2 = (*Sx1) * (*Sz2);
+											*Sy1Sx2 = (*Sy1) * (*Sx2);
+											*Sy1Sy2 = (*Sy1) * (*Sy2);
+											*Sy1Sz2 = (*Sy1) * (*Sz2);
+											*Sz1Sx2 = (*Sz1) * (*Sx2);
+											*Sz1Sy2 = (*Sz1) * (*Sy2);
+											*Sz1Sz2 = (*Sz1) * (*Sz2);
 
 											// Put all tensors on pointer array
 											num_op = 9;
@@ -729,25 +745,16 @@ namespace RunSection
 												continue;
 											}
 
-											// Transfer spherical tensors into Superspace
-											*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-											*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
-											// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-											*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-											*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-											*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-											*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
-
 											// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 											num_op = 6;
 											delete[] ptr_Tensors;
 											ptr_Tensors = new arma::cx_mat *[num_op];
-											ptr_Tensors[0] = T0_rank_0_SS;
-											ptr_Tensors[1] = T0_rank_2_SS;
-											ptr_Tensors[2] = Tm1_SS;
-											ptr_Tensors[3] = Tp1_SS;
-											ptr_Tensors[4] = Tm2_SS;
-											ptr_Tensors[5] = Tp2_SS;
+											ptr_Tensors[0] = T0_rank_0;
+											ptr_Tensors[1] = T0_rank_2;
+											ptr_Tensors[2] = Tm1;
+											ptr_Tensors[3] = Tp1;
+											ptr_Tensors[4] = Tm2;
+											ptr_Tensors[5] = Tp2;
 
 											// Construct spatial spherical Tensors
 											SpinAPI::Tensor inTensor(0);
@@ -772,11 +779,28 @@ namespace RunSection
 												*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 												// Rank 2
 												*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-												*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
-												*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
+												*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
+												*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
 												*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 												*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 											}
+											else
+											{
+												// Norm
+												*ptr_Tensors[0] = (*ptr_Tensors[0]);
+												*ptr_Tensors[1] = (*ptr_Tensors[1]);
+												*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+												*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+												*ptr_Tensors[4] = (*ptr_Tensors[4]);
+												*ptr_Tensors[5] = (*ptr_Tensors[5]);
+											}
+										}
+
+// Rotate tensors in eigenbasis of H0
+#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+										for (k = 0; k < num_op; k++)
+										{
+											*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
 										}
 
 										// Number of elments for SpecDens. Important for delete statemant later
@@ -837,8 +861,6 @@ namespace RunSection
 																continue;
 															}
 
-															SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 															*ptr_SpecDens[m] += SpecDens;
 														}
 
@@ -848,7 +870,7 @@ namespace RunSection
 
 														tmp_R *= 0.0;
 
-														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], eigen_vec, tmp_R))
 														{
 															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 															continue;
@@ -896,8 +918,6 @@ namespace RunSection
 															continue;
 														}
 
-														SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 														*ptr_SpecDens[m] += SpecDens;
 													}
 
@@ -907,7 +927,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], eigen_vec, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -953,7 +973,7 @@ namespace RunSection
 						// ...
 					}
 				}
-				// Normal loops without multiple multiexponential lists
+// Normal loops without multiple multiexponential lists
 				else if ((*interaction)->Properties()->GetList("tau_c", tau_c_list))
 				{
 					if ((*interaction)->Properties()->GetList("g", ampl_list))
@@ -994,19 +1014,16 @@ namespace RunSection
 										return false;
 									}
 
-									// Build double-spin operators (already in correct Superspace size for NZ matrix)
-									*Sx1Sx2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bx
-									*Sx1Sy2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * By
-									*Sx1Sz2 = arma::kron((*Sx1), one) - arma::kron(one, (*Sx1).t()); // * Bz
-									*Sy1Sx2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bx
-									*Sy1Sy2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * By
-									*Sy1Sz2 = arma::kron((*Sy1), one) - arma::kron(one, (*Sy1).t()); // * Bz
-									*Sz1Sx2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-									; // * Bx
-									*Sz1Sy2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-									; // * By
-									*Sz1Sz2 = arma::kron((*Sz1), one) - arma::kron(one, (*Sz1).t());
-									; // * Bz
+									// Build double-spin operators
+									*Sx1Sx2 = (*Sx1); // * Bx
+									*Sx1Sy2 = (*Sx1); // * By
+									*Sx1Sz2 = (*Sx1); // * Bz
+									*Sy1Sx2 = (*Sy1); // * Bx
+									*Sy1Sy2 = (*Sy1); // * By
+									*Sy1Sz2 = (*Sy1); // * Bz
+									*Sz1Sx2 = (*Sz1); // * Bx
+									*Sz1Sy2 = (*Sz1); // * By
+									*Sz1Sz2 = (*Sz1); // * Bz
 
 									// Put all tensors on pointer array
 									num_op = 9;
@@ -1089,25 +1106,16 @@ namespace RunSection
 										continue;
 									}
 
-									// Transfer spherical tensors into Superspace
-									*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-									*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
-									// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-									*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, -1 * (*Tm1).t());
-									*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, -1 * (*Tp1).t());
-									*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-									*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
-
 									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 									num_op = 6;
 									delete[] ptr_Tensors;
 									ptr_Tensors = new arma::cx_mat *[num_op];
-									ptr_Tensors[0] = T0_rank_0_SS;
-									ptr_Tensors[1] = T0_rank_2_SS;
-									ptr_Tensors[2] = Tm1_SS;
-									ptr_Tensors[3] = Tp1_SS;
-									ptr_Tensors[4] = Tm2_SS;
-									ptr_Tensors[5] = Tp2_SS;
+									ptr_Tensors[0] = T0_rank_0;
+									ptr_Tensors[1] = T0_rank_2;
+									ptr_Tensors[2] = Tm1;
+									ptr_Tensors[3] = Tp1;
+									ptr_Tensors[4] = Tm2;
+									ptr_Tensors[5] = Tp2;
 
 									// Construct spatial spherical Tensors
 									SpinAPI::Tensor inTensor(0);
@@ -1137,8 +1145,31 @@ namespace RunSection
 										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 									}
+									else
+									{
+										// Norm
+										*ptr_Tensors[0] = (*ptr_Tensors[0]);
+										*ptr_Tensors[1] = (*ptr_Tensors[1]);
+										*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+										*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+										*ptr_Tensors[4] = (*ptr_Tensors[4]);
+										*ptr_Tensors[5] = (*ptr_Tensors[5]);
+									}
 								}
 
+								// Rotate tensors in eigenbasis of H0
+//#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+								for (k = 0; k < num_op; k++)
+								{
+									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
+								}
+								
+								for (k = 0; k < num_op; k++)
+								{
+									std::cout << (*ptr_Tensors[k]) << std::endl;
+								}
+
+								std::cout << "KEK" << std::endl;
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
 								if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
@@ -1156,13 +1187,18 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
+#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction, lambda) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
 											// ----------------------------------------------------------------
 											// CONSTRUCTING SPECTRAL DENSITY MATRIX
 											// ----------------------------------------------------------------
 											ampl_combined = ampl_list[k] * ampl_list[k];
+											std::cout << "AMPL" << std::endl;
+											std::cout << ampl_combined << std::endl;
+
+											std::cout << "TAU" << std::endl;
+											std::cout << tau_c_list[k] << std::endl;
 
 											SpecDens *= 0.0;
 
@@ -1172,7 +1208,8 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
+											std::cout << "SpecDens:" << std::endl;
+											std::cout << SpecDens << std::endl;
 
 											// -----------------------------------------------------------------
 											// CONSTRUCTING R MATRIX
@@ -1180,13 +1217,25 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
 											}
 
+											std::cout << "TMP_R:" << std::endl;
+											std::cout << tmp_R << std::endl;
+
+											std::cout << "BEFORE_PTR_R:" << std::endl;
+											std::cout << *ptr_R[omp_get_thread_num()] << std::endl;
+
 											*ptr_R[omp_get_thread_num()] += tmp_R;
+
+											std::cout << "Thread:" << std::endl;
+											std::cout << omp_get_thread_num() << std::endl;
+
+											std::cout << "PTR_R:" << std::endl;
+											std::cout << *ptr_R[omp_get_thread_num()] << std::endl;
 										}
 									}
 									else
@@ -1204,8 +1253,6 @@ namespace RunSection
 											continue;
 										}
 
-										SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 #pragma omp parallel for num_threads(threads)
 										for (l = 0; l < threads; l++)
 										{
@@ -1221,7 +1268,7 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1262,15 +1309,13 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 												// ----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
 												// ----------------------------------------------------------------
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1296,8 +1341,6 @@ namespace RunSection
 											continue;
 										}
 
-										SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 #pragma omp parallel for num_threads(threads)
 										for (l = 0; l < threads; l++)
 										{
@@ -1315,7 +1358,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1326,11 +1369,16 @@ namespace RunSection
 										}
 									}
 								}
-
-								for (l = 0; l < threads; l++)
+#pragma omp parallel for num_threads(threads)
+								for (l = 0; l > threads; l++)
 								{
+								std::cout << "LOOP PTR_R:" << std::endl;
+								std::cout << *ptr_R[l] << std::endl;
 									R += *ptr_R[l];
 								}
+	
+								std::cout << "Interaction R:" << std::endl;
+								std::cout << R << std::endl;
 
 								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 							}
@@ -1386,15 +1434,15 @@ namespace RunSection
 										}
 
 										// Build double-spin operators
-										*Sx1Sx2 = arma::kron((*Sx1) * (*Sx2), one) - arma::kron(one, ((*Sx1) * (*Sx2)).t());
-										*Sx1Sy2 = arma::kron((*Sx1) * (*Sy2), one) - arma::kron(one, ((*Sx1) * (*Sy2)).t());
-										*Sx1Sz2 = arma::kron((*Sx1) * (*Sz2), one) - arma::kron(one, ((*Sx1) * (*Sz2)).t());
-										*Sy1Sx2 = arma::kron((*Sy1) * (*Sx2), one) - arma::kron(one, ((*Sy1) * (*Sx2)).t());
-										*Sy1Sy2 = arma::kron((*Sy1) * (*Sy2), one) - arma::kron(one, ((*Sy1) * (*Sy2)).t());
-										*Sy1Sz2 = arma::kron((*Sy1) * (*Sz2), one) - arma::kron(one, ((*Sy1) * (*Sz2)).t());
-										*Sz1Sx2 = arma::kron((*Sz1) * (*Sx2), one) - arma::kron(one, ((*Sz1) * (*Sx2)).t());
-										*Sz1Sy2 = arma::kron((*Sz1) * (*Sy2), one) - arma::kron(one, ((*Sz1) * (*Sy2)).t());
-										*Sz1Sz2 = arma::kron((*Sz1) * (*Sz2), one) - arma::kron(one, ((*Sz1) * (*Sz2)).t());
+										*Sx1Sx2 = ((*Sx1) * (*Sx2));
+										*Sx1Sy2 = ((*Sx1) * (*Sy2));
+										*Sx1Sz2 = ((*Sx1) * (*Sz2));
+										*Sy1Sx2 = ((*Sy1) * (*Sx2));
+										*Sy1Sy2 = ((*Sy1) * (*Sy2));
+										*Sy1Sz2 = ((*Sy1) * (*Sz2));
+										*Sz1Sx2 = ((*Sz1) * (*Sx2));
+										*Sz1Sy2 = ((*Sz1) * (*Sy2));
+										*Sz1Sz2 = ((*Sz1) * (*Sz2));
 
 										// Put all tensors on pointer array
 										num_op = 9;
@@ -1464,25 +1512,16 @@ namespace RunSection
 											continue;
 										}
 
-										// Transfer spherical tensors into Superspace
-										*T0_rank_0_SS = arma::kron((*T0_rank_0), one) - arma::kron(one, (*T0_rank_0).t());
-										*T0_rank_2_SS = arma::kron((*T0_rank_2), one) - arma::kron(one, (*T0_rank_2).t());
-										// Transferred the minus sign for Tm1 and Tp1 here when constructing the SS dimension (in Redfield task its in the next if statement)
-										*Tm1_SS = arma::kron(-1 * (*Tm1), one) - arma::kron(one, (-1 * (*Tm1)).t());
-										*Tp1_SS = arma::kron(-1 * (*Tp1), one) - arma::kron(one, (-1 * (*Tp1)).t());
-										*Tm2_SS = arma::kron((*Tm2), one) - arma::kron(one, (*Tm2).t());
-										*Tp2_SS = arma::kron((*Tp2), one) - arma::kron(one, (*Tp2).t());
-
 										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
 										num_op = 6;
 										delete[] ptr_Tensors;
 										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = T0_rank_0_SS;
-										ptr_Tensors[1] = T0_rank_2_SS;
-										ptr_Tensors[2] = Tm1_SS;
-										ptr_Tensors[3] = Tp1_SS;
-										ptr_Tensors[4] = Tm2_SS;
-										ptr_Tensors[5] = Tp2_SS;
+										ptr_Tensors[0] = T0_rank_0;
+										ptr_Tensors[1] = T0_rank_2;
+										ptr_Tensors[2] = Tm1;
+										ptr_Tensors[3] = Tp1;
+										ptr_Tensors[4] = Tm2;
+										ptr_Tensors[5] = Tp2;
 
 										// Construct spatial spherical Tensors
 										SpinAPI::Tensor inTensor(0);
@@ -1491,15 +1530,15 @@ namespace RunSection
 											this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
 											auto ATensor = (*interaction)->CouplingTensor();
 											arma::cx_mat A(3, 3);
-											arma::cx_vec Am(6);
+											arma::cx_vec Am(9);
 
 											A.zeros();
 											A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
 
 											Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 											Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
-											Am(2) = 0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-											Am(3) = -0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+											Am(2) = 0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+											Am(3) = -0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
 											Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
 											Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
 
@@ -1512,6 +1551,23 @@ namespace RunSection
 											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 										}
+										else
+										{
+											// Norm
+											*ptr_Tensors[0] = (*ptr_Tensors[0]);
+											*ptr_Tensors[1] = (*ptr_Tensors[1]);
+											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+											*ptr_Tensors[4] = (*ptr_Tensors[4]);
+											*ptr_Tensors[5] = (*ptr_Tensors[5]);
+										}
+									}
+
+									// Rotate tensors in eigenbasis of H0
+#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+									for (k = 0; k < num_op; k++)
+									{
+										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 									}
 
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
@@ -1539,8 +1595,6 @@ namespace RunSection
 												// ----------------------------------------------------------------
 												ampl_combined = ampl_list[k] * ampl_list[k];
 
-												std::cout << ampl_combined << std::endl;
-
 												SpecDens *= 0.0;
 
 												if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
@@ -1549,7 +1603,7 @@ namespace RunSection
 													continue;
 												}
 
-												SpecDens *= ((*interaction)->Prefactor());
+												// SpecDens *= ((*interaction)->Prefactor());
 
 												// -----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
@@ -1557,7 +1611,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1582,8 +1636,6 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 #pragma omp parallel for num_threads(threads)
 											for (l = 0; l < threads; l++)
 											{
@@ -1599,7 +1651,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1641,7 +1693,7 @@ namespace RunSection
 														continue;
 													}
 
-													SpecDens *= ((*interaction)->Prefactor());
+													// SpecDens *= ((*interaction)->Prefactor());
 
 													// ----------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
@@ -1649,7 +1701,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1676,8 +1728,6 @@ namespace RunSection
 												continue;
 											}
 
-											SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
 #pragma omp parallel for num_threads(threads)
 											for (l = 0; l < threads; l++)
 											{
@@ -1695,7 +1745,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1712,7 +1762,7 @@ namespace RunSection
 										R += *ptr_R[l];
 									}
 
-									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
+									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
 						}
@@ -1750,6 +1800,8 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
+			H = (eigen_vec.t() * H * eigen_vec);
+
 			// Transforming into superspace
 			space.SuperoperatorFromLeftOperator(H, lhs);
 			space.SuperoperatorFromRightOperator(H, rhs);
@@ -1757,23 +1809,16 @@ namespace RunSection
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
-			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS;
+			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS; // arma::cx_double(0.0, -1.0) *
 
-			// Get the reaction operators, and add them to "A"
-			arma::cx_mat K;
 
-			if (!space.TotalReactionOperator(K))
-			{
-				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
-			}
-
-			// Rotation into eigenbasis of H0
-			// K = (eigen_vec.t() * K * eigen_vec);
 
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
 			arma::cx_mat Krhs;
 			arma::cx_mat K_SS;
+
+			K = (eigen_vec.t() * K * eigen_vec);
 
 			space.SuperoperatorFromLeftOperator(K, Klhs);
 			space.SuperoperatorFromRightOperator(K, Krhs);
@@ -1788,11 +1833,13 @@ namespace RunSection
 			for (auto t = (*i)->operators_cbegin(); t != (*i)->operators_cend(); t++)
 			{
 				space.UseSuperoperatorSpace(true);
-				if (space.RelaxationOperator((*t), O_SS))
-				{
-					A += O_SS;
-					space.UseSuperoperatorSpace(false);
 
+				if (space.RelaxationOperatorFrameChange((*t), eigen_vec, O_SS))
+				{
+
+					A += O_SS;
+
+					space.UseSuperoperatorSpace(false);
 					this->Log() << "Added other relaxation operator \"" << (*t)->Name() << "\" to the Liouvillian.\n";
 				}
 				else
@@ -1802,6 +1849,9 @@ namespace RunSection
 				}
 			}
 
+
+			std::cout << "Relaxation Operator:" << std::endl;
+			std::cout << R << std::endl;
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
@@ -1840,7 +1890,7 @@ namespace RunSection
 					}
 
 					// Transform into eigenbasis of H0
-					// PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
+					PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
 					this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
 				}
 
@@ -1885,7 +1935,7 @@ namespace RunSection
 						}
 
 						// Transform into eigenbasis of H0
-						// PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
+						PState = ((*ptr_eigen_vec[ic]).t() * PState * (*ptr_eigen_vec[ic]));
 						this->Data() << std::abs(arma::trace(PState * rho0)) << " ";
 					}
 
@@ -1983,10 +2033,26 @@ namespace RunSection
 	{
 		_NakajimaZwanzigtensor *= 0.0;
 
-		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2
+		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.t() * _op2
 		// J. Chem. Phys. 154, 084121 (2021) https://doi.org/10.1063/5.0040519
 
-		_NakajimaZwanzigtensor = -1.00 * _op1.t() * _eigenvec * _specdens * _eigenvec.t() * _op2;
+		arma::cx_mat _op1_SS;
+		arma::cx_mat _op2_SS;
+		arma::cx_mat one = arma::eye<arma::cx_mat>(arma::size(_op1));
+
+		_op1_SS = arma::kron((_op1).t(), one) - arma::kron(one, (_op1.t()).st());
+		_op2_SS = arma::kron((_op2), one) - arma::kron(one, (_op2).st());
+
+		std::cout << "_op1_SS" << std::endl;
+		std::cout << _op1_SS << std::endl;
+
+		std::cout << "_op2_SS" << std::endl;
+		std::cout << _op2_SS << std::endl;
+
+		_NakajimaZwanzigtensor = -1.00 * _op1_SS * (_specdens * _op2_SS);
+
+		// arma::kron(_eigenvec,_eigenvec.st()) *
+		// * arma::kron(_eigenvec.t(),(_eigenvec.t()).st())
 
 		return true;
 	}
@@ -1997,7 +2063,7 @@ namespace RunSection
 #pragma omp for
 		for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
 		{
-			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - arma::cx_double(0.0, 1.0) * _omega);
+			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - _omega);
 		}
 
 		return true;
@@ -2006,7 +2072,15 @@ namespace RunSection
 	bool TaskStaticSSNakajimaZwanzigTimeEvo::ConstructSpecDensSpecificTimeEvo(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
-		_specdens = _ampl / ((1.00 / _tau_c) - arma::cx_double(0.0, 1.0) * _omega);
+		std::cout << "Omega: " << std::endl;
+		std::cout << _omega << std::endl;
+
+		arma::cx_mat denominator =  (1.00 / _tau_c) - _omega;
+
+		std::cout << "Denominator: " << std::endl;
+		std::cout << denominator << std::endl;
+
+		_specdens = _ampl / denominator; // ((arma::cx_double(1.00, 0.00) / _tau_c) - (_omega));
 
 		return true;
 	}
