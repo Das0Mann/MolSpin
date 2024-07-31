@@ -91,6 +91,9 @@ namespace RunSection
 			// ----------------------------------------------------------------
 
 			arma::cx_mat H;
+			arma::cx_mat eigen_vec; // To hold eigenvectors
+			arma::cx_vec eigen_val; // To hold eigenvalues
+			arma::cx_mat eig_val_mat;
 
 			if (!space.Hamiltonian(H))
 			{
@@ -101,18 +104,13 @@ namespace RunSection
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
-			arma::cx_mat eigen_vec; // To hold eigenvectors
-			arma::cx_vec eigen_val;	// To hold eigenvalues
-			arma::cx_mat eig_val_mat;
-
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_gen(eigen_val, eigen_vec, (arma::cx_double(0.0, -1.0) * H));
+			arma::eig_gen(eigen_val, eigen_vec, (H));
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
 			// Rotate density operator in eigenbasis of H0
-			rho0 = (eigen_vec.i() * rho0 * eigen_vec);
+			rho0 = (eigen_vec.t() * rho0 * eigen_vec);
 			rho0 = rho0 / trace(rho0);
-
 			// ----------------------------------------------------------------
 			// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
 			// ----------------------------------------------------------------
@@ -120,15 +118,13 @@ namespace RunSection
 			// Constructing diagonal matrix with eigenvalues of H0
 			eig_val_mat = arma::diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
-			arma::cx_mat lambda;
-			arma::cx_mat U_eigenvec_matrix;
-
 			// Unit matrix
 			arma::cx_mat one;
 			one.set_size(arma::size(H));
 			one.eye();
 
-			lambda = arma::cx_double(0.0, -1.0) * arma::kron( eig_val_mat, one) + arma::cx_double(0.0, 1.0) * arma::kron(one, arma::conj(eig_val_mat));
+			arma::cx_mat lambda;
+			lambda = (arma::kron(eig_val_mat, one) - arma::kron(one, eig_val_mat.st()));
 
 			// ---------------------------------------------------------------
 			// SETUP RELAXATION OPERATOR
@@ -331,7 +327,6 @@ namespace RunSection
 										// ----------------------------------------------------------------
 
 										this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-
 										this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
 
 										arma::vec static_field = (*interaction)->Field();
@@ -443,7 +438,7 @@ namespace RunSection
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 									for (k = 0; k < num_op; k++)
 									{
-										*ptr_Tensors[k] = (eigen_vec.i() * (*ptr_Tensors[k]) * eigen_vec);
+										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 									}
 
 									// Number of elments for SpecDens. Important for delete statemant later
@@ -514,7 +509,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -571,7 +566,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -773,7 +768,7 @@ namespace RunSection
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
-											*ptr_Tensors[k] = eigen_vec.i() * (*ptr_Tensors[k]) * eigen_vec;
+											*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
 										}
 
 										// Number of elments for SpecDens. Important for delete statemant later
@@ -843,7 +838,7 @@ namespace RunSection
 
 														tmp_R *= 0.0;
 
-														if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+														if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
 														{
 															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 															continue;
@@ -900,7 +895,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1022,7 +1017,6 @@ namespace RunSection
 									// ----------------------------------------------------------------
 
 									this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-
 									this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
 
 									arma::vec static_field = (*interaction)->Field();
@@ -1134,7 +1128,12 @@ namespace RunSection
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 								for (k = 0; k < num_op; k++)
 								{
-									*ptr_Tensors[k] = (eigen_vec.i() * (*ptr_Tensors[k]) * eigen_vec);
+									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
+								}
+
+								for (k = 0; k < num_op; k++)
+								{
+									std::cout << (*ptr_Tensors[k]) << std::endl;
 								}
 
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
@@ -1154,7 +1153,7 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
+#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, lambda, eigen_vec) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
 											// ----------------------------------------------------------------
@@ -1176,7 +1175,7 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
+											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1206,7 +1205,7 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
+#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors, eigen_vec) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
 											// -----------------------------------------------------------------
@@ -1215,7 +1214,7 @@ namespace RunSection
 
 											tmp_R *= 0.0;
 
-											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
+											if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 											{
 												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 												continue;
@@ -1262,7 +1261,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1305,7 +1304,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, eigen_vec, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1316,7 +1315,7 @@ namespace RunSection
 										}
 									}
 								}
-
+#pragma omp parallel for num_threads(threads)
 								for (l = 0; l < threads; l++)
 								{
 									R += *ptr_R[l];
@@ -1509,7 +1508,7 @@ namespace RunSection
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 									for (k = 0; k < num_op; k++)
 									{
-										*ptr_Tensors[k] = (eigen_vec.i() * (*ptr_Tensors[k]) * eigen_vec);
+										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 									}
 
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
@@ -1536,6 +1535,7 @@ namespace RunSection
 												// CONSTRUCTING SPECTRAL DENSITY MATRIX
 												// ----------------------------------------------------------------
 												ampl_combined = ampl_list[k] * ampl_list[k];
+
 												SpecDens *= 0.0;
 
 												if (!ConstructSpecDensSpecific(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
@@ -1544,15 +1544,13 @@ namespace RunSection
 													continue;
 												}
 
-												// SpecDens *= ((*interaction)->Prefactor());
-
 												// -----------------------------------------------------------------
 												// CONSTRUCTING R MATRIX
 												// -----------------------------------------------------------------
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, eigen_vec, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1592,7 +1590,7 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, U_eigenvec_matrix, tmp_R))
+												if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
@@ -1634,15 +1632,13 @@ namespace RunSection
 														continue;
 													}
 
-													// SpecDens *= ((*interaction)->Prefactor());
-
 													// ----------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
 													// ----------------------------------------------------------------
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1686,7 +1682,7 @@ namespace RunSection
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, U_eigenvec_matrix, tmp_R))
+													if (!NakajimaZwanzigtensor((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1703,7 +1699,7 @@ namespace RunSection
 										R += *ptr_R[l];
 									}
 
-									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
+									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
 								}
 							}
 						}
@@ -1741,16 +1737,14 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
-			H = (eigen_vec.i() * H * eigen_vec);
-
 			// Transforming into superspace
-			space.SuperoperatorFromLeftOperator(H, lhs);
-			space.SuperoperatorFromRightOperator(H, rhs);
+			space.SuperoperatorFromLeftOperator(eig_val_mat, lhs);
+			space.SuperoperatorFromRightOperator(eig_val_mat, rhs);
 
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
-			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS; // arma::cx_double(0.0, -1.0) *
+			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS;
 
 			// Get the reaction operators, and add them to "A"
 			arma::cx_mat K;
@@ -1765,7 +1759,7 @@ namespace RunSection
 			arma::cx_mat Krhs;
 			arma::cx_mat K_SS;
 
-			K = (eigen_vec.i() * K * eigen_vec);
+			K = (eigen_vec.t() * K * eigen_vec);
 
 			space.SuperoperatorFromLeftOperator(K, Klhs);
 			space.SuperoperatorFromRightOperator(K, Krhs);
@@ -1854,7 +1848,7 @@ namespace RunSection
 							continue;
 						}
 
-						P = (eigen_vec.i() * P * eigen_vec);
+						P = (eigen_vec.t() * P * eigen_vec);
 						// Return the yield for this transition
 						this->Data() << (*j)->Rate() * std::abs((arma::trace(P * rho0))) << " ";
 						sum_yield += (*j)->Rate() * std::abs((arma::trace(P * rho0)));
@@ -1875,7 +1869,7 @@ namespace RunSection
 							continue;
 						}
 
-						P = (eigen_vec.i() * P * eigen_vec);
+						P = (eigen_vec.t() * P * eigen_vec);
 						// Return the yield for this state - note that no reaction rates are included here.
 						this->Data() << std::abs(arma::trace(P * rho0)) << " ";
 						sum_yield += (std::abs(arma::trace(P * rho0)));
@@ -1948,25 +1942,23 @@ namespace RunSection
 		return true;
 	}
 
-	// Construction Refield tensor
-	bool TaskStaticSSNakajimaZwanzig::NakajimaZwanzigtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, const arma::cx_mat _eigenvec, arma::cx_mat &_NakajimaZwanzigtensor)
+	// --------------------------------------------------------------------------------------------------------------------------------------
+	// Construction NZ tensor
+	bool TaskStaticSSNakajimaZwanzig::NakajimaZwanzigtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, arma::cx_mat &_NakajimaZwanzigtensor)
 	{
 		_NakajimaZwanzigtensor *= 0.0;
 
-		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.i() * _op2
+		// -1 *_op1.t() * _eigenvec * _specdens * _eigenvec.t() * _op2
 		// J. Chem. Phys. 154, 084121 (2021) https://doi.org/10.1063/5.0040519
 
-		arma::cx_mat _op1_SS;
-		arma::cx_mat _op2_SS;
+		arma::cx_mat _op1_SS = _specdens;
+		arma::cx_mat _op2_SS = _specdens;
 		arma::cx_mat one = arma::eye<arma::cx_mat>(arma::size(_op1));
 
-		_op1_SS = arma::kron((_op1.t()), one) - arma::kron(one, (_op1.t()).st());
+		_op1_SS = arma::kron((_op1).t(), one) - arma::kron(one, (_op1.t()).st());
 		_op2_SS = arma::kron((_op2), one) - arma::kron(one, (_op2).st());
 
-		_NakajimaZwanzigtensor = -1.00 * _op1_SS * _specdens * _op2_SS;
-
-		// arma::kron(_eigenvec,_eigenvec.st()) *
-		// * arma::kron(_eigenvec.t(),(_eigenvec.t()).st())
+		_NakajimaZwanzigtensor = arma::cx_double(-1.00, 0.00) * _op1_SS * _specdens.t() * _op2_SS;
 
 		return true;
 	}
@@ -1974,11 +1966,18 @@ namespace RunSection
 	bool TaskStaticSSNakajimaZwanzig::ConstructSpecDensGeneral(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
-#pragma omp for
-		for (auto ii = 0; ii < (int)_tau_c_list.size(); ii++)
+		arma::cx_vec spectral_entries = _omega.diag();
+		spectral_entries.zeros();
+
+		for (auto ii = 0; ii < (int)_omega.n_cols; ii++)
 		{
-			_specdens += (static_cast<std::complex<double>>(_ampl_list[ii])) / ((1.00 / static_cast<std::complex<double>>(_tau_c_list[ii])) - _omega);
+			for (auto jj = 0; jj < (int)_tau_c_list.size(); jj++)
+			{ 
+				spectral_entries(ii) += (static_cast<std::complex<double>>(_ampl_list[jj])) / ((1.00 / (static_cast<std::complex<double>>(_tau_c_list[jj]))) + arma::cx_double(0.0, -1.00) * _omega(ii, ii));
+			}
 		}
+
+		_specdens = arma::diagmat(arma::conv_to<arma::cx_mat>::from(spectral_entries));
 
 		return true;
 	}
@@ -1986,7 +1985,15 @@ namespace RunSection
 	bool TaskStaticSSNakajimaZwanzig::ConstructSpecDensSpecific(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens)
 	{
 		// Solution of spectral density: S = Ampl/(1/tau_c - i * omega)
-		_specdens = _ampl / ((arma::cx_double(1.00, 0.00) / _tau_c) - (_omega));
+
+		arma::cx_vec spectral_entries = _omega.diag();
+
+		for (auto ii = 0; ii < (int)_omega.n_cols; ii++)
+		{
+			spectral_entries(ii) = _ampl / ((1.00 / _tau_c) + arma::cx_double(0.0, -1.00) * _omega(ii, ii));
+		}
+
+		_specdens = arma::diagmat(arma::conv_to<arma::cx_mat>::from(spectral_entries));
 
 		return true;
 	}

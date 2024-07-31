@@ -20,7 +20,7 @@ namespace RunSection
 		bool productYieldsOnly;																																							   // If true, a quantum yield will be calculated from each Transition object and multiplied by the rate constant
 																																														   // If false, a quantum yield will be calculated each defined State object
 		void WriteHeader(std::ostream &);																																				   // Write header for the output file
-		bool NakajimaZwanzigtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, const arma::cx_mat _eigenvec, arma::cx_mat &_NakajimaZwanzigtensor); // Contruction of NakajimaZwanzigtensor with operator basis
+		bool NakajimaZwanzigtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, arma::cx_mat &_NakajimaZwanzigtensor); // Contruction of NakajimaZwanzigtensor with operator basis
 		bool ConstructSpecDensGeneral(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens);
 		bool ConstructSpecDensSpecific(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens);
 
