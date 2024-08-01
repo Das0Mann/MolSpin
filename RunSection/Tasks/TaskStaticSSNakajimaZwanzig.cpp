@@ -101,11 +101,19 @@ namespace RunSection
 				continue;
 			}
 
+			// Get the reaction operators, and add them to "A"
+			arma::cx_mat K;
+
+			if (!space.TotalReactionOperator(K))
+			{
+				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
+			}
+
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_gen(eigen_val, eigen_vec, (H));
+			arma::eig_gen(eigen_val, eigen_vec, (H - arma::cx_double(0.0,1.00) * K));
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
 			// Rotate density operator in eigenbasis of H0
@@ -1131,11 +1139,6 @@ namespace RunSection
 									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 								}
 
-								for (k = 0; k < num_op; k++)
-								{
-									std::cout << (*ptr_Tensors[k]) << std::endl;
-								}
-
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
 								if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
@@ -1153,7 +1156,7 @@ namespace RunSection
 											*ptr_R[l] *= 0.0;
 										}
 
-#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, lambda, eigen_vec) num_threads(threads)
+#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, lambda, interaction) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
 											// ----------------------------------------------------------------
@@ -1315,7 +1318,7 @@ namespace RunSection
 										}
 									}
 								}
-#pragma omp parallel for num_threads(threads)
+
 								for (l = 0; l < threads; l++)
 								{
 									R += *ptr_R[l];
@@ -1737,22 +1740,18 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
+			H = (eigen_vec.t() * H * eigen_vec);
+
 			// Transforming into superspace
-			space.SuperoperatorFromLeftOperator(eig_val_mat, lhs);
-			space.SuperoperatorFromRightOperator(eig_val_mat, rhs);
+			space.SuperoperatorFromLeftOperator(H, lhs);
+			space.SuperoperatorFromRightOperator(H, rhs);
 
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
 			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS;
 
-			// Get the reaction operators, and add them to "A"
-			arma::cx_mat K;
 
-			if (!space.TotalReactionOperator(K))
-			{
-				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
-			}
 
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
@@ -1807,7 +1806,7 @@ namespace RunSection
 			// ---------------------------------------------------------------
 			// Perform the calculation
 			this->Log() << "Ready to perform calculation." << std::endl;
-			arma::cx_vec result = solve(-1 * arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			arma::cx_vec result = solve(arma::conv_to<arma::cx_mat>::from(A), rho0vec);
 			this->Log() << "Done with calculation." << std::endl;
 
 			// Convert the resulting density operator back to its Hilbert space representation
@@ -1890,6 +1889,7 @@ namespace RunSection
 				lambda *= 0.0;
 				H_SS *= 0.0;
 				K_SS *= 0.0;
+				sum_yield *= 0.0;
 				eig_val_mat *= 0.0;
 				eigen_val *= 0.0;
 				eigen_vec *= 0.0;

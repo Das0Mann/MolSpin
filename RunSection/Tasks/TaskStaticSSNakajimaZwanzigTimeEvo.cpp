@@ -107,11 +107,19 @@ namespace RunSection
 				continue;
 			}
 
+			// Get the reaction operators, and add them to "A"
+			arma::cx_mat K;
+
+			if (!space.TotalReactionOperator(K))
+			{
+				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
+			}
+
 			// ----------------------------------------------------------------
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_gen(eigen_val, eigen_vec, (H));
+			arma::eig_gen(eigen_val, eigen_vec, (H - arma::cx_double(0.00,1.00) * K));
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
 			// Rotate density operator in eigenbasis of H0
@@ -1141,11 +1149,6 @@ namespace RunSection
 									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 								}
 
-								for (k = 0; k < num_op; k++)
-								{
-									std::cout << (*ptr_Tensors[k]) << std::endl;
-								}
-
 								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
 								if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
@@ -1325,7 +1328,7 @@ namespace RunSection
 										}
 									}
 								}
-#pragma omp parallel for num_threads(threads)
+
 								for (l = 0; l < threads; l++)
 								{
 									R += *ptr_R[l];
@@ -1747,22 +1750,16 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
+			H = (eigen_vec.t() * H * eigen_vec);
+
 			// Transforming into superspace
-			space.SuperoperatorFromLeftOperator(eig_val_mat, lhs);
-			space.SuperoperatorFromRightOperator(eig_val_mat, rhs);
+			space.SuperoperatorFromLeftOperator(H, lhs);
+			space.SuperoperatorFromRightOperator(H, rhs);
 
 			H_SS = lhs - rhs;
 
 			// Get a matrix to collect all the terms (the total Liouvillian)
 			arma::cx_mat A = arma::cx_double(0.0, -1.0) * H_SS; 
-
-			// Get the reaction operators, and add them to "A"
-			arma::cx_mat K;
-
-			if (!space.TotalReactionOperator(K))
-			{
-				this->Log() << "Warning: Failed to obtain matrix representation of the reaction operators!" << std::endl;
-			}
 
 			// Transform ReactionOperator into superspace
 			arma::cx_mat Klhs;
@@ -1800,8 +1797,6 @@ namespace RunSection
 				}
 			}
 
-			std::cout << "Relaxation Operator:" << std::endl;
-			std::cout << R << std::endl;
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
