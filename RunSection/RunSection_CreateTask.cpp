@@ -53,7 +53,7 @@
 
 #include "TaskStaticSSPump.h"
 
-#include "TaskStaticSSCopy.h" //added by Benji 
+#include "TaskMultiRadicalPairSSTimeEvo.h" //added by Benji 
 
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
@@ -221,9 +221,9 @@ namespace RunSection
 		}
 
 		//NEW (ADDED by Benji Tigg)
-		else if(_tasktype.compare("staticsscopy") == 0)
+		else if(_tasktype.compare("multiradicalpairss-timeevolution") == 0)
 		{
-			task = std::make_shared<TaskStaticSSCopy>(_obj, *this);
+			task = std::make_shared<TaskMultiRadicalPairSSTimeEvo>(_obj, *this);
 		}
 
 		// NOTE: To add a new task class, just add another "else if" here...

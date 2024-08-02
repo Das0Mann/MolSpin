@@ -82,6 +82,7 @@ namespace SpinAPI
 		bool Contains(const std::vector<spin_ptr> &) const;		  // Checks whether all spins in range are contained in the space
 		bool Contains(const std::shared_ptr<SpinSystem> &) const; // Checks whether all spins in the SpinSystem are contained in the space
 		bool Contains(const SpinSystem &) const;
+		bool Contains(const std::string SpinObject) const;
 		bool ContainsSubspace(const spin_ptr &, const state_ptr &) const;		// Checks whether all spins coupled/entangled with the spin are contained in the space
 		bool ContainsSubspace(const spin_ptr &, const interaction_ptr &) const; // Checks whether all spins interacting with the spin are contained in the space
 

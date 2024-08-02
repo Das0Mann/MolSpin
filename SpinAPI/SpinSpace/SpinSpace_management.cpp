@@ -170,6 +170,18 @@ namespace SpinAPI
 		return this->Contains(_system.Spins());
 	}
 
+	bool SpinSpace::Contains(const std::string SpinObject) const
+	{
+		for (auto i = spins.cbegin(); i != spins.cend(); i++)
+		{
+			if(i->get()->Properties()->Name() == SpinObject)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// Checks whether the spins space contains the given spin and all spins entangled to it in the given state
 	bool SpinSpace::ContainsSubspace(const spin_ptr &_spin, const state_ptr &_state) const
 	{
