@@ -10,6 +10,7 @@
 #include <iostream>
 #include "TaskMultiRadicalPairSSTimeEvo.h"
 #include "Transition.h"
+#include "Interaction.h"
 #include "Settings.h"
 #include "State.h"
 #include "ObjectParser.h"
@@ -190,7 +191,26 @@ namespace RunSection
 				}
 			}
 
-			//Implement similar system for interactions;
+			//similar system for interactions
+			for(auto interaction : MainSpinSystem->get()->Interactions())
+			{
+				std::string SubSystem = "";
+				SubSystemsInteractions.push_back({system.first, {}});
+				if(!interaction->Properties()->Get("subsystem", SubSystem))
+				{
+					this->Log() << "Error: No sub system specified for interaction " << interaction->Name() << std::endl;
+					std::cout << "Failed to load interaction " << interaction->Name() << ". No sub system specified" << std::endl;
+					interaction->SetValid(false);
+					continue;
+				}
+				if(SubSystem != system.first)
+				{
+					continue;
+				}
+				
+				//TODO: checks that the spin objects involved are in that subsystem
+				SubSystemsInteractions[num].second.push_back(interaction);
+			}
 
 			num++;
 		}
@@ -218,6 +238,28 @@ namespace RunSection
 
 		// Loop through the systems again to fill this matrix and vector
 		int spinsystem = 0; 
+		auto SpinSpace = spaces.cbegin();
+		for(auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.end(); i++)
+		{
+			std::cout << "Radical Pair: " << spinsystem << std::endl;
+			//Get intitial state
+			auto initial_states = SpinSpace->first->InitialState()[spinsystem]; //get error when the state doesn't exist, TODO: fix this
+			arma::cx_mat rho0HS;
+			if(initial_states->Name() == "zero")
+			{
+				rho0HS = arma::zeros<arma::cx_mat>(SpinSpace->second->HilbertSpaceDimensions(), SpinSpace->second->HilbertSpaceDimensions());
+			}
+			else
+			{
+				if(!SpinSpace->second->GetState(initial_states, rho0HS))
+				{
+					this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << initial_states->Name() << "\", initial state of SpinSubSystem \"" << i->first << "\"." << std::endl;
+					return false;
+				}
+				rho0HS /= arma::trace(rho0HS);
+			}
+			spinsystem++;
+		}
 		for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
 		{
 			std::cout << spinsystem << std::endl;
