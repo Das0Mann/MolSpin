@@ -203,18 +203,31 @@ namespace RunSection
 					interaction->SetValid(false);
 					continue;
 				}
-				if(SubSystem != system.first)
+
+				std::vector<std::string> systems; 
+				std::stringstream ss(SubSystem);
+				while(ss.good())
 				{
-					continue;
+					std::string Name;
+					std::getline(ss,Name, ',');
+					systems.push_back(Name);
 				}
 				
-				//TODO: checks that the spin objects involved are in that subsystem
-				SubSystemsInteractions[num].second.push_back(interaction);
+				for(auto i : systems)
+				{
+					if(i != system.first)
+					{
+						continue;
+					}
+
+					//TODO: checks that the spin objects involved are in that subsystem
+					SubSystemsInteractions[num].second.push_back(interaction);
+					break;
+				}
 			}
 
 			num++;
 		}
-
 
 		std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>> spaces;
 		unsigned int dimensions = 0;
@@ -230,132 +243,141 @@ namespace RunSection
 			// Make sure to save the newly created spin space
 			spaces.push_back(std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>(*i, space));
 		}
-
+		int super_dimensions = dimensions * SubSystems; //every SubSystem has the same dimension so the total operator dimension has to be bigger depending on the number of subsystems
 		// Now, create a matrix to hold the Liouvillian superoperator and the initial state
-		arma::sp_cx_mat L(dimensions, dimensions);
-		arma::cx_vec rho0(dimensions);
+		arma::sp_cx_mat L(super_dimensions, super_dimensions);
+		arma::cx_vec rho0(super_dimensions);
 		unsigned int nextDimension = 0; // Keeps track of the dimension where the next spin space starts
 
 		// Loop through the systems again to fill this matrix and vector
 		int spinsystem = 0; 
 		auto SpinSpace = spaces.cbegin();
+
+		std::vector<SpinAPI::state_ptr> AllStates;
+		std::vector<std::string> InitialStates;
+		AllStates = SpinSpace->first->GetAllStates();
+		std::string InitialStatesString;
+		if(!SpinSpace->first->GetProperties()->Get("initialstate", InitialStatesString))
+		{
+			this->Log() << "No initial states provided, density matrix will be set to 0" << std::endl;
+			for(int i = 0; i < SubSystems; i++)
+			{
+				InitialStates.push_back({""});
+			}
+		}
+		else
+		{
+			std::stringstream ss(InitialStatesString);
+			while(ss.good())
+			{
+				std::string state;
+				std::getline(ss,state, ',');
+				InitialStates.push_back(state);
+			}
+		}
+		
 		for(auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.end(); i++)
 		{
 			std::cout << "Radical Pair: " << spinsystem << std::endl;
 			//Get intitial state
-			auto initial_states = SpinSpace->first->InitialState()[spinsystem]; //get error when the state doesn't exist, TODO: fix this
+			auto initial_state = InitialStates[spinsystem]; 
+			auto FindState = [&initial_state](auto state)
+			{
+				return state->Name() == initial_state;
+			};
+			bool found = true;
+			auto FoundState = std::find_if(AllStates.begin(), AllStates.end(), FindState);
+			if(*FoundState == nullptr)
+			{
+				found = false;
+			}
 			arma::cx_mat rho0HS;
-			if(initial_states->Name() == "zero")
+			if(initial_state == "zero" || initial_state == "")
 			{
 				rho0HS = arma::zeros<arma::cx_mat>(SpinSpace->second->HilbertSpaceDimensions(), SpinSpace->second->HilbertSpaceDimensions());
 			}
-			else
+			else if(found == true)
 			{
-				if(!SpinSpace->second->GetState(initial_states, rho0HS))
+				if(!SpinSpace->second->GetState((*FoundState), rho0HS))
 				{
-					this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << initial_states->Name() << "\", initial state of SpinSubSystem \"" << i->first << "\"." << std::endl;
+					this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << (*FoundState)->Name() << "\", initial state of SpinSubSystem \"" << i->first << "\"." << std::endl;
 					return false;
 				}
 				rho0HS /= arma::trace(rho0HS);
 			}
-			spinsystem++;
-		}
-		for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
-		{
-			std::cout << spinsystem << std::endl;
-			// Make sure we have an initial state
-			auto initial_states = i->first->InitialState();
-			arma::cx_mat rho0HS;
-			if (initial_states.size() < 1)
-			{
-				this->Log() << "Note: No initial state specified for spin system \"" << i->first->Name() << "\", setting the initial state to zero." << std::endl;
-				rho0HS = arma::zeros<arma::cx_mat>(i->second->HilbertSpaceDimensions(), i->second->HilbertSpaceDimensions());
-			}
 			else
 			{
-				// Get the initial state for the current system
-				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
-				{
-					arma::cx_mat tmp_rho0;
-					if (!i->second->GetState(*j, tmp_rho0))
-					{
-						this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
-						return false;
-					}
-					if (j == initial_states.cbegin())
-						rho0HS = tmp_rho0;
-					else
-						rho0HS += tmp_rho0;
-				}
-				rho0HS /= arma::trace(rho0HS); // The density operator should have a trace of 1
+				rho0HS = arma::zeros<arma::cx_mat>(SpinSpace->second->HilbertSpaceDimensions(), SpinSpace->second->HilbertSpaceDimensions());
 			}
+
 			// Now put the initial state into the superspace vector
 			arma::cx_vec rho0vec;
-			if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
+			if (!SpinSpace->second->OperatorToSuperspace(rho0HS, rho0vec))
 			{
-				this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
+				this->Log() << "ERROR: Failed convert initial state to superspace for spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
 			}
-			rho0.rows(nextDimension, nextDimension + i->second->SpaceDimensions() - 1) = rho0vec;
+			rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1) = rho0vec;
 
 			// Next, get the Hamiltonian
 			arma::sp_cx_mat H;
-			if (!i->second->Hamiltonian(H))
+			if (!GenerateHamiltonian(SubSystemsInteractions[spinsystem].second, H, dimensions, SpinSpace->second))
 			{
-				this->Log() << "ERROR: Failed to obtain the superspace Hamiltonian for spin system \"" << i->first->Name() << "\"!" << std::endl;
+				this->Log() << "ERROR: Failed to obtain the superspace Hamiltonian for spin spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
 			}
-			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
+			L.submat(nextDimension, nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextDimension + SpinSpace->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
 
 			// Then get the reaction operators
 			arma::sp_cx_mat K;
-			if (!i->second->TotalReactionOperator(K))
+			if (!GenerateReactionOperator(SubSystemsTransitions[spinsystem].second, K, dimensions, SpinSpace->second))
 			{
-				this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin system \"" << i->first->Name() << "\"!" << std::endl;
+				this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
 			}
+			L.submat(nextDimension, nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextDimension + SpinSpace->second->SpaceDimensions() - 1) -= K;
 
-			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) -= K;
-
-			//this entire system needs to go
-			// Obtain the creation operators - note that we need to loop through the other SpinSystems again to find transitions leading into the current SpinSystem
+			//Loop through all the interactions that involve transitions to and from other subsystems
 			unsigned int nextCDimension = 0; // Similar to nextDimension, but to keep track of first dimension for this other SpinSystem
-			for (auto j = spaces.cbegin(); j != spaces.cend(); j++)
+			for (auto j = SubSystemsInterTransitions.begin(); j != SubSystemsInterTransitions.end(); j++)
 			{
-				// Creation operators are off-diagonal elements
-				if (j != i)
+				//only process the transition if the transition is leading into the current spin state
+				if(j->second.first == SubSystemSpins[spinsystem].first) 
 				{
-					// Check all transitions whether they should produce a creation operator
-					for (auto t = j->first->transitions_cbegin(); t != j->first->transitions_cend(); t++)
-					{
-						// Does the Transition lead into the current spin space?
-						if ((*t)->Target() == i->first)
-						{
-							// Prepare a creation operator
-							arma::sp_cx_mat C;
-							if(!j->second->ReactionOperator((*t), C))
-							{
-								this->Log() << "ERROR: Failed to obtain matrix representation of the  reaction operator for transition \"" << (*t)->Name() << "\"!" << std::endl;
-								return false;
-							}
-
-							// Put it into the total Liouvillian:
-							//  - The row should be that of the current spin space (the target space)
-							//  - The column should be that of the source spin space (the spin system containing the Transition object)
-							L.submat(nextDimension, nextCDimension, nextDimension + i->second->SpaceDimensions() - 1, nextCDimension + j->second->SpaceDimensions() - 1) += C;
-						}
-					}
+					continue;
+				}
+				if(j->second.second != SubSystemSpins[spinsystem].first)
+				{
+					continue;
 				}
 
-				// Move on to check next spin system for transitions into the current spin space
-				nextCDimension += j->second->SpaceDimensions();
+				//identify what column the source subsystem is
+				std::string SubSystemName = j->second.first;
+				auto FindSubSystem = [&SubSystemName](std::pair<std::string,std::vector<std::string>> t)
+				{
+					return SubSystemName == t.first;		
+				};
+				auto temp = std::find_if(SubSystemSpins.begin(), SubSystemSpins.end(), FindSubSystem);
+				int col = temp - SubSystemSpins.begin();
+				nextCDimension = col * dimensions;
+
+				//transition is leading into subsystem
+				arma::sp_cx_mat T;
+				if(!SpinSpace->second->ReactionOperator(j->first, T))
+				{
+					this->Log() << "ERROR: Failed to obtain matrix representation of the  reaction operator for transition \"" << j->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+				L.submat(nextDimension, nextCDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += T;
+				
+				//modify L for the transition leading out of the subsytem;
+				L.submat(nextCDimension, nextCDimension, nextCDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) -=T;
+
 			}
-
-			// Move on to next spin space
-			nextDimension += i->second->SpaceDimensions();
 			spinsystem++;
+			nextDimension += dimensions;
 		}
-
+		
 		// Write results for initial state as well (i.e. at time 0)
 		this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
 		this->WriteStandardOutput(this->Data());
@@ -447,6 +469,68 @@ namespace RunSection
 			// Return the yield for this state - note that no reaction rates are included here.
 			this->Data() << std::abs(arma::trace(P * _rho)) << " ";
 		}
+	}
+
+	bool TaskMultiRadicalPairSSTimeEvo::GenerateHamiltonian(const std::vector<SpinAPI::interaction_ptr> interactions, arma::sp_cx_mat& H, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem)
+	{
+		if(interactions.size() < 1)
+		{
+			H = arma::sp_cx_mat(dimension, dimension);
+			return true;
+		}
+
+		// Get the first interaction contribution
+		auto i = interactions.cbegin();
+		arma::sp_cx_mat tmp;
+		arma::sp_cx_mat result; 
+		if (!SpinSystem->InteractionOperator((*i), result))
+			return false;
+
+		// We have already used the first interaction
+		i++;
+		// Loop through the rest
+		for (; i != interactions.cend(); i++)
+		{
+			// Attempt to get the matrix representing the Interaction object in the spin space
+			if (!SpinSystem->InteractionOperator((*i), tmp))
+				return false;
+			result += tmp;
+		}
+
+		H = result;
+		return true;
+	}
+
+	bool TaskMultiRadicalPairSSTimeEvo::GenerateReactionOperator(const std::vector<SpinAPI::transition_ptr> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem)
+	{
+		if(transitions.size() < 1)
+		{
+			K = arma::sp_cx_mat(dimension,dimension);
+			return true;
+		}
+
+		// Get the first transition contribution
+		auto i = transitions.cbegin();
+		arma::sp_cx_mat tmp;
+		arma::sp_cx_mat result;
+		if (!SpinSystem->ReactionOperator((*i), result, SpinAPI::ReactionOperatorType::Unspecified))
+			return false;
+
+		// We have already used the first transition
+		i++;
+
+		// Loop through the rest
+		for (; i != transitions.cend(); i++)
+		{
+			// Attempt to get the matrix representing the reaction operator in the spin space
+			if (!SpinSystem->ReactionOperator((*i), tmp, SpinAPI::ReactionOperatorType::Unspecified))
+				return false;
+			result += tmp;
+		}
+
+		K = result;
+		return true;
+
 	}
 
 	// Writes the header of the data file (but can also be passed to other streams)
