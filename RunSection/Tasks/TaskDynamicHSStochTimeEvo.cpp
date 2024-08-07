@@ -520,10 +520,10 @@ namespace RunSection
 						space.SetTime(current_time);
 
 						auto transitions = (*i)->Transitions();
-						
+
 						// Obtain results
 						this->Data() << this->RunSettings()->CurrentStep() << " ";
-						this->Data() << current_time;
+						this->Data() << current_time << " ";
 						this->WriteStandardOutput(this->Data());
 
 						int idx = 0;
@@ -601,7 +601,7 @@ namespace RunSection
 					{
 						// Obtain results
 						this->Data() << this->RunSettings()->CurrentStep() << " ";
-						this->Data() << time(k);
+						this->Data() << time(k) << " ";
 						this->WriteStandardOutput(this->Data());
 
 						for (int idx = 0; idx < num_transitions; idx++)
@@ -631,7 +631,7 @@ namespace RunSection
 
 							// Obtain results
 							this->Data() << this->RunSettings()->CurrentStep() << " ";
-							this->Data() << current_time;
+							this->Data() << current_time << " ";
 							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
@@ -672,7 +672,7 @@ namespace RunSection
 
 							// Obtain results
 							this->Data() << this->RunSettings()->CurrentStep() << " ";
-							this->Data() << current_time;
+							this->Data() << current_time << " ";
 							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
@@ -746,7 +746,7 @@ namespace RunSection
 						{
 							// Obtain results
 							this->Data() << this->RunSettings()->CurrentStep() << " ";
-							this->Data() << time(k);
+							this->Data() << time(k) << " ";
 							this->WriteStandardOutput(this->Data());
 
 							for (int idx = 0; idx < num_transitions; idx++)
@@ -797,7 +797,7 @@ namespace RunSection
 						{
 							// obtain results
 							this->Data() << this->RunSettings()->CurrentStep() << " ";
-							this->Data() << time(k);
+							this->Data() << time(k) << " ";
 							this->WriteStandardOutput(this->Data());
 		
 							for (int idx = 0; idx < num_transitions; idx++)
@@ -832,7 +832,7 @@ namespace RunSection
 
 						// obtain results
 						this->Data() << this->RunSettings()->CurrentStep() << " ";
-						this->Data() << current_time;
+						this->Data() << current_time << " ";
 						this->WriteStandardOutput(this->Data());
 
 						// Set the currentime for the Dynamic Hamiltonian
@@ -926,7 +926,7 @@ namespace RunSection
 					{
 						// Obtain results
 						this->Data() << this->RunSettings()->CurrentStep() << " ";
-						this->Data() << time(k);
+						this->Data() << time(k) << " ";
 						this->WriteStandardOutput(this->Data());
 						for (int idx = 0; idx < num_transitions; idx++)
 						{

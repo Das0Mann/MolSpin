@@ -437,7 +437,10 @@ namespace RunSection
 						double current_time = k * dt;
 						time(k) = current_time;
 
-						this->Data() << current_time;
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << current_time << " ";
+						this->WriteStandardOutput(this->Data());
 
 						// Set the currentime for the Dynamic Hamiltonian
 						space.SetTime(current_time);
@@ -517,7 +520,11 @@ namespace RunSection
 
 					for (int k = 0; k < num_steps; k++)
 					{
-						this->Data() << time(k);
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << time(k) << " ";
+						this->WriteStandardOutput(this->Data());
+						
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
@@ -542,7 +549,11 @@ namespace RunSection
 							// Set the current time
 							double current_time = k * dt;
 							time(k) = current_time;
-							this->Data() << current_time;
+							
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << current_time << " ";
+							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
@@ -578,7 +589,12 @@ namespace RunSection
 							// Set the current time
 							double current_time = k * dt;
 							time(k) = current_time;
-							this->Data() << current_time;
+							
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << current_time << " ";
+							this->WriteStandardOutput(this->Data());
+							
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
 
@@ -647,7 +663,11 @@ namespace RunSection
 						ExptValues /= Z;
 						for (int k = 0; k < num_steps; k++)
 						{
-							this->Data() << time(k);
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << time(k) << " ";
+							this->WriteStandardOutput(this->Data());
+
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -694,7 +714,11 @@ namespace RunSection
 						ExptValues /= Z;
 						for (int k = 0; k < num_steps; k++)
 						{
-							this->Data() << time(k);
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << time(k) << " ";
+							this->WriteStandardOutput(this->Data());
+							
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -723,7 +747,12 @@ namespace RunSection
 						// Set the current time
 						double current_time = k * dt;
 						time(k) = current_time;
-						this->Data() << current_time;
+						
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << current_time << " ";
+						this->WriteStandardOutput(this->Data());
+						
 						// Set the currentime for the Dynamic Hamiltonian
 						space.SetTime(current_time);
 
@@ -815,7 +844,11 @@ namespace RunSection
 					this->WriteStandardOutput(this->Data());
 					for (int k = 0; k < num_steps; k++)
 					{
-						this->Data() << time(k);
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << time(k) << " ";
+						this->WriteStandardOutput(this->Data());
+
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
@@ -863,6 +896,7 @@ namespace RunSection
 	// Writes the header of the data file (but can also be passed to other streams)
 	void TaskDynamicHSDirectTimeEvo::WriteHeader(std::ostream &_stream)
 	{
+		_stream << "Step ";
 		_stream << "Time(ns) ";
 		this->WriteStandardOutputHeader(_stream);
 
