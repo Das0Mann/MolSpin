@@ -53,6 +53,8 @@ namespace RunSection
 
 		//get the number of sub systems
 		int SubSystems = 0;
+
+		//change to this->Properties()->Get()
 		if(!this->Properties().get()->Get("subsystems", SubSystems))
 		{
 			this->Log() << "Error: Number of sub systems not specified. Correct syntax is e.g. subsystems: 2" << std::endl;
@@ -327,7 +329,7 @@ namespace RunSection
 				return false;
 			}
 			L.submat(nextDimension, nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextDimension + SpinSpace->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
-
+			
 			// Then get the reaction operators
 			arma::sp_cx_mat K;
 			if (!GenerateReactionOperator(SubSystemsTransitions[spinsystem].second, K, dimensions, SpinSpace->second))
@@ -365,9 +367,10 @@ namespace RunSection
 				arma::sp_cx_mat T;
 				if(!SpinSpace->second->ReactionOperator(j->first, T))
 				{
-					this->Log() << "ERROR: Failed to obtain matrix representation of the  reaction operator for transition \"" << j->first->Name() << "\"!" << std::endl;
+					this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operator for transition \"" << j->first->Name() << "\"!" << std::endl;
 					return false;
 				}
+				//std::cout << T << std::endl;
 				L.submat(nextDimension, nextCDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += T;
 				
 				//modify L for the transition leading out of the subsytem;
@@ -382,29 +385,50 @@ namespace RunSection
 		this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
 		this->WriteStandardOutput(this->Data());
 		nextDimension = 0;
-		for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
+
+		//modify this so it's the same that I've got in my code, using the vectors and superspace rather than matracies;
+
+		struct TrajectoryData
 		{
+			std::string subsystem;
+			std::vector<std::complex<double>> StateTrace;
+
+			TrajectoryData(std::string name)
+				:subsystem(name)
+			{
+				StateTrace = {};
+			}
+		};
+
+		std::vector<std::pair<double, std::vector<TrajectoryData>>> trajectory;
+		trajectory.push_back({0.0, {}});
+		for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
+		{
+			trajectory[0].second.push_back(TrajectoryData(i->first));
 			// Get the superspace result vector and convert it back to the native Hilbert space
 			arma::cx_mat rho_result;
 			arma::cx_vec rho_result_vec;
-			rho_result_vec = rho0.rows(nextDimension, nextDimension + i->second->SpaceDimensions() - 1);
-			if (!i->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+			rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
+			//std::cout << rho_result_vec << std::endl;
+			if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
 			{
-				this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
+				//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
 				return false;
 			}
 
 			// Get the results
-			this->GatherResults(rho_result, *(i->first), *(i->second));
+			this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[0].second[i - SubSystemSpins.begin()].StateTrace);
 
 			// Move on to next spin space
-			nextDimension += i->second->SpaceDimensions();
+			nextDimension += SpinSpace->second->SpaceDimensions();
 		}
 		this->Data() << std::endl;
 
 		// We need the propagator
 		this->Log() << "Calculating the propagator..." << std::endl;
+		this->timestep = 1e-4;
 		arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
+		//arma::cx_mat P = arma::conv_to<arma::cx_mat>::from(L) * this->timestep;
 
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
@@ -413,34 +437,36 @@ namespace RunSection
 		{
 			// Write first part of the data output
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
-			this->Data() << (static_cast<double>(n) * this->timestep) << " ";
+			double time = static_cast<double>(n) * this->timestep;
+			this->Data() << time << " ";
 			this->WriteStandardOutput(this->Data());
+			trajectory.push_back({time, {}});
 
 			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
 				arma::cx_vec tmp = P * rho0;
 				rho0 = tmp;
 			}
-
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
-			for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
+			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
 			{
 				// Get the superspace result vector and convert it back to the native Hilbert space
+				trajectory[n].second.push_back(TrajectoryData(i->first));
 				arma::cx_mat rho_result;
 				arma::cx_vec rho_result_vec;
-				rho_result_vec = rho0.rows(nextDimension, nextDimension + i->second->SpaceDimensions() - 1);
-				if (!i->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+				rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
+				if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
 				{
-					this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
 					return false;
 				}
 
 				// Get the results
-				this->GatherResults(rho_result, *(i->first), *(i->second));
+				this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[n].second[i - SubSystemSpins.begin()].StateTrace);
 
 				// Move on to next spin space
-				nextDimension += i->second->SpaceDimensions();
+				nextDimension += SpinSpace->second->SpaceDimensions();
 			}
 
 			// Terminate the line in the data file after iteration through all spin systems
@@ -453,7 +479,7 @@ namespace RunSection
 	}
 
 	// Gathers and outputs the results from a given time-integrated density operator
-	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space)
+	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space, std::vector<std::complex<double>>& traj)
 	{
 		// Loop through all states
 		arma::cx_mat P;
@@ -467,7 +493,10 @@ namespace RunSection
 			}
 
 			// Return the yield for this state - note that no reaction rates are included here.
-			this->Data() << std::abs(arma::trace(P * _rho)) << " ";
+			std::complex<double> tr = arma::trace(P * _rho);
+			//this->Data() << std::abs(arma::trace(P * _rho)) << " ";
+			this->Data() << std::abs(tr.real()) << " ";
+			traj.push_back(tr.real());
 		}
 	}
 
