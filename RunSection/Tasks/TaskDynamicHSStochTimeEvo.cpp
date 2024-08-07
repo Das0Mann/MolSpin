@@ -520,8 +520,11 @@ namespace RunSection
 						space.SetTime(current_time);
 
 						auto transitions = (*i)->Transitions();
-
+						
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
 						this->Data() << current_time;
+						this->WriteStandardOutput(this->Data());
 
 						int idx = 0;
 						for (auto o = transitions.begin(); o != transitions.end(); o++)
@@ -596,7 +599,11 @@ namespace RunSection
 
 					for (int k = 0; k < num_steps; k++)
 					{
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
 						this->Data() << time(k);
+						this->WriteStandardOutput(this->Data());
+
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
@@ -622,7 +629,10 @@ namespace RunSection
 							double current_time = k * dt;
 							time(k) = current_time;
 
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
 							this->Data() << current_time;
+							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
@@ -660,7 +670,10 @@ namespace RunSection
 							double current_time = k * dt;
 							time(k) = current_time;
 
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
 							this->Data() << current_time;
+							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
@@ -731,7 +744,11 @@ namespace RunSection
 
 						for (int k = 0; k < num_steps; k++)
 						{
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
 							this->Data() << time(k);
+							this->WriteStandardOutput(this->Data());
+
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -778,7 +795,11 @@ namespace RunSection
 						ExptValues /= mc_samples;
 						for (int k = 0; k < num_steps; k++)
 						{
+							// obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
 							this->Data() << time(k);
+							this->WriteStandardOutput(this->Data());
+		
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -809,7 +830,10 @@ namespace RunSection
 						double current_time = k * dt;
 						time(k) = current_time;
 
+						// obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
 						this->Data() << current_time;
+						this->WriteStandardOutput(this->Data());
 
 						// Set the currentime for the Dynamic Hamiltonian
 						space.SetTime(current_time);
@@ -896,12 +920,14 @@ namespace RunSection
 						B.col(itr) = prop_state;
 					}
 					ExptValues /= mc_samples;
-					// Obtain results
-					this->Data() << this->RunSettings()->CurrentStep() << " ";
-					this->WriteStandardOutput(this->Data());
+
+
 					for (int k = 0; k < num_steps; k++)
 					{
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
 						this->Data() << time(k);
+						this->WriteStandardOutput(this->Data());
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
