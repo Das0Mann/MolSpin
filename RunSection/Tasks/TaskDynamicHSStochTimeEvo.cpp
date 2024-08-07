@@ -951,28 +951,18 @@ namespace RunSection
 	// Writes the header of the data file (but can also be passed to other streams)
 	void TaskDynamicHSStochTimeEvo::WriteHeader(std::ostream &_stream)
 	{
-		_stream << "Time_ns ";
+		_stream << "Step ";
+		_stream << "Time(ns) ";
 		this->WriteStandardOutputHeader(_stream);
 
 		// Get header for each spin system
 		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i != systems.cend(); i++)
 		{
-			// Should yields be written per transition or per defined state?
-			if (this->productYieldsOnly)
-			{
-				// Write each transition name
-				auto transitions = (*i)->Transitions();
-				for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
-					_stream << (*i)->Name() << "." << (*j)->Name() << ".yield ";
-			}
-			else
-			{
-				// Write each state name
-				auto states = (*i)->States();
-				for (auto j = states.cbegin(); j != states.cend(); j++)
-					_stream << (*i)->Name() << "." << (*j)->Name() << " ";
-			}
+			// Write each state name
+			auto states = (*i)->States();
+			for (auto j = states.cbegin(); j != states.cend(); j++)
+				_stream << (*i)->Name() << "." << (*j)->Name() << " ";
 		}
 		_stream << std::endl;
 	}
