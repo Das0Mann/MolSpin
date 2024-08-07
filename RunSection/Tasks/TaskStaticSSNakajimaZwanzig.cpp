@@ -113,7 +113,7 @@ namespace RunSection
 			// DIAGONALIZATION OF H0// We need all of these operators
 			// ----------------------------------------------------------------
 			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_gen(eigen_val, eigen_vec, (H - arma::cx_double(0.0,1.00) * K));
+			arma::eig_gen(eigen_val, eigen_vec, (H));
 			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
 			// Rotate density operator in eigenbasis of H0
@@ -1740,11 +1740,11 @@ namespace RunSection
 			arma::cx_mat rhs;
 			arma::cx_mat H_SS;
 
-			H = (eigen_vec.t() * H * eigen_vec);
+			// H = (eigen_vec.t() * H * eigen_vec);
 
 			// Transforming into superspace
-			space.SuperoperatorFromLeftOperator(H, lhs);
-			space.SuperoperatorFromRightOperator(H, rhs);
+			space.SuperoperatorFromLeftOperator(eig_val_mat, lhs);
+			space.SuperoperatorFromRightOperator(eig_val_mat, rhs);
 
 			H_SS = lhs - rhs;
 
