@@ -20,6 +20,18 @@
 
 namespace RunSection
 {
+	struct SubSystemTransition
+	{
+		SpinAPI::transition_ptr transition;
+		int type; //0 = Transition out of one subsystem, 1 = Transition between two subsytems
+		std::string source;
+		std::string target;
+		SubSystemTransition()
+			:transition(nullptr), type(-1), source(""), target("")
+		{
+		}
+	};
+
 	class TaskMultiRadicalPairSSTimeEvo : public BasicTask
 	{
 	private:
@@ -31,8 +43,13 @@ namespace RunSection
 
 		// Private method that gathers and outputs the results from a given time-integrated density operator
 		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &, std::vector<std::complex<double>>& traj);
+		
+		void StateYield(double, double&, const std::vector<std::complex<double>>&, std::vector<double>& ); //Method that calculates the yeild for a given state
+		double simpson_integration(std::vector<double> x_list, std::vector<double> y_list);
+		
 		bool GenerateHamiltonian(const std::vector<SpinAPI::interaction_ptr> interactions, arma::sp_cx_mat& H, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem);
-		bool GenerateReactionOperator(const std::vector<SpinAPI::transition_ptr> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem);
+		bool GenerateReactionOperator(const std::vector<SubSystemTransition> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem, std::string source);
+
 	protected:
 		bool RunLocal() override;
 		bool Validate() override;

@@ -69,8 +69,8 @@ namespace RunSection
 		
 		std::vector<std::pair<std::string,std::vector<std::string>>> SubSystemSpins;
 		std::vector<std::pair<std::string,std::vector<SpinAPI::interaction_ptr>>> SubSystemsInteractions;
-		std::vector<std::pair<std::string,std::vector<SpinAPI::transition_ptr>>> SubSystemsTransitions;
-		std::vector<std::pair<SpinAPI::transition_ptr, std::pair<std::string, std::string>>>SubSystemsInterTransitions;
+		std::vector<SubSystemTransition> SubSystemsTransitions;
+		//std::vector<std::pair<SpinAPI::transition_ptr, std::pair<std::string, std::string>>>SubSystemsInterTransitions;
 		{
 			std::stringstream ss(SubSystemNames);
 			while(ss.good())
@@ -141,7 +141,8 @@ namespace RunSection
 			};
 
 			auto MainSpinSystem = systems.cbegin();
-			SubSystemsTransitions.push_back({system.first, {}});
+
+			//SubSystemsTransitions.push_back({system.first, {}});
 			for(auto transiton : MainSpinSystem->get()->Transitions())
 			{
 				int TransitionType = 0; //0 = Transition out of one subsystem, 1 = Transition between two subsytems
@@ -181,13 +182,22 @@ namespace RunSection
 					}
 					TransitionType = 1;
 				}
+
+				SubSystemTransition TransitionData;
+				TransitionData.transition = transiton;
+				TransitionData.type = TransitionType;
+				TransitionData.source = SourceSubSystem;
+				TransitionData.type = TransitionType;
+
 				switch (TransitionType)
 				{
 				case 0:
-					SubSystemsTransitions[num].second.push_back(transiton);
+					SubSystemsTransitions.push_back(TransitionData);
 					break;
 				case 1:
-					SubSystemsInterTransitions.push_back({transiton, {SourceSubSystem, TargetSubSystem}});
+					TransitionData.target = TargetSubSystem;
+					SubSystemsTransitions.push_back(TransitionData);
+					break;
 				default:
 					break;
 				}
@@ -332,7 +342,7 @@ namespace RunSection
 			
 			// Then get the reaction operators
 			arma::sp_cx_mat K;
-			if (!GenerateReactionOperator(SubSystemsTransitions[spinsystem].second, K, dimensions, SpinSpace->second))
+			if (!GenerateReactionOperator(SubSystemsTransitions, K, dimensions, SpinSpace->second, i->first))
 			{
 				this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operators for spin spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
@@ -341,20 +351,20 @@ namespace RunSection
 
 			//Loop through all the interactions that involve transitions to and from other subsystems
 			unsigned int nextCDimension = 0; // Similar to nextDimension, but to keep track of first dimension for this other SpinSystem
-			for (auto j = SubSystemsInterTransitions.begin(); j != SubSystemsInterTransitions.end(); j++)
+			for (auto j = SubSystemsTransitions.begin(); j != SubSystemsTransitions.end(); j++)
 			{
 				//only process the transition if the transition is leading into the current spin state
-				if(j->second.first == SubSystemSpins[spinsystem].first) 
+				if(j->type == 0)
 				{
 					continue;
 				}
-				if(j->second.second != SubSystemSpins[spinsystem].first)
+				if(j->target != SubSystemSpins[spinsystem].first)
 				{
 					continue;
 				}
 
 				//identify what column the source subsystem is
-				std::string SubSystemName = j->second.first;
+				std::string SubSystemName = j->source;
 				auto FindSubSystem = [&SubSystemName](std::pair<std::string,std::vector<std::string>> t)
 				{
 					return SubSystemName == t.first;		
@@ -365,17 +375,16 @@ namespace RunSection
 
 				//transition is leading into subsystem
 				arma::sp_cx_mat T;
-				if(!SpinSpace->second->ReactionOperator(j->first, T))
+				if(!SpinSpace->second->ReactionOperator(j->transition, T))
 				{
-					this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operator for transition \"" << j->first->Name() << "\"!" << std::endl;
+					this->Log() << "ERROR: Failed to obtain matrix representation of the reaction operator for transition \"" << j->transition->Name() << "\"!" << std::endl;
 					return false;
 				}
 				//std::cout << T << std::endl;
 				L.submat(nextDimension, nextCDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += T;
-				
 				//modify L for the transition leading out of the subsytem;
-				L.submat(nextCDimension, nextCDimension, nextCDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) -=T;
-
+				//L.submat(nextCDimension, nextCDimension, nextCDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += -1 * T;
+				//std::cout << L << std::endl;
 			}
 			spinsystem++;
 			nextDimension += dimensions;
@@ -426,10 +435,10 @@ namespace RunSection
 
 		// We need the propagator
 		this->Log() << "Calculating the propagator..." << std::endl;
-		this->timestep = 1e-4;
+		//this->timestep = 1e-4;
 		arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
 		//arma::cx_mat P = arma::conv_to<arma::cx_mat>::from(L) * this->timestep;
-
+	
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
@@ -474,6 +483,74 @@ namespace RunSection
 		}
 
 		this->Log() << "Done with calculation." << std::endl;
+		this->Log() << "Calculating Total Yield." << std::endl;
+		this->Data() << "\n" << "Yeilds ";
+		std::vector<double> time;
+		std::vector<double> yields;
+
+		for(int i = 0; i < SpinSpace->first->States().size(); i++)
+		{
+			yields.push_back(0.0);
+		}
+
+		for(int i = 0; i < SubSystemSpins.size(); i++)
+		{
+			std::vector<std::vector<std::complex<double>>> data;
+			for(auto e = trajectory.begin(); e != trajectory.end(); e++)
+			{
+				if(i == 0)
+				{
+					time.push_back(e->first);
+				}
+
+				for(auto a = e->second.begin(); a != e->second.end(); a++)
+				{
+					if(a->subsystem != SubSystemSpins[i].first)
+					{
+						continue;
+					}
+
+					data.push_back(a->StateTrace);
+					break;
+				}
+			}
+
+			for(auto e = SubSystemsTransitions.begin(); e != SubSystemsTransitions.end(); e++)
+			{
+				if(e->type != 0)
+				{
+					continue;
+				}
+				if(e->source != SubSystemSpins[i].first)
+				{
+					continue;
+				}
+				int index = 0;
+				for(auto s : SpinSpace->first->States())
+				{
+					if(e->transition->SourceState() != s)
+					{
+						index++;
+						continue;
+					}
+					break;
+				}
+				double rate = e->transition->Rate();
+				double yield = 0;
+				std::vector<std::complex<double>> state_data;
+				for(auto a : data)
+				{
+					state_data.push_back(a[index]);
+				}
+				StateYield(rate, yield, state_data, time);
+				yields[index] += yield;
+			}
+		}
+		for(auto y : yields)
+		{
+			this->Data() << y << " ";
+		}
+		this->Data() << "\n" << std::endl;
 
 		return true;
 	}
@@ -493,11 +570,36 @@ namespace RunSection
 			}
 
 			// Return the yield for this state - note that no reaction rates are included here.
+			//std::cout << P << std::endl;
 			std::complex<double> tr = arma::trace(P * _rho);
 			//this->Data() << std::abs(arma::trace(P * _rho)) << " ";
-			this->Data() << std::abs(tr.real()) << " ";
+			this->Data() << tr.real() << " ";
 			traj.push_back(tr.real());
 		}
+	}
+
+	void TaskMultiRadicalPairSSTimeEvo::StateYield(double _rate, double& _yeild, const std::vector<std::complex<double>>& _traj, std::vector<double>& _time)
+	{
+		auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
+		std::vector<double> ylist;
+		for(int i = 0; i < _traj.size(); i++)
+		{
+			ylist.push_back(f(_traj[i].real(), _time[i], _rate));
+		}
+		_yeild = _rate * simpson_integration(_time, ylist);
+	}
+
+	double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
+	{
+		double area = 0;
+		for (int i = 0; i < x_list.size()-1; i++)
+		{
+			double diff = x_list[i + 1] - x_list[i];
+			double ab = y_list[i] + y_list[i + 1];
+
+			area = area + (ab * 0.5) * diff;
+		}
+		return area;
 	}
 
 	bool TaskMultiRadicalPairSSTimeEvo::GenerateHamiltonian(const std::vector<SpinAPI::interaction_ptr> interactions, arma::sp_cx_mat& H, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem)
@@ -530,7 +632,7 @@ namespace RunSection
 		return true;
 	}
 
-	bool TaskMultiRadicalPairSSTimeEvo::GenerateReactionOperator(const std::vector<SpinAPI::transition_ptr> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem)
+	bool TaskMultiRadicalPairSSTimeEvo::GenerateReactionOperator(const std::vector<SubSystemTransition> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem, std::string source)
 	{
 		if(transitions.size() < 1)
 		{
@@ -542,8 +644,11 @@ namespace RunSection
 		auto i = transitions.cbegin();
 		arma::sp_cx_mat tmp;
 		arma::sp_cx_mat result;
-		if (!SpinSystem->ReactionOperator((*i), result, SpinAPI::ReactionOperatorType::Unspecified))
-			return false;
+		if(i->source == source)
+		{
+			if (!SpinSystem->ReactionOperator(i->transition, result, SpinAPI::ReactionOperatorType::Unspecified))
+				return false;
+		}
 
 		// We have already used the first transition
 		i++;
@@ -551,8 +656,12 @@ namespace RunSection
 		// Loop through the rest
 		for (; i != transitions.cend(); i++)
 		{
+			if(i->source != source)
+			{
+				continue;
+			}
 			// Attempt to get the matrix representing the reaction operator in the spin space
-			if (!SpinSystem->ReactionOperator((*i), tmp, SpinAPI::ReactionOperatorType::Unspecified))
+			if (!SpinSystem->ReactionOperator(i->transition, tmp, SpinAPI::ReactionOperatorType::Unspecified))
 				return false;
 			result += tmp;
 		}
