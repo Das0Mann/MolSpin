@@ -376,10 +376,7 @@ namespace RunSection
 				precision = "single";
 			}
 
-			// Current step
-			this->WriteStandardOutput(this->Data());
 			// Propagate the system in time using the specified method
-
 			// Propagation using autoexpm for matrix exponential
 			if (propmethod == "autoexpm")
 			{
@@ -619,6 +616,7 @@ namespace RunSection
 							k++;
 						}
 					}
+
 					ExptValues /= Z;
 
 					for (int k = 0; k < num_steps; k++)

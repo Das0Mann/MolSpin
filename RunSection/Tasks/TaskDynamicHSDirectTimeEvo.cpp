@@ -516,6 +516,7 @@ namespace RunSection
 						}
 						B.col(itr) = prop_state;
 					}
+					
 					ExptValues /= Z;
 
 					for (int k = 0; k < num_steps; k++)
@@ -660,7 +661,9 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= Z;
+
 						for (int k = 0; k < num_steps; k++)
 						{
 							// Obtain results
@@ -711,7 +714,9 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= Z;
+
 						for (int k = 0; k < num_steps; k++)
 						{
 							// Obtain results
@@ -839,9 +844,7 @@ namespace RunSection
 					}
 
 					ExptValues /= Z;
-					// Obtain results
-					this->Data() << this->RunSettings()->CurrentStep() << " ";
-					this->WriteStandardOutput(this->Data());
+
 					for (int k = 0; k < num_steps; k++)
 					{
 						// Obtain results

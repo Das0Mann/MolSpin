@@ -457,9 +457,6 @@ namespace RunSection
 			ExptValues.zeros(num_steps, num_transitions);
 			arma::vec time(num_steps);
 
-			// Current step
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-
 			// Propagate the system in time using the specified method
 
 			// Propagation using autoexpm for matrix exponential

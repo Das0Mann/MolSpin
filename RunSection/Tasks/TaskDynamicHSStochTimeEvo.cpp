@@ -595,6 +595,7 @@ namespace RunSection
 						}
 						B.col(itr) = prop_state;
 					}
+					
 					ExptValues /= mc_samples;
 
 					for (int k = 0; k < num_steps; k++)
@@ -740,6 +741,7 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= mc_samples;
 
 						for (int k = 0; k < num_steps; k++)
@@ -792,7 +794,9 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= mc_samples;
+						
 						for (int k = 0; k < num_steps; k++)
 						{
 							// obtain results
@@ -919,8 +923,8 @@ namespace RunSection
 						}
 						B.col(itr) = prop_state;
 					}
-					ExptValues /= mc_samples;
 
+					ExptValues /= mc_samples;
 
 					for (int k = 0; k < num_steps; k++)
 					{

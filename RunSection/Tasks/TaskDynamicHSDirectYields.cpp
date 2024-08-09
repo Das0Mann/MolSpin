@@ -433,9 +433,6 @@ namespace RunSection
 			arma::vec Identity(num_steps);
 			arma::vec time(num_steps);
 
-			// Current step
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-
 			if (time_dependent_transitions && !time_dependent_hamiltonian)
 			{
 				// Case 1: time_dependent_transitions is true but time_dependent_hamiltonian is false
