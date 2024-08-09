@@ -884,6 +884,8 @@ namespace RunSection
 
 	bool TaskDynamicHSDirectYields::Validate()
 	{
+		this->Properties()->Get("transitionyields", this->productYieldsOnly);
+		
 		// Get the reaction operator type
 		std::string str;
 		if (this->Properties()->Get("reactionoperators", str))
