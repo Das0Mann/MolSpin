@@ -436,6 +436,10 @@ namespace MSDParser
 		{
 			return MSDFileObject(ObjectType::Action,_name,_contents);
 		}
+		else if(_keyword.compare("subsystem") == 0)
+		{
+			return MSDFileObject(ObjectType::SubSystem,_name,_contents);
+		}
 		else if(_keyword.compare("output") == 0)
 		{
 			return MSDFileObject(ObjectType::Output,_name,_contents);

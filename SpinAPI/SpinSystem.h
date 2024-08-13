@@ -33,6 +33,7 @@ namespace SpinAPI
 		std::vector<operator_ptr> operators;
 		std::vector<pulse_ptr> pulses;
 		std::vector<state_ptr> states;
+		std::vector<subsystem_ptr> subsystems;
 		std::shared_ptr<MSDParser::ObjectParser> properties;
 
 	public:
@@ -66,6 +67,7 @@ namespace SpinAPI
 		std::vector<operator_ptr> Operators() const;	   // Returns a copy of the collection of operators
 		std::vector<pulse_ptr> Pulses() const;			   // Returns a copy of the collection of pulses
 		std::vector<state_ptr> States() const;			   // Returns a copy of the collection of states
+		std::vector<subsystem_ptr> SubSystems();
 
 		// Objects by name
 		// TODO: Return pointer-to-const
@@ -91,6 +93,7 @@ namespace SpinAPI
 		bool Contains(const operator_ptr &) const;
 		bool Contains(const pulse_ptr &) const;
 		bool Contains(const state_ptr &) const;
+		bool Contains(const subsystem_ptr& ) const;
 
 		// Add methods
 		bool Add(const spin_ptr &);
@@ -99,6 +102,7 @@ namespace SpinAPI
 		bool Add(const operator_ptr &);
 		bool Add(const pulse_ptr &);
 		bool Add(const state_ptr &);
+		bool Add(const subsystem_ptr& );
 
 		// Subspace set methods
 		bool IsComplete(const std::vector<spin_ptr> &) const; // Checks whether the spins comprise a complete subspace with respect to interactions and transitions (not all states)
@@ -110,6 +114,7 @@ namespace SpinAPI
 		std::vector<operator_ptr> ValidateOperators(const std::vector<std::shared_ptr<SpinAPI::SpinSystem>> &);		// Validates operators
 		std::vector<pulse_ptr> ValidatePulses();																	// Validates pulses
 		std::vector<state_ptr> ValidateStates();																	// Attempts to parse all the states (requires all spins to be read into this->spins first). Returns list of states that failed validation/parsing.
+		std::vector<subsystem_ptr> ValidateSubSystems(); 															// Validates Subsystems;
 
 		// Properties
 		bool SetProperties(const std::shared_ptr<MSDParser::ObjectParser> &);

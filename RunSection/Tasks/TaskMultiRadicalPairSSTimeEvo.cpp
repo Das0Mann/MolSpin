@@ -14,6 +14,8 @@
 #include "Settings.h"
 #include "State.h"
 #include "ObjectParser.h"
+#include "SubSystem.h"
+
 
 namespace RunSection
 {
@@ -42,9 +44,7 @@ namespace RunSection
 		}
 
 		// Loop through all SpinSystems to obtain SpinSpace objects
-		//auto systems = this->SpinSystems();
 		auto systems = this->SpinSystems();
-
 		if(systems.size() > 1)
 		{
 			this->Log() << "Error: Only supports one spin system" << std::endl;
@@ -52,150 +52,70 @@ namespace RunSection
 		}
 
 		//get the number of sub systems
-		int SubSystems = 0;
+		auto ss = systems[0]->SubSystems();
+		int SubSystems = ss.size();
 
 		//change to this->Properties()->Get()
-		if(!this->Properties().get()->Get("subsystems", SubSystems))
-		{
-			this->Log() << "Error: Number of sub systems not specified. Correct syntax is e.g. subsystems: 2" << std::endl;
-			return false;
-		}
+		//if(!this->Properties().get()->Get("subsystems", SubSystems))
+		//{
+		//	this->Log() << "Error: Number of sub systems not specified. Correct syntax is e.g. subsystems: 2" << std::endl;
+		//	return false;
+		//}
 		
-		std::string SubSystemNames; 
-		if(!this->Properties().get()->Get("subsystemnames", SubSystemNames))
-		{
-			this->Log() << "Note: subsystemnames not specified. Asssuming names are system1, system2, system3...." << std::endl;
-		}
+		//std::string SubSystemNames; 
+		//if(!this->Properties().get()->Get("subsystemnames", SubSystemNames))
+		//{
+		//	this->Log() << "Note: subsystemnames not specified. Asssuming names are system1, system2, system3...." << std::endl;
+		//}
 		
 		std::vector<std::pair<std::string,std::vector<std::string>>> SubSystemSpins;
 		std::vector<std::pair<std::string,std::vector<SpinAPI::interaction_ptr>>> SubSystemsInteractions;
 		std::vector<SubSystemTransition> SubSystemsTransitions;
 		//std::vector<std::pair<SpinAPI::transition_ptr, std::pair<std::string, std::string>>>SubSystemsInterTransitions;
-		{
-			std::stringstream ss(SubSystemNames);
-			while(ss.good())
-			{
-				std::string Name;
-				std::getline(ss,Name, ',');
-				std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){return std::tolower(c);});
-				SubSystemSpins.push_back({Name, {}});
-			}
-		}
+		//{
+		//	std::stringstream ss(SubSystemNames);
+		//	while(ss.good())
+		//	{
+		//		std::string Name;
+		//		std::getline(ss,Name, ',');
+		//		std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){return std::tolower(c);});
+		//		SubSystemSpins.push_back({Name, {}});
+		//	}
+		//}
 
-		//Verify that the subsytems are valid by checking if all the spin objects listed have been loaded 
 		int num = 0;
-		for(auto system : SubSystemSpins)
+		for(auto s : ss)
 		{
-			std::vector<std::string> SubSystemTemp;
-			std::string SpinObjects = "";
-			if(!this->Properties().get()->Get(system.first, SpinObjects))
-			{
-				this->Log() << "Error: Failed to Load SubSystem " << system.first << std::endl;
-				std::cout << "Error: Failed to Load SubSystem " << system.first << std::endl;
-				num++;
-				continue;
-			}
+			SubSystemSpins.push_back({s->Name(), s->GetSpinNames()});
 
-			std::stringstream ss(SpinObjects);
-			while(ss.good())
+			for(auto tr : s->GetTransitions())
 			{
-				std::string Name;
-				std::getline(ss,Name, ',');
-				SubSystemTemp.push_back(Name);
-			}
-			{
-				auto space = std::make_shared<SpinAPI::SpinSpace>(*(*systems.cbegin()));
-				bool loaded = true;
-				for(std::string i : SubSystemTemp)
+				//remove duplicates
+				bool duplicate = false;
+				for(int i = 0; i < SubSystemsTransitions.size(); i++)
 				{
-					if(!space->Contains(i))
+					if(*tr.TransitionObject == SubSystemsTransitions[i].transition)
 					{
-						this->Log() << "Error: " << i << " is not a loaded spin object" << std::endl;
-						std::cout << "Error: " << i << " is not a loaded spin object" << std::endl;
-						loaded &= false;
-						continue;
+						duplicate = true;
+						break;
 					}
-					loaded &= true;
-				}
-				if(!loaded)
-				{
-					this->Log() << "Failed to load SubSystem " << system.first << std::endl;
-					std::cout << "Failed to load SubSystem " << system.first << std::endl;
-					num++;
-					continue;
-				}
-				
-			}
 
-			SubSystemSpins[num].second = SubSystemTemp;
-			auto FindInVec = [&SubSystemSpins](std::string str)
-			{
-				for(int i = 0; i < SubSystemSpins.size(); i++)
-				{
-					if(SubSystemSpins[i].first == str)
-					{
-						return true;
-					}
-				}
-				return false;
-			};
-
-			auto MainSpinSystem = systems.cbegin();
-
-			//SubSystemsTransitions.push_back({system.first, {}});
-			for(auto transiton : MainSpinSystem->get()->Transitions())
-			{
-				int TransitionType = 0; //0 = Transition out of one subsystem, 1 = Transition between two subsytems
-				std::string SourceSubSystem = "";
-				//All transitions need a source sub system
-				if(transiton->Properties()->Get("sourcesubsystem", SourceSubSystem))
-				{
-					if(SourceSubSystem != system.first)
-					{
-						continue;
-					}
-					if(!FindInVec(SourceSubSystem))
-					{
-						this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
-						std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
-						transiton->SetValid(false);
-						continue;
-					}
-				}
-				else
-				{
-					this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
-					std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
-					transiton->SetValid(false);
-					continue;
 				}
 
-				std::string TargetSubSystem = "";
-				if(transiton->Properties()->Get("targetsubsystem", TargetSubSystem))
-				{
-					if(!FindInVec(TargetSubSystem))
-					{
-						this->Log() << "Error: No target sub system specified for transition " << transiton->Name() << std::endl;
-						std::cout << "Failed to load transition " << transiton->Name() << ". No target sub system specified" << std::endl;
-						transiton->SetValid(false);
-						continue;
-					}
-					TransitionType = 1;
-				}
+				if(duplicate) {continue;}
 
 				SubSystemTransition TransitionData;
-				TransitionData.transition = transiton;
-				TransitionData.type = TransitionType;
-				TransitionData.source = SourceSubSystem;
-				TransitionData.type = TransitionType;
+				TransitionData.transition = *tr.TransitionObject;
+				TransitionData.type = tr.type;
+				TransitionData.source = tr.source;
 
-				switch (TransitionType)
+				switch(tr.type)
 				{
 				case 0:
 					SubSystemsTransitions.push_back(TransitionData);
 					break;
 				case 1:
-					TransitionData.target = TargetSubSystem;
+					TransitionData.target = tr.target;
 					SubSystemsTransitions.push_back(TransitionData);
 					break;
 				default:
@@ -203,43 +123,168 @@ namespace RunSection
 				}
 			}
 
-			//similar system for interactions
-			for(auto interaction : MainSpinSystem->get()->Interactions())
-			{
-				std::string SubSystem = "";
-				SubSystemsInteractions.push_back({system.first, {}});
-				if(!interaction->Properties()->Get("subsystem", SubSystem))
-				{
-					this->Log() << "Error: No sub system specified for interaction " << interaction->Name() << std::endl;
-					std::cout << "Failed to load interaction " << interaction->Name() << ". No sub system specified" << std::endl;
-					interaction->SetValid(false);
-					continue;
-				}
+			SubSystemsInteractions.push_back({s->Name(), s->GetInteractions()});
 
-				std::vector<std::string> systems; 
-				std::stringstream ss(SubSystem);
-				while(ss.good())
-				{
-					std::string Name;
-					std::getline(ss,Name, ',');
-					systems.push_back(Name);
-				}
-				
-				for(auto i : systems)
-				{
-					if(i != system.first)
-					{
-						continue;
-					}
-
-					//TODO: checks that the spin objects involved are in that subsystem
-					SubSystemsInteractions[num].second.push_back(interaction);
-					break;
-				}
-			}
-
-			num++;
 		}
+
+		//Verify that the subsytems are valid by checking if all the spin objects listed have been loaded 
+		//num = 0;
+		//for(auto system : SubSystemSpins)
+		//{
+		//	//std::vector<std::string> SubSystemTemp;
+		//	//std::string SpinObjects = "";
+		//	//if(!this->Properties().get()->Get(system.first, SpinObjects))
+		//	//{
+		//	//	this->Log() << "Error: Failed to Load SubSystem " << system.first << std::endl;
+		//	//	std::cout << "Error: Failed to Load SubSystem " << system.first << std::endl;
+		//	//	num++;
+		//	//	continue;
+		//	//}
+
+		//	//std::stringstream ss(SpinObjects);
+		//	//while(ss.good())
+		//	//{
+		//	//	std::string Name;
+		//	//	std::getline(ss,Name, ',');
+		//	//	SubSystemTemp.push_back(Name);
+		//	//}
+		//	//{
+		//	//	auto space = std::make_shared<SpinAPI::SpinSpace>(*(*systems.cbegin()));
+		//	//	bool loaded = true;
+		//	//	for(std::string i : SubSystemTemp)
+		//	//	{
+		//	//		if(!space->Contains(i))
+		//	//		{
+		//	//			this->Log() << "Error: " << i << " is not a loaded spin object" << std::endl;
+		//	//			std::cout << "Error: " << i << " is not a loaded spin object" << std::endl;
+		//	//			loaded &= false;
+		//	//			continue;
+		//	//		}
+		//	//		loaded &= true;
+		//	//	}
+		//	//	if(!loaded)
+		//	//	{
+		//	//		this->Log() << "Failed to load SubSystem " << system.first << std::endl;
+		//	//		std::cout << "Failed to load SubSystem " << system.first << std::endl;
+		//	//		num++;
+		//	//		continue;
+		//	//	}
+		//	//	
+		//	//}
+
+		//	//SubSystemSpins[num].second = SubSystemTemp;
+		//	auto FindInVec = [&SubSystemSpins](std::string str)
+		//	{
+		//		for(int i = 0; i < SubSystemSpins.size(); i++)
+		//		{
+		//			if(SubSystemSpins[i].first == str)
+		//			{
+		//				return true;
+		//			}
+		//		}
+		//		return false;
+		//	};
+
+		//	auto MainSpinSystem = systems.cbegin();
+
+		//	//SubSystemsTransitions.push_back({system.first, {}});
+		//	for(auto transiton : MainSpinSystem->get()->Transitions())
+		//	{
+		//		int TransitionType = 0; //0 = Transition out of one subsystem, 1 = Transition between two subsytems
+		//		std::string SourceSubSystem = "";
+		//		//All transitions need a source sub system
+		//		if(transiton->Properties()->Get("sourcesubsystem", SourceSubSystem))
+		//		{
+		//			if(SourceSubSystem != system.first)
+		//			{
+		//				continue;
+		//			}
+		//			if(!FindInVec(SourceSubSystem))
+		//			{
+		//				this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
+		//				std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
+		//				transiton->SetValid(false);
+		//				continue;
+		//			}
+		//		}
+		//		else
+		//		{
+		//			this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
+		//			std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
+		//			transiton->SetValid(false);
+		//			continue;
+		//		}
+
+		//		std::string TargetSubSystem = "";
+		//		if(transiton->Properties()->Get("targetsubsystem", TargetSubSystem))
+		//		{
+		//			if(!FindInVec(TargetSubSystem))
+		//			{
+		//				this->Log() << "Error: No target sub system specified for transition " << transiton->Name() << std::endl;
+		//				std::cout << "Failed to load transition " << transiton->Name() << ". No target sub system specified" << std::endl;
+		//				transiton->SetValid(false);
+		//				continue;
+		//			}
+		//			TransitionType = 1;
+		//		}
+
+		//		SubSystemTransition TransitionData;
+		//		TransitionData.transition = transiton;
+		//		TransitionData.type = TransitionType;
+		//		TransitionData.source = SourceSubSystem;
+		//		TransitionData.type = TransitionType;
+
+		//		switch (TransitionType)
+		//		{
+		//		case 0:
+		//			SubSystemsTransitions.push_back(TransitionData);
+		//			break;
+		//		case 1:
+		//			TransitionData.target = TargetSubSystem;
+		//			SubSystemsTransitions.push_back(TransitionData);
+		//			break;
+		//		default:
+		//			break;
+		//		}
+		//	}
+
+		//	//similar system for interactions
+		//	for(auto interaction : MainSpinSystem->get()->Interactions())
+		//	{
+		//		std::string SubSystem = "";
+		//		SubSystemsInteractions.push_back({system.first, {}});
+		//		if(!interaction->Properties()->Get("subsystem", SubSystem))
+		//		{
+		//			this->Log() << "Error: No sub system specified for interaction " << interaction->Name() << std::endl;
+		//			std::cout << "Failed to load interaction " << interaction->Name() << ". No sub system specified" << std::endl;
+		//			interaction->SetValid(false);
+		//			continue;
+		//		}
+
+		//		std::vector<std::string> systems; 
+		//		std::stringstream ss(SubSystem);
+		//		while(ss.good())
+		//		{
+		//			std::string Name;
+		//			std::getline(ss,Name, ',');
+		//			systems.push_back(Name);
+		//		}
+		//		
+		//		for(auto i : systems)
+		//		{
+		//			if(i != system.first)
+		//			{
+		//				continue;
+		//			}
+
+		//			//TODO: checks that the spin objects involved are in that subsystem
+		//			SubSystemsInteractions[num].second.push_back(interaction);
+		//			break;
+		//		}
+		//	}
+
+		//	num++;
+		//}
 
 		std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>> spaces;
 		unsigned int dimensions = 0;
@@ -744,6 +789,52 @@ namespace RunSection
 			}
 		}
 
+		ValidateSubSystems();
+
+		return true;
+	}
+
+	bool TaskMultiRadicalPairSSTimeEvo::ValidateSubSystems()
+	{
+		int SubSystemsNum = 0;
+		if(!this->Properties()->Get("subsystems", SubSystemsNum))
+		{
+			this->Log() << "Error: Number of sub systems not specified. Correct syntax is e.g. subsystems: 2" << std::endl;
+			return false;
+		}
+
+		std::string SubSystemNames; 
+		if(!this->Properties()->Get("subsystemnames", SubSystemNames))
+		{
+			this->Log() << "Note: subsystemnames not specified. Asssuming names are system1, system2, system3...." << std::endl;
+		}
+
+		std::vector<std::string> SubSystems;
+		{
+			std::stringstream ss(SubSystemNames);
+			while(ss.good())
+			{
+				std::string Name;
+				std::getline(ss,Name, ',');
+				std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){return std::tolower(c);});
+				SubSystems.push_back(Name);
+			}
+		}
+
+		//Verify that the subsytems are valid by checking if all the objects have been loaded
+		int num = 0;
+		for(auto system : SubSystems)
+		{
+			std::vector<std::string> SubSystemTemp;
+			std::string SubSytemDefinition = "";
+			if(!this->Properties().get()->Get(system, SubSytemDefinition))
+			{
+				this->Log() << "Error: Failed to Load SubSystem " << system << std::endl;
+				std::cout << "Error: Failed to Load SubSystem " << system << std::endl;
+				num++;
+				continue;
+			}
+		}
 		return true;
 	}
 	// -----------------------------------------------------

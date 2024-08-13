@@ -50,6 +50,8 @@ namespace RunSection
 		bool GenerateHamiltonian(const std::vector<SpinAPI::interaction_ptr> interactions, arma::sp_cx_mat& H, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem);
 		bool GenerateReactionOperator(const std::vector<SubSystemTransition> transitions, arma::sp_cx_mat& K, int dimension, std::shared_ptr<SpinAPI::SpinSpace> SpinSystem, std::string source);
 
+		bool ValidateSubSystems();
+
 	protected:
 		bool RunLocal() override;
 		bool Validate() override;

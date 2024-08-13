@@ -22,12 +22,13 @@ namespace MSDParser
 
 	enum class ObjectType
 	{
-		Spin,
+		Spin = 0,
 		Interaction,
 		Transition,
 		Operator,
 		State,
 		Pulse,
+		SubSystem,
 		Output,
 		Task,
 		Action,
