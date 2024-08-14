@@ -49,7 +49,7 @@ namespace SpinAPI
 
     public:
         SubSystem(std::string, std::string, system_ptr); //Normal constructor
-        SubSystem(const SubSystem& ) = delete;//Copy constructor
+        //SubSystem(const SubSystem& ) = delete;//Copy constructor
         ~SubSystem(); //Destructor
 
         //Operator overloading 

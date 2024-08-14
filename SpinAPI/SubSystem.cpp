@@ -23,6 +23,18 @@ namespace SpinAPI
     {
     }
 
+    //SubSystem::SubSystem(SubSystem& _system)
+    //{
+    //    m_name = _system.m_name;
+    //    m_properties = _system.m_properties;
+    //    m_system = _system.m_system;
+    //    m_spins = _system.m_spins;
+    //    m_transtions = _system.m_transtions;
+    //    m_interactions = _system.m_interactions;
+    //    m_operators = _system.m_operators;
+    //    m_pulses = _system.m_pulses;
+    //}
+
     SubSystem::~SubSystem()
     {
     }
@@ -262,6 +274,7 @@ namespace SpinAPI
         {
             m_spins.push_back(std::make_shared<spin_ptr>(m_system->spins_find(SubSystemSpins[i])));
         }
+
         for(int i = 0; i < SubSystemTransitionsOut.size(); i++)
         {
             std::shared_ptr<transition_ptr> t = std::make_shared<transition_ptr>(m_system->transitions_find(SubSystemTransitionsOut[i]));
@@ -348,6 +361,9 @@ namespace SpinAPI
                         tr->target = tr2->target;
                         tr2->source = tr->source;
                     }
+
+                    //put console message that transition was skipped
+
                     break;
                 }
                 index2++;

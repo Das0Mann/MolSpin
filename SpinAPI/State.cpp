@@ -215,9 +215,11 @@ namespace SpinAPI
 
 		std::string buffer = "";
 		arma::cx_double factor;
+		arma::cx_double PreFactor = 0;
 		int mz = 0;
 		bool inState = false;
 		auto currentSpinPair = newState.begin();
+		bool brackets = false;
 
 		// Loop through all characters in the string
 		for (auto i = _states.cbegin(); i != _states.cend(); i++)
@@ -227,6 +229,11 @@ namespace SpinAPI
 				// Attempt to parse the factor
 				if (!this->ParseFactor(buffer, factor))
 					return false;
+
+				if(brackets)
+				{
+					factor = factor * PreFactor;
+				}
 
 				// We are now inside a state (not the factor), so reset the buffer
 				inState = true;
@@ -287,6 +294,21 @@ namespace SpinAPI
 
 				// Reset the CompleteState iterator
 				currentSpinPair = newState.begin();
+			}
+			else if (!inState && (*i) == '(')
+			{
+				if (!this->ParseFactor(buffer, factor))
+					return false;
+				
+				buffer = "";
+
+				PreFactor = factor;
+				brackets = true;
+			}
+			else if (!inState && (*i) == ')')
+			{
+				PreFactor = 0;
+				brackets = false;
 			}
 			else
 			{
