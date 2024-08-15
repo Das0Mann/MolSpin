@@ -16,6 +16,39 @@
 
 namespace SpinAPI
 {
+
+	class Function //handles prefactors like cos and sin but essentially any other mathmatical function
+	{
+	public:
+		typedef void*(*FuncPtr)(void*);
+
+		enum class ReturnType
+		{
+			i = 0, //int
+			d, //double
+			f, //float
+			cd, //complex double
+			undefined
+		};
+	private:
+		std::string m_FunctionName;
+		FuncPtr m_func; //function pointer
+		ReturnType m_funcType; //function type
+		std::string m_variable;
+		double m_factor;
+
+	public:
+		arma::cx_double operator()(void* value);
+		Function(FuncPtr, ReturnType, std::string, std::string var = "x", double factor = 1.0);
+	};
+
+	std::shared_ptr<Function> FunctionParser(std::string, std::string);
+	
+	namespace MathematicalFunctions
+	{
+		void* sin(void*); //double
+	}
+
 	class State
 	{
 		// Aliases to improve readability
@@ -76,6 +109,8 @@ namespace SpinAPI
 
 	// Define alias for state-pointers
 	using state_ptr = std::shared_ptr<State>;
+
+
 }
 
 #endif

@@ -13,8 +13,123 @@
 #include "State.h"
 #include "SpinSystem.h"
 
+#include <cctype>
+
+#include <math.h> //testing something
+
 namespace SpinAPI
 {
+	//Function class stuff
+	arma::cx_double Function::operator()(void* value)
+	{
+		arma::cx_double ReturnValue;
+		if(m_funcType == ReturnType::i)
+		{
+			int val = (int)m_factor * *(int*)value; 
+			int _val = *(int*)m_func((void*)(int*)&val);
+			ReturnValue = arma::cx_double((double)_val, 0);
+		}
+		else if(m_funcType == ReturnType::d)
+		{
+			double val = m_factor * *(double*)value; 
+			double _val = *(double*)m_func((void*)(double*)&val);
+			ReturnValue = arma::cx_double(_val, 0);
+		}
+		else if(m_funcType == ReturnType::f)
+		{
+			float val = (float)m_factor * *(float*)value; 
+			float _val = *(float*)m_func((void*)(float*)&val);
+			ReturnValue = arma::cx_double((float)_val, 0);
+		}
+		else if(m_funcType == ReturnType::cd)
+		{
+			arma::cx_double val = (arma::cx_double)m_factor * *(arma::cx_double*)value; 
+			arma::cx_double _val = *(arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			ReturnValue = _val;
+		}
+
+		return ReturnValue;
+	}
+
+	Function::Function(FuncPtr FunctionPtr, ReturnType type, std::string name, std::string var, double factor)
+	{
+		m_func = FunctionPtr;
+		m_funcType = type;
+		m_FunctionName = name;
+		m_variable = var;
+		m_factor = factor;
+	}
+
+	std::shared_ptr<Function> FunctionParser(std::string func, std::string var)
+	{
+		std::string buffer = "";
+		bool decimal = false;
+		std::pair<double,double> nums = {0.0, 0.0};
+		bool value = true;
+		for(auto c = var.cbegin(); c != var.cend(); c++)
+		{
+			if((*c) == '.')
+			{
+				decimal = true;
+				nums.first = std::stod(buffer);
+				buffer = "";
+			}
+			else if(std::isdigit((*c)) == 0 && value)
+			{
+				value = false;
+				double val = std::stod(buffer);
+				if(!decimal)
+				{
+					nums.first = val;
+				}
+				else
+				{
+					int DivideBy = buffer.length();
+					val = val * std::pow(10.0, -1.0 * (double)DivideBy);
+					nums.second = val;
+				}
+				buffer = (*c);
+			}
+			else
+			{
+				buffer += (*c);
+			}
+		}
+
+		std::string variable = buffer;
+		double factor = nums.first + nums.second;
+
+		std::string FunctionName = "";
+		for(auto c = func.cbegin(); c != func.end(); c++)
+		{
+			if((*c) == '+' || (*c) == '-')
+			{
+				continue;
+			} 
+			else
+			{
+				FunctionName += (*c);
+			}
+		}
+
+		std::shared_ptr<Function> _func = nullptr;
+		if(FunctionName.compare("sin") == 0)
+		{
+			 _func = std::make_shared<Function>(MathematicalFunctions::sin, Function::ReturnType::d, FunctionName, variable, factor);
+		}
+		
+		return _func;
+	}
+	namespace MathematicalFunctions
+	{
+		void* sin(void* value) //double
+		{
+			double val = *(double*)value;
+			double _val = std::sin(val);
+			double* v = &_val;
+			return (void*)v;
+		} 
+	}
 	// -----------------------------------------------------
 	// State Constructors and Destructor
 	// -----------------------------------------------------
@@ -214,12 +329,15 @@ namespace SpinAPI
 		}
 
 		std::string buffer = "";
+		std::string functionName = "";
+		std::string variable = "";
 		arma::cx_double factor;
 		arma::cx_double PreFactor = 0;
 		int mz = 0;
 		bool inState = false;
 		auto currentSpinPair = newState.begin();
 		bool brackets = false;
+		bool function = false;
 
 		// Loop through all characters in the string
 		for (auto i = _states.cbegin(); i != _states.cend(); i++)
@@ -295,7 +413,7 @@ namespace SpinAPI
 				// Reset the CompleteState iterator
 				currentSpinPair = newState.begin();
 			}
-			else if (!inState && (*i) == '(')
+			else if (!inState && (*i) == '(' && !function)
 			{
 				if (!this->ParseFactor(buffer, factor))
 					return false;
@@ -305,16 +423,39 @@ namespace SpinAPI
 				PreFactor = factor;
 				brackets = true;
 			}
-			else if (!inState && (*i) == ')')
+			else if (!inState && (*i) == ')' && !function)
 			{
 				PreFactor = 0;
 				brackets = false;
+			}
+			else if(!function && std::isalpha((*i)) != 0)
+			{
+				buffer +=(*i);
+				function = true;
+			}
+			else if(function && (*i) == '(')
+			{
+				functionName = buffer;
+				buffer = "";
+			}
+			else if(function && (*i) == ')')
+			{
+				variable = buffer;
+				buffer = "";
+				function = false;
+				std::shared_ptr<Function> Func = FunctionParser(functionName, variable);
+				double val = 1.5;
+				std::cout << Func->operator()((void*)((double*)&val)) << std::endl;
 			}
 			else
 			{
 				buffer += (*i);
 			}
 		}
+
+		//Function sin_test(MathematicalFunctions::sin, Function::ReturnType::d, "sin", "x", 0.5);
+
+		//std::cout << sin_test((void*)((double*)&val)) << std::endl;
 
 		this->substates.push_back(newState);
 		return true;
