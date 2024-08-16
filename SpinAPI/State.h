@@ -40,13 +40,16 @@ namespace SpinAPI
 	public:
 		arma::cx_double operator()(void* value);
 		Function(FuncPtr, ReturnType, std::string, std::string var = "x", double factor = 1.0);
+		//using FunctionPtr = std::shared_ptr<Function>;
 	};
 
-	std::shared_ptr<Function> FunctionParser(std::string, std::string);
+	std::shared_ptr<Function> FunctionParser(std::string&, std::string&);
 	
 	namespace MathematicalFunctions
 	{
 		void* sin(void*); //double
+		void* cos(void*); //double
+		void* scaler(void* = nullptr); //double
 	}
 
 	class State
@@ -59,11 +62,12 @@ namespace SpinAPI
 
 		using CompleteState = std::vector<StatePair>; // A collection of states that are entangled together,
 													  // or only 1 state if it is not entangled with any other states.
-
 	private:
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::vector<CompleteState> substates;				 // A list of complete states, i.e. see the alias definition above
+		std::vector<std::shared_ptr<Function>> Functions; 				 // A list of functions that act as factors before states, e.g. cos or sin
+		std::vector<int> BracketDepth;
 		bool isValid;
 
 		// Private methods

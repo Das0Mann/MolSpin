@@ -60,7 +60,7 @@ namespace SpinAPI
 		m_factor = factor;
 	}
 
-	std::shared_ptr<Function> FunctionParser(std::string func, std::string var)
+	std::shared_ptr<Function> FunctionParser(std::string& func, std::string& var)
 	{
 		std::string buffer = "";
 		bool decimal = false;
@@ -100,8 +100,10 @@ namespace SpinAPI
 		double factor = nums.first + nums.second;
 
 		std::string FunctionName = "";
-		for(auto c = func.cbegin(); c != func.end(); c++)
+		std::vector<int> removed = {};
+		for(auto c = func.cbegin(); c != func.cend(); c++)
 		{
+			auto a = func.cend() - func.cbegin();
 			if((*c) == '+' || (*c) == '-')
 			{
 				continue;
@@ -109,13 +111,24 @@ namespace SpinAPI
 			else
 			{
 				FunctionName += (*c);
+				removed.push_back(c - func.begin());
 			}
+		}
+		int r = 0;
+		for(int i = 0; i < removed.size(); i++)
+		{
+			func.erase(func.begin() + removed[i] - r);
+			r++;
 		}
 
 		std::shared_ptr<Function> _func = nullptr;
 		if(FunctionName.compare("sin") == 0)
 		{
 			 _func = std::make_shared<Function>(MathematicalFunctions::sin, Function::ReturnType::d, FunctionName, variable, factor);
+		}
+		if(FunctionName.compare("cos") == 0)
+		{
+			_func = std::make_shared<Function>(MathematicalFunctions::cos, Function::ReturnType::d, FunctionName, variable, factor);
 		}
 		
 		return _func;
@@ -129,6 +142,21 @@ namespace SpinAPI
 			double* v = &_val;
 			return (void*)v;
 		} 
+
+		void* cos(void* value) //double
+		{
+			double val = *(double*)value;
+			double _val = std::cos(val);
+			double* v = &_val;
+			return (void*)v;
+		}
+
+		void* scaler(void* value)
+		{
+			double _val = *(double*)value ;
+			double* v = &_val;
+			return (void*)v;
+		}
 	}
 	// -----------------------------------------------------
 	// State Constructors and Destructor
@@ -332,12 +360,14 @@ namespace SpinAPI
 		std::string functionName = "";
 		std::string variable = "";
 		arma::cx_double factor;
-		arma::cx_double PreFactor = 0;
+		std::vector<arma::cx_double> PreFactor = {1};
+		std::shared_ptr<Function> Func;
 		int mz = 0;
 		bool inState = false;
 		auto currentSpinPair = newState.begin();
 		bool brackets = false;
 		bool function = false;
+		int depth = 0;
 
 		// Loop through all characters in the string
 		for (auto i = _states.cbegin(); i != _states.cend(); i++)
@@ -348,11 +378,7 @@ namespace SpinAPI
 				if (!this->ParseFactor(buffer, factor))
 					return false;
 
-				if(brackets)
-				{
-					factor = factor * PreFactor;
-				}
-
+				factor = factor * PreFactor.back();
 				// We are now inside a state (not the factor), so reset the buffer
 				inState = true;
 				buffer = "";
@@ -375,7 +401,14 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
+				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				if(Func == nullptr)
+				{
+					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, "scaler", "", 1.0);
+				}
+				Functions.push_back(Func);
+				BracketDepth.push_back(depth);
 
 				// Reset buffer and prepare reading next mz value
 				buffer = "";
@@ -399,7 +432,14 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
+				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				if(Func == nullptr)
+				{
+					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, "scaler", "", 1.0);
+				}
+				Functions.push_back(Func);
+				BracketDepth.push_back(depth);
 
 				// Reset buffer and prepare to read the next state
 				buffer = "";
@@ -419,14 +459,13 @@ namespace SpinAPI
 					return false;
 				
 				buffer = "";
-
-				PreFactor = factor;
-				brackets = true;
+				PreFactor.push_back(factor * PreFactor[depth]);
+				depth++;
 			}
 			else if (!inState && (*i) == ')' && !function)
 			{
-				PreFactor = 0;
-				brackets = false;
+				PreFactor.pop_back();
+				depth--;
 			}
 			else if(!function && std::isalpha((*i)) != 0)
 			{
@@ -441,9 +480,9 @@ namespace SpinAPI
 			else if(function && (*i) == ')')
 			{
 				variable = buffer;
-				buffer = "";
 				function = false;
-				std::shared_ptr<Function> Func = FunctionParser(functionName, variable);
+				Func = FunctionParser(functionName, variable);
+				buffer = functionName;
 				double val = 1.5;
 				std::cout << Func->operator()((void*)((double*)&val)) << std::endl;
 			}
