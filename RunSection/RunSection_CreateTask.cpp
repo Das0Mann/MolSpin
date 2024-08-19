@@ -23,6 +23,8 @@
 #include "TaskMultiStaticSSTimeEvo.h"
 #include "TaskMultiDynamicHSTimeEvo.h"
 
+#include "TaskMultiStaticSSTimeEvoSpectra.h"
+
 #include "TaskStaticSSRedfield.h"
 #include "TaskStaticSSRedfieldSparse.h"
 #include "TaskStaticSSRedfieldTimeEvo.h"
@@ -150,6 +152,12 @@ namespace RunSection
 		{
 			task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);
 		}
+
+		// NEW (Added by Luca Gerhards): Including spectroscopy multi-spin system task
+    	else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
+        {
+            task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
+        }
 
 		// NEW (Added by Gediminas Pazera and Luca Gerhards): Including SSE theory as CreateTask member.
 		else if (_tasktype.compare("statichs-stoch-yields") == 0 || _tasktype.compare("StaticHS-Stoch-Yields") == 0)
