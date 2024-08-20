@@ -66,10 +66,10 @@ namespace RunSection
 		// Loop through the systems again to fill this matrix and vector
 		for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
 		{
-
 			// Make sure we have an initial state
 			auto initial_states = i->first->InitialState();
 			arma::cx_mat rho0HS;
+
 			if (initial_states.size() < 1)
 			{
 				this->Log() << "Note: No initial state specified for spin system \"" << i->first->Name() << "\", setting the initial state to zero." << std::endl;
@@ -77,23 +77,68 @@ namespace RunSection
 			}
 			else
 			{
-				// Get the initial state for the current system
-				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				std::vector<double> weights;
+				weights = i->first->Weights();
+				
+				// Normalize the weights
+				double sum_weights = std::accumulate(weights.begin(), weights.end(), 0.0);
+
+				if (sum_weights > 0)
 				{
-					arma::cx_mat tmp_rho0;
-					if (!i->second->GetState(*j, tmp_rho0))
+					for (double &weight : weights)
 					{
-						this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
-						return false;
+						weight /= sum_weights;
 					}
-					if (j == initial_states.cbegin())
-						rho0HS = tmp_rho0;
-					else
-						rho0HS += tmp_rho0;
+				}
+
+				if (weights.size() > 1)
+				{
+					this->Log() << "Using weighted density matrix for initial state. Be sure that the sum of weights equals to 1." << std::endl;
+					// Get the initial state
+					int counter = 0;
+
+					for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+					{
+						arma::cx_mat tmp_rho0;
+						if (!i->second->GetState(*j, tmp_rho0))
+						{
+							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
+							continue;
+						}
+
+						if (j == initial_states.cbegin())
+						{
+							this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[0] << "\"." << std::endl;
+							rho0HS = weights[0] * tmp_rho0;
+							counter += 1;
+						}
+						else
+						{
+							this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[counter] << "\"." << std::endl;
+							rho0HS += weights[counter] * tmp_rho0;
+							counter += 1;
+						}
+					}
+				}
+				else
+				{
+					// Get the initial state for the current system
+					for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+					{
+						arma::cx_mat tmp_rho0;
+						if (!i->second->GetState(*j, tmp_rho0))
+						{
+							this->Log() << "ERROR: Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
+							return false;
+						}
+						if (j == initial_states.cbegin())
+							rho0HS = tmp_rho0;
+						else
+							rho0HS += tmp_rho0;
+					}
 				}
 				rho0HS /= arma::trace(rho0HS); // The density operator should have a trace of 1
 			}
-
 			// Now put the initial state into the superspace vector
 			arma::cx_vec rho0vec;
 			if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
@@ -111,7 +156,7 @@ namespace RunSection
 				return false;
 			}
 
-			std::cout << H << std::endl;
+			//std::cout << H << std::endl;
 
 			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
 
@@ -276,7 +321,7 @@ namespace RunSection
 				{
 					if ((*l)->Name() == nuclei_list[m])
 					{
-						std::cout << (*l)->Name() << std::endl;
+						//std::cout << (*l)->Name() << std::endl;
 						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
 						{
 							return false;
@@ -297,7 +342,7 @@ namespace RunSection
 						// There are two result modes - either write results per transition or for each defined state
 						if (this->productYieldsOnly && Dnp == false)
 						{
-							std::cout << "Perfoming CIDSP calculation." << std::endl;
+							//std::cout << "Perfoming CIDSP calculation." << std::endl;
 							// Loop through all defind transitions
 							
 							for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
@@ -318,7 +363,7 @@ namespace RunSection
 						}
 						else if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
 						{
-							std::cout << "Perfoming DNP calculation." << std::endl;
+							//std::cout << "Perfoming DNP calculation." << std::endl;
 							this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl;
 
 							// Return the yield for this state - note that no reaction rates are included here.
@@ -328,8 +373,7 @@ namespace RunSection
 						}
 						else
 						{
-
-							std::cout << "Perfoming Double-Projection calculation." << std::endl;
+							//std::cout << "Perfoming Double-Projection calculation." << std::endl;
 							// Loop through all states
 							for (auto j = states.cbegin(); j != states.cend(); j++)
 							{
