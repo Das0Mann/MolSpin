@@ -569,6 +569,10 @@ namespace SpinAPI
 		for (auto i = this->pulses.cbegin(); i != this->pulses.cend(); i++)
 			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
 
+		// Get ActionTargets from all state objects, adding the name of the SpinSystem
+		for(auto i = this->states.cbegin(); i != this->states.cend(); i++)
+			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
+
 		// Insert all the ActionScalars in the associated container
 		for (auto i = tmpVecScalars.cbegin(); i != tmpVecScalars.cend(); i++)
 		{

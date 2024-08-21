@@ -8,6 +8,7 @@
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
+
 namespace SpinAPI
 {
 	// -----------------------------------------------------
@@ -75,6 +76,8 @@ namespace SpinAPI
 		unsigned int index = 0;
 
 		// Get the norm square of the CompleteState
+
+
 		while (index < _cstate[0].second.size())
 		{
 			auto factor = _cstate[0].second[index++].second;
