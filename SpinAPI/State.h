@@ -35,6 +35,7 @@ namespace SpinAPI
 		std::vector<CompleteState> substates;				 // A list of complete states, i.e. see the alias definition above
 		std::vector<std::shared_ptr<Function>> Functions; 	 // A list of functions that act as factors before states, e.g. cos or sin
 		std::vector<int> BracketDepth;						 // A description of the state when it comes to how to apply factors
+		std::vector<arma::cx_double> InitialFactors; 				 // stores the initial factors (see UpdateFactors for reasoning)
 		std::unordered_map<std::string, double> Variables; 	// Variable name and function and it's value(stored as a void* for type casting)
 		bool isValid;
 
@@ -83,6 +84,9 @@ namespace SpinAPI
 
 		// Public method for creating ActionTargets
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
+
+		//Applies all the functions to the factors
+		bool UpdateFactors();
 	};
 
 	// Define alias for state-pointers

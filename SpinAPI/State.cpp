@@ -228,6 +228,7 @@ namespace SpinAPI
 		bool brackets = false;
 		bool function = false;
 		int depth = 0;
+		int FuncNum = 0;
 
 		// Loop through all characters in the string
 		for (auto i = _states.cbegin(); i != _states.cend(); i++)
@@ -263,9 +264,10 @@ namespace SpinAPI
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, "scaler", "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
 				std::string ConcatinatedString = Func->GetVariable();
 				double var;
@@ -275,6 +277,7 @@ namespace SpinAPI
 				}
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
+				FuncNum++;
 
 				// Reset buffer and prepare reading next mz value
 				buffer = "";
@@ -300,9 +303,10 @@ namespace SpinAPI
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, "scaler", "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
 				std::string ConcatinatedString = Func->GetVariable();
 				double var;
@@ -312,6 +316,7 @@ namespace SpinAPI
 				}
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
+				FuncNum++;
 
 				// Reset buffer and prepare to read the next state
 				buffer = "";
@@ -451,6 +456,9 @@ namespace SpinAPI
 
 		// Don't waste any unnecessary memory
 		this->substates.shrink_to_fit();
+
+		//make sure all the factors are correct
+		this->UpdateFactors();
 
 		// If we were successful, the state is now valid
 		this->isValid = true;
@@ -747,6 +755,31 @@ namespace SpinAPI
 			if (i + 1 != this->substates.cend())
 				_stream << "\n";
 		}
+	}
+
+	bool State::UpdateFactors()
+	{
+		for(auto i = substates.begin(); i != substates.end(); i++)
+		{
+			for(auto e = i->begin(); e != i->end(); e++)
+			{
+				int FuncNum = e - i->begin(); //Functions exist for each state of each spin object, so the nth spin object will have it's functions offset by n
+				arma::cx_double factor = 1;
+				for(auto a = e->second.begin(); a != e->second.end(); a++)
+				{	
+					auto f = this->Functions[FuncNum];
+					if(f->GetVariable() == "") //checks whether it acutally has a function to apply 
+					{
+						FuncNum = FuncNum + i->size();
+						continue;
+					}
+					factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()]);
+					a->second = factor; //can't use a->second as this would have a culmative effect over time
+					FuncNum = FuncNum + i->size();
+				}
+			}
+		}
+		return true;
 	}
 
 	// -----------------------------------------------------
