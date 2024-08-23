@@ -23,8 +23,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskStaticHSDirectTimeEvo Constructors and Destructor
 	// -----------------------------------------------------
-	TaskStaticHSDirectTimeEvo::TaskStaticHSDirectTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-																																  productYieldsOnly(false)
+	TaskStaticHSDirectTimeEvo::TaskStaticHSDirectTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(false)
 	{
 	}
 

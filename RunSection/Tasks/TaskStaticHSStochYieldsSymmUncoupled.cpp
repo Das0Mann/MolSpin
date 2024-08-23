@@ -23,8 +23,7 @@ namespace RunSection
         // -----------------------------------------------------
         // TaskStaticHSStochYieldsSymmUncoupled Constructors and Destructor
         // -----------------------------------------------------
-        TaskStaticHSStochYieldsSymmUncoupled::TaskStaticHSStochYieldsSymmUncoupled(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-                                                                                                                                                            productYieldsOnly(false)
+        TaskStaticHSStochYieldsSymmUncoupled::TaskStaticHSStochYieldsSymmUncoupled(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(true)
         {
         }
 
