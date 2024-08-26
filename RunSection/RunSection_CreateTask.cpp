@@ -33,6 +33,7 @@
 // #include "TaskStaticRPOnlyHSSymDecRedfield.h"
 #include "TaskStaticSSNakajimaZwanzig.h"
 #include "TaskStaticSSNakajimaZwanzigTimeEvo.h"
+#include "TaskMultiStaticSSNakajimaZwanzigTimeEvo.h"
 
 #include "TaskStaticSSSpectra.h"
 #include "TaskStaticSSCIDNP.h"
@@ -141,6 +142,10 @@ namespace RunSection
 		else if (_tasktype.compare("nakajimazwanzig-relaxation-timeevolution") == 0 || _tasktype.compare("NakajimaZwanzig-Relaxation-Timeevolution") == 0)
 		{
 			task = std::make_shared<TaskStaticSSNakajimaZwanzigTimeEvo>(_obj, *this);
+		}
+		else if (_tasktype.compare("multistaticss-nakajimazwanzig-timeevolution") == 0 || _tasktype.compare("nakajimazwanzig-multisystem") == 0)
+		{
+			task = std::make_shared<TaskMultiStaticSSNakajimaZwanzigTimeEvo>(_obj, *this);
 		}
 
 		// NEW (ADDED by Luca Gerhards): Including spectroscopy task such as CIDNP

@@ -156,8 +156,6 @@ namespace RunSection
 				return false;
 			}
 
-			//std::cout << H << std::endl;
-
 			L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
 
 			// Then get the reaction operators
@@ -321,7 +319,6 @@ namespace RunSection
 				{
 					if ((*l)->Name() == nuclei_list[m])
 					{
-						//std::cout << (*l)->Name() << std::endl;
 						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
 						{
 							return false;
@@ -342,7 +339,6 @@ namespace RunSection
 						// There are two result modes - either write results per transition or for each defined state
 						if (this->productYieldsOnly && Dnp == false)
 						{
-							//std::cout << "Perfoming CIDSP calculation." << std::endl;
 							// Loop through all defind transitions
 							
 							for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
@@ -363,7 +359,6 @@ namespace RunSection
 						}
 						else if (this->Properties()->Get("dnp", Dnp) && Dnp == true)
 						{
-							//std::cout << "Perfoming DNP calculation." << std::endl;
 							this->Log() << "Just using the projection operator of " << (*l)->Name() << " and not doing CIDNP." << std::endl;
 
 							// Return the yield for this state - note that no reaction rates are included here.
@@ -373,7 +368,6 @@ namespace RunSection
 						}
 						else
 						{
-							//std::cout << "Perfoming Double-Projection calculation." << std::endl;
 							// Loop through all states
 							for (auto j = states.cbegin(); j != states.cend(); j++)
 							{
