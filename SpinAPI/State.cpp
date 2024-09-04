@@ -314,6 +314,7 @@ namespace SpinAPI
 				{
 					Variables[ConcatinatedString] = var;
 				}
+				//throw a error if var not found 
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
 				FuncNum++;
@@ -504,8 +505,8 @@ namespace SpinAPI
 		{
 			for(auto i = Variables.begin(); i != Variables.end(); i++)
 			{
-				RunSection::ActionScalar VarScaler = RunSection::ActionScalar(i->second, &CheckActionScalarVariable);
-				scalars.push_back(RunSection::NamedActionScalar(_system + "." + this->Name() + "." + i->first, VarScaler));
+				RunSection::ActionScalar VarScalar = RunSection::ActionScalar(i->second, &CheckActionScalarVariable);
+				scalars.push_back(RunSection::NamedActionScalar(_system + "." + this->Name() + "." + i->first, VarScalar));
 			}
 		}
 
@@ -780,6 +781,11 @@ namespace SpinAPI
 			}
 		}
 		return true;
+	}
+
+	bool State::Update()
+	{
+		return UpdateFactors();
 	}
 
 	// -----------------------------------------------------

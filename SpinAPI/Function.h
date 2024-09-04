@@ -31,7 +31,7 @@ namespace SpinAPI
     		std::string m_FunctionName;
     		FuncPtr m_func; //function pointer
     		ReturnType m_funcType; //function type
-    		std::string m_variable;
+    		std::string m_variable; //TODO: turn into vector
     		double m_factor;
 
     	public:

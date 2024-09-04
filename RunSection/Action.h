@@ -59,6 +59,8 @@ namespace RunSection
 		bool IsValid() const;
 		std::string Name();
 
+		const std::shared_ptr<MSDParser::ObjectParser> GetProperties() const { return this->properties; };
+
 		// Public method to be overwritten
 		bool Validate();
 	};

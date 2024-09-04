@@ -48,7 +48,9 @@ namespace SpinAPI
 																								// Sets the StateSeries pointer if the pointer-to-pointer is not nullptr
 
 		// Private methods to create ActionTargets
-		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);    
+		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &); 
+
+		bool UpdateFactors();   
 
 	public:
 		// Constructors / Destructors
@@ -86,7 +88,8 @@ namespace SpinAPI
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
 
 		//Applies all the functions to the factors
-		bool UpdateFactors();
+		bool Update();
+	
 	};
 
 	// Define alias for state-pointers

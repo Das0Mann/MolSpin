@@ -21,9 +21,10 @@ namespace SpinAPI
 	arma::cx_double Function::operator()(void* value)
 	{
 		arma::cx_double ReturnValue;
+		//remove interger and float
 		if(m_funcType == ReturnType::i)
 		{
-			int val = (int)m_factor * *(int*)value; 
+			int val = (int)m_factor * *(double*)value; 
 			int _val = *(int*)m_func((void*)(int*)&val);
 			ReturnValue = arma::cx_double((double)_val, 0);
 		}
@@ -35,13 +36,13 @@ namespace SpinAPI
 		}
 		else if(m_funcType == ReturnType::f)
 		{
-			float val = (float)m_factor * *(float*)value; 
+			float val = (float)m_factor * *(double*)value; 
 			float _val = *(float*)m_func((void*)(float*)&val);
 			ReturnValue = arma::cx_double((float)_val, 0);
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
-			arma::cx_double val = (arma::cx_double)m_factor * *(arma::cx_double*)value; 
+			arma::cx_double val = (arma::cx_double)m_factor * *(double*)value; 
 			arma::cx_double _val = *(arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
 			ReturnValue = _val;
 		}
@@ -160,7 +161,7 @@ namespace SpinAPI
 			return (void*)v;
 		}
 
-		void* scaler(void* value)
+		void* scaler(void* value) //scalar not scaler
 		{
 			double _val = *(double*)value ;
 			double* v = &_val;
