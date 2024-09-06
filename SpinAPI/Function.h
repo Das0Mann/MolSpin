@@ -21,24 +21,39 @@ namespace SpinAPI
 
     		enum class ReturnType
     		{
-    			i = 0, //int
-    			d, //double
-    			f, //float
+    			d = 0, //double
     			cd, //complex double
     			undefined
     		};
+
+			enum class InternalOperations
+			{
+				p = 0, //plus
+				mi, //minus
+				mu, //multiply
+				d //divide
+			};
     	private:
     		std::string m_FunctionName;
     		FuncPtr m_func; //function pointer
     		ReturnType m_funcType; //function type
-    		std::string m_variable; //TODO: turn into vector
-    		double m_factor;
-
+    		std::vector<std::string> m_variables; //TODO: turn into vector
+    		std::vector<double> m_factors;
+			std::vector<InternalOperations> m_op;
+			std::vector<int> m_VarDepth;
+		
+		private:
+			double EvaluateFuncValue(std::vector<void*>);
     	public:
     		arma::cx_double operator()(void* value);
+			arma::cx_double operator()(std::vector<void*> value);
     		Function(FuncPtr, ReturnType, std::string, std::string var = "x", double factor = 1.0);
-    		std::string GetVariable();
+			Function(FuncPtr, ReturnType, std::string, std::vector<std::string> vars, std::vector<double> factors);
+    		std::vector<std::string> GetVariable();
     		std::string GetName();
+
+			void SetOp(std::vector<InternalOperations> op) { m_op = op;}
+			void SetVarDepth(std::vector<int> vd) {m_VarDepth = vd; }
     		//using FunctionPtr = std::shared_ptr<Function>;
     	};
 
@@ -48,7 +63,7 @@ namespace SpinAPI
 	{
 		void* sin(void*); //double
 		void* cos(void*); //double
-		void* scaler(void* = nullptr); //double
+		void* scalar(void* = nullptr); //double
 	}
 
 }

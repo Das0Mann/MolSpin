@@ -228,6 +228,7 @@ namespace SpinAPI
 		bool brackets = false;
 		bool function = false;
 		int depth = 0;
+		int FunctionDepth = -1;
 		int FuncNum = 0;
 
 		// Loop through all characters in the string
@@ -267,11 +268,11 @@ namespace SpinAPI
 				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
-				std::string ConcatinatedString = Func->GetVariable();
+				std::string ConcatinatedString = Func->GetVariable()[0];
 				double var;
-				if(properties->Get(Func->GetVariable(), var))
+				if(properties->Get(Func->GetVariable()[0], var))
 				{
 					Variables[ConcatinatedString] = var;
 				}
@@ -306,11 +307,11 @@ namespace SpinAPI
 				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scaler, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
-				std::string ConcatinatedString = Func->GetVariable();
+				std::string ConcatinatedString = Func->GetVariable()[0];
 				double var;
-				if(properties->Get(Func->GetVariable(), var))
+				if(properties->Get(Func->GetVariable()[0], var))
 				{
 					Variables[ConcatinatedString] = var;
 				}
@@ -352,14 +353,31 @@ namespace SpinAPI
 			}
 			else if(function && (*i) == '(')
 			{
+				FunctionDepth++;
+				if(FunctionDepth != 0)
+				{
+					buffer += (*i);
+					continue;
+				}
 				functionName = buffer;
 				buffer = "";
 			}
 			else if(function && (*i) == ')')
 			{
+				FunctionDepth--;
+				if(FunctionDepth != -1)
+				{
+					buffer += (*i);
+					continue;
+				}
 				variable = buffer;
 				function = false;
 				Func = FunctionParser(functionName, variable);
+
+				//code testing
+				double x1 = 0.5, x2 = 0.2, x3 = 0.3, x4 = 1;
+
+				Func->operator()({(void*)&x1, (void*)&x2, (void*)&x3, (void*)&x4});
 				buffer = functionName;
 			}
 			else
@@ -769,12 +787,12 @@ namespace SpinAPI
 				for(auto a = e->second.begin(); a != e->second.end(); a++)
 				{	
 					auto f = this->Functions[FuncNum];
-					if(f->GetVariable() == "") //checks whether it acutally has a function to apply 
+					if(f->GetVariable()[0] == "") //checks whether it acutally has a function to apply 
 					{
 						FuncNum = FuncNum + i->size();
 						continue;
 					}
-					factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()]);
+					factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()[0]]);
 					a->second = factor; //can't use a->second as this would have a culmative effect over time
 					FuncNum = FuncNum + i->size();
 				}
