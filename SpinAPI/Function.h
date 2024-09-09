@@ -37,7 +37,8 @@ namespace SpinAPI
     		std::string m_FunctionName;
     		FuncPtr m_func; //function pointer
     		ReturnType m_funcType; //function type
-    		std::vector<std::string> m_variables; //TODO: turn into vector
+    		std::vector<std::string> m_variables;
+			std::vector<std::string> m_duplicates;
     		std::vector<double> m_factors;
 			std::vector<InternalOperations> m_op;
 			std::vector<int> m_VarDepth;

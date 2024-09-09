@@ -380,9 +380,14 @@ namespace SpinAPI
 				Func->operator()({(void*)&x1, (void*)&x2, (void*)&x3, (void*)&x4});
 				buffer = functionName;
 			}
+			else if((*i) == '*')
+			{
+				if(function)
+					buffer += (*i);
+			}
 			else
 			{
-				buffer += (*i);
+				buffer +=(*i);
 			}
 		}
 

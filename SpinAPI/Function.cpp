@@ -14,6 +14,8 @@
 #include <armadillo>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
 
 #include "Function.h"
 
@@ -61,6 +63,7 @@ namespace SpinAPI
 	double Function::EvaluateFuncValue(std::vector<void*> values)
 	{
 		std::vector<double> VarValues;
+
 		for(int i = 0; i < m_variables.size(); i++)
 		{
 			if(m_variables[i] == "")
@@ -82,6 +85,36 @@ namespace SpinAPI
 			index++;
 
 		} 
+
+		for(auto v = m_duplicates.begin(); v != m_duplicates.end(); v++)
+		{
+			auto it = std::find(m_variables.begin(), m_variables.end(), (*v));
+			int InitialIndex = it  - m_variables.begin();
+
+			std::vector<int> loc = {};
+			it++;
+			while(it < m_variables.end())
+			{
+				it = std::find(it, m_variables.end(), (*v));
+				if(it ==\ m_variables.end())
+				{
+					break;
+				}
+				loc.push_back(it - m_variables.begin());
+				it++;
+			}
+
+			for(auto i : loc)
+			{
+				VarValues.insert(VarValues.begin() + i, VarValues[InitialIndex]);
+			}
+		}
+		
+
+		if(VarValues.size() != m_factors.size())
+		{
+			std::cout << "[WARNING] : TOO MANY VALUES SUPPLIED FOR THIS FUNCTION, UNDEFINED BEHAVIOUR MAY OCCUR" << std::endl;
+		}
 
 		for(int i = 0; i < VarValues.size(); i++)
 		{
@@ -283,11 +316,47 @@ namespace SpinAPI
 		m_factors = factors;
 		m_op = {};
 		m_VarDepth = {};
+
+		std::vector<std::string> TempVar;
+		for(auto v = m_variables.cbegin(); v != m_variables.cend(); v++)
+		{
+			if((*v) == "")
+			{
+				continue;
+			}
+
+			if(TempVar.size() == 0)
+			{
+				TempVar.push_back((*v));
+				continue;
+			}
+
+			if(std::find(TempVar.begin(), TempVar.end(), (*v)) == TempVar.end())
+			{
+				TempVar.push_back((*v));
+			}
+			else if(std::find(m_duplicates.begin(), m_duplicates.end(), (*v)) == m_duplicates.end())
+			{
+				m_duplicates.push_back((*v));
+			}
+		}
+
 	}
 
 	std::vector<std::string> Function::GetVariable()
 	{
-		return m_variables;
+		std::vector<std::string> variables;
+		std::unordered_set<std::string> TempSet;
+
+		TempSet.insert(m_variables.begin(), m_variables.end());
+		for(auto var : TempSet)
+		{
+			variables.push_back(var);
+		}
+
+		std::reverse(variables.begin(), variables.end());
+
+		return variables;
 	}
 
 	std::string Function::GetName()
@@ -410,13 +479,13 @@ namespace SpinAPI
 				//		Initial = false;
 				//	}
 				//}
-				if(VarDepth[VarNum-1] == VarDepth[VarNum-2] - 1)
-				{
-					VarDepth.pop_back();
-					variables.pop_back();
-					factors.pop_back();
-					VarNum = VarNum-1;
-				}
+				//if(VarDepth[VarNum-1] == VarDepth[VarNum-2] - 1)
+				//{
+				//	VarDepth.pop_back();
+				//	variables.pop_back();
+				//	factors.pop_back();
+				//	VarNum = VarNum-1;
+				//}
 
 				if((*it) == '+')
 				{
