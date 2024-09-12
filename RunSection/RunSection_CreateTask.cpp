@@ -225,6 +225,12 @@ namespace RunSection
 		{
 			task = std::make_shared<TaskMultiRadicalPairSSTimeEvo>(_obj, *this);
 		}
+		//NEW (ADDED by Benji Tigg)
+		else if(_tasktype.compare("multiradicalpair-yields"))
+		{
+			//task = std::make_shared<TaskMutliRadicalPairSSYield>(_obj, *this);
+			//Task doesn't exist yet
+		}
 
 		// NOTE: To add a new task class, just add another "else if" here...
 		// The string used in the "compare" method is the "type" to be specified in the MolSpin input file

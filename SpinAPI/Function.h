@@ -46,15 +46,16 @@ namespace SpinAPI
 		private:
 			double EvaluateFuncValue(std::vector<void*>);
     	public:
-    		arma::cx_double operator()(void* value);
-			arma::cx_double operator()(std::vector<void*> value);
-    		Function(FuncPtr, ReturnType, std::string, std::string var = "x", double factor = 1.0);
-			Function(FuncPtr, ReturnType, std::string, std::vector<std::string> vars, std::vector<double> factors);
-    		std::vector<std::string> GetVariable();
+    		arma::cx_double operator()(void* value); //function evaluation for one variable
+			arma::cx_double operator()(std::vector<void*> value); //multiple variables
+    		Function(FuncPtr, ReturnType, std::string, std::string var = "x", double factor = 1.0); //constructor for one variable
+			Function(FuncPtr, ReturnType, std::string, std::vector<std::string> vars, std::vector<double> factors); //multiple variables
+    		
+			std::vector<std::string> GetVariable();
     		std::string GetName();
 
-			void SetOp(std::vector<InternalOperations> op) { m_op = op;}
-			void SetVarDepth(std::vector<int> vd) {m_VarDepth = vd; }
+			void SetOp(std::vector<InternalOperations> op) { m_op = op;} //set operations list 
+			void SetVarDepth(std::vector<int> vd) {m_VarDepth = vd; } //set bracket depth
     		//using FunctionPtr = std::shared_ptr<Function>;
     	};
 

@@ -67,16 +67,16 @@ namespace SpinAPI
 		for(int i = 0; i < m_variables.size(); i++)
 		{
 			if(m_variables[i] == "")
-				VarValues.push_back(1.0);
+				VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
 			else
-				VarValues.push_back(0.0);
+ 				VarValues.push_back(0.0);
 		}
 		int index = 0;
 		for(auto v = values.begin(); v != values.end(); v++)
 		{
 			if(VarValues[index] == 0.0)
 			{
-				VarValues[index] = *(double*)(*v);
+				VarValues[index] = *(double*)(*v); //gets the variable value
 			}
 			else
 			{
@@ -96,7 +96,7 @@ namespace SpinAPI
 			while(it < m_variables.end())
 			{
 				it = std::find(it, m_variables.end(), (*v));
-				if(it ==\ m_variables.end())
+				if(it == m_variables.end())
 				{
 					break;
 				}
@@ -108,7 +108,7 @@ namespace SpinAPI
 			{
 				VarValues.insert(VarValues.begin() + i, VarValues[InitialIndex]);
 			}
-		}
+		} //sorts out all the stuff with duplicates making sure all the right values are duplicated, it does this by looking for all copies of a known duplicated variable in a vector
 		
 
 		if(VarValues.size() != m_factors.size())
@@ -182,12 +182,14 @@ namespace SpinAPI
 					CarriedForward = temp;
 				}
 			}
-			
 		}
+
+		//converts the equation back into a string (seems slightly counter intutive as the equation started off as a string )
 
 		//std::cout << func << std::endl; //for debug purposes
 		
 		//using reverse polish notation 
+		//puts the equation into postfix form
 		std::stack<char> st;
 		std::string Postfix;
 
@@ -241,7 +243,7 @@ namespace SpinAPI
 
 		//std::cout << Postfix << std::endl;
 
-		//evaluate using the same method
+		//evaluate using the same method using rpn
 		std::stack<double> ValueStack;
 		for(int i = 0; i < Postfix.length(); i++)
 		{
