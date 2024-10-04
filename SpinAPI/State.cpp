@@ -374,10 +374,6 @@ namespace SpinAPI
 				function = false;
 				Func = FunctionParser(functionName, variable);
 
-				//code testing
-				double x1 = 0.5, x2 = 0.2, x3 = 0.3, x4 = 1;
-
-				Func->operator()({(void*)&x1, (void*)&x2, (void*)&x3, (void*)&x4});
 				buffer = functionName;
 			}
 			else if((*i) == '*')

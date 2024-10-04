@@ -21,6 +21,18 @@ namespace RunSection
 		this->properties->Get("first", this->first);
 		this->properties->Get("last", this->last);
 		this->properties->Get("period", this->period);
+		
+		std::string loop;
+		this->properties->Get("loop", loop);
+		
+		if(loop.compare("true") == 0)
+		{
+			this->m_loop = true;
+		}
+		else
+		{
+			this->m_loop = false;
+		}
 	}
 
 	Action::~Action()
@@ -94,9 +106,43 @@ namespace RunSection
 		if (!this->isValid)
 			return;
 
+		///bool TopLevel = true;
+		///if(m_LoopLevel == -1 || m_steps == -1)
+		///{
+		///	TopLevel = true;
+		///}
+
 		// Only use the action if we are at a step between "first" and "last", and take steps with the given periodicity
-		if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first) % this->period) != 0)
-			return;
+		if(!m_loop)
+		{
+			if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first - 1) % this->period) != 0)
+				return;
+
+			std::cout << "updating" << std::endl;
+		}
+
+		if(m_loop)
+		{
+			if(_currentStep == this->last + 1 && this->last != 0)
+			{
+				this->Reset();
+				std::cout << "resetting" << std::endl;
+				int gap = this->last - this->first;
+				this->first = _currentStep -1 ;
+				this->last = this->first + gap;
+				return;
+			}
+
+			if(((_currentStep - this->first) % this->period) != 0)
+			{
+				return;
+			}
+
+			if(_currentStep < this->first)
+			{
+				return;
+			}
+		}
 
 		// Take a step with the action, and notify the user if it failed
 		if (!this->DoStep())

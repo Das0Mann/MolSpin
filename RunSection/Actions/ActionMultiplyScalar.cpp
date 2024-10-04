@@ -66,5 +66,10 @@ namespace RunSection
 
 		return true;
 	}
+
+	bool ActionMultiplyScalar::Reset()
+	{
+		this->actionScalar->Reset();
+	}
 	// -----------------------------------------------------
 }

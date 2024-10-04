@@ -29,6 +29,7 @@ namespace RunSection
 		// Overwritten protected methods
 		bool DoStep() override;
 		bool DoValidate() override;
+		bool Reset() override;
 
 	public:
 		// Constructors / Destructors

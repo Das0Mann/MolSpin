@@ -22,6 +22,7 @@
 #include "ActionAddVector.h"
 #include "ActionAddScalar.h"
 #include "ActionMultiplyScalar.h"
+#include "ActionFibonacciSphere.h"
 
 //object classes
 #include "State.h"
@@ -192,6 +193,10 @@ namespace RunSection
 			if (type.compare("rotatevector") == 0)
 			{
 				action = std::make_shared<ActionRotateVector>(_obj, actionScalars, actionVectors);
+			}
+			else if(type.compare("fibonaccisphere") == 0)
+			{
+				//action = std::make_shared<ActionFibonacciSphere>(_obj, actionScalars, actionVectors);
 			}
 			else if (type.compare("scalevector") == 0)
 			{

@@ -101,5 +101,10 @@ namespace RunSection
 
 		return false;
 	}
+
+	bool ActionAddVector::Reset()
+	{
+		this->actionVector->Reset();
+	}
 	// -----------------------------------------------------
 }
