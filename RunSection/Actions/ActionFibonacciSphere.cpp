@@ -97,6 +97,16 @@ namespace RunSection
 			return false;
 		}
 
+        int NumPoints = 0;
+        if(!this->Properties()->Get("points", NumPoints))
+        {
+            std::cout << "ERROR: No Number of points specified for the FibonacciSphere action \"" << this->Name() << "\"!" << std::endl;
+			return false;
+        }
+
+        m_Num = NumPoints;
+        CalculatePoints(m_Num);
+
         // Attemp to set the ActionVector
         if (!this->Vector(str, &(this->actionVector)))
 		{

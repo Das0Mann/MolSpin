@@ -196,7 +196,7 @@ namespace RunSection
 			}
 			else if(type.compare("fibonaccisphere") == 0)
 			{
-				//action = std::make_shared<ActionFibonacciSphere>(_obj, actionScalars, actionVectors);
+				action = std::make_shared<ActionFibonacciSphere>(_obj, actionScalars, actionVectors);
 			}
 			else if (type.compare("scalevector") == 0)
 			{
