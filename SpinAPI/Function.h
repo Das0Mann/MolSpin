@@ -11,6 +11,7 @@
 #define MOD_SpinAPI_Function
 
 #include<string>
+#include<iostream>
 
 namespace SpinAPI
 {
@@ -42,6 +43,7 @@ namespace SpinAPI
     		std::vector<double> m_factors;
 			std::vector<InternalOperations> m_op;
 			std::vector<int> m_VarDepth;
+			std::string m_FunctionString;
 		
 		private:
 			double EvaluateFuncValue(std::vector<void*>);
@@ -56,6 +58,17 @@ namespace SpinAPI
 
 			void SetOp(std::vector<InternalOperations> op) { m_op = op;} //set operations list 
 			void SetVarDepth(std::vector<int> vd) {m_VarDepth = vd; } //set bracket depth
+			
+			void SetFunctionString(std::string FuncString)
+			{
+				m_FunctionString = FuncString;
+				std::cout << FuncString << std::endl;
+			}
+			std::string GetFunctionString()
+			{
+				std::cout << m_FunctionString << std::endl;
+				return m_FunctionString;
+			}
     		//using FunctionPtr = std::shared_ptr<Function>;
     	};
 

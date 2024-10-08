@@ -25,9 +25,20 @@ namespace SpinAPI
 	arma::cx_double Function::operator()(void* value)
 	{
 		arma::cx_double ReturnValue;
+
+		if(m_duplicates.size() != 0) //if there's duplicates but only one variable the overload gets called
+		{
+			std::vector<void*> values;
+			for(int i = 0; i < m_duplicates.size(); i++)
+			{
+				values.push_back(value);
+			}
+			return this->operator()(values);
+		}
+
 		if(m_funcType == ReturnType::d)
 		{
-			double val = m_factors[0] * *(double*)value; 
+			double val = m_factors[0] * *(double*)value; //
 			double _val = *(double*)m_func((void*)(double*)&val);
 			ReturnValue = arma::cx_double(_val, 0);
 		}
@@ -63,13 +74,18 @@ namespace SpinAPI
 	double Function::EvaluateFuncValue(std::vector<void*> values)
 	{
 		std::vector<double> VarValues;
-
+		std::string AllocatedVariables = "";
 		for(int i = 0; i < m_variables.size(); i++)
 		{
+			if(AllocatedVariables.find(m_variables[i]) != AllocatedVariables.npos)
+				continue;
+			
 			if(m_variables[i] == "")
 				VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
 			else
  				VarValues.push_back(0.0);
+			
+			AllocatedVariables = AllocatedVariables + m_variables[i];
 		}
 		int index = 0;
 		for(auto v = values.begin(); v != values.end(); v++)
@@ -666,6 +682,7 @@ namespace SpinAPI
 		
 		_func->SetOp(operations);
 		_func->SetVarDepth(VarDepth);
+		_func->SetFunctionString(FunctionName + "(" + var + ")");
 
 		return _func;
 	}

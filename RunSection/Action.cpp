@@ -118,7 +118,7 @@ namespace RunSection
 			if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first - 1) % this->period) != 0)
 				return;
 
-			std::cout << "updating" << std::endl;
+			//std::cout << "updating" << std::endl;
 		}
 
 		if(m_loop)
@@ -126,7 +126,7 @@ namespace RunSection
 			if(_currentStep == this->last + 1 && this->last != 0)
 			{
 				this->Reset();
-				std::cout << "resetting" << std::endl;
+				//std::cout << "resetting" << std::endl;
 				int gap = this->last - this->first;
 				this->first = _currentStep -1 ;
 				this->last = this->first + gap;

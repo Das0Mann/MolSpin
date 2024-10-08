@@ -270,11 +270,15 @@ namespace SpinAPI
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
-				std::string ConcatinatedString = Func->GetVariable()[0];
-				double var;
-				if(properties->Get(Func->GetVariable()[0], var))
+				std::vector<std::string> vars = Func->GetVariable();
+				int VarNum = 0;
+				for(auto x : vars)
 				{
-					Variables[ConcatinatedString] = var;
+					double var;
+					if(properties->Get(x, var))
+					{
+						Variables[x] = var;
+					}
 				}
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
@@ -309,11 +313,15 @@ namespace SpinAPI
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
-				std::string ConcatinatedString = Func->GetVariable()[0];
-				double var;
-				if(properties->Get(Func->GetVariable()[0], var))
+				std::vector<std::string> vars = Func->GetVariable();
+				int VarNum = 0;
+				for(auto x : vars)
 				{
-					Variables[ConcatinatedString] = var;
+					double var;
+					if(properties->Get(x, var))
+					{
+						Variables[x] = var;
+					}
 				}
 				//throw a error if var not found 
 				Functions.push_back(Func);
@@ -793,7 +801,20 @@ namespace SpinAPI
 						FuncNum = FuncNum + i->size();
 						continue;
 					}
-					factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()[0]]);
+
+					if(Variables.size() == 1)
+					{
+						factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()[0]]);
+					}
+					else
+					{
+						std::vector<void*> v;
+						for(int i = 0; i < Variables.size(); i++)
+						{
+							v.push_back((void*)(double*)&Variables[f->GetVariable()[i]]);
+						}
+						factor = this->InitialFactors[FuncNum] * f->operator()(v);
+					}
 					a->second = factor; //can't use a->second as this would have a culmative effect over time
 					FuncNum = FuncNum + i->size();
 				}

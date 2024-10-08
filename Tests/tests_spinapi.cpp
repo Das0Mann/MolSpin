@@ -14,6 +14,7 @@
 #include "Transition.h"
 #include "SpinSystem.h"
 #include "SpinSpace.h"
+#include "Function.h"
 //////////////////////////////////////////////////////////////////////////////
 // Tests whether the spin quantum number is stored correctly.
 // DEPENDENCY NOTE: ObjectParser
@@ -294,7 +295,7 @@ bool test_spinapi_state()
 	std::string spin4_name = "spin4";
 	std::string spin4_contents = "spin=1/2;";
 	auto spin4 = std::make_shared<SpinAPI::Spin>(spin4_name, spin4_contents);
-
+    
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
@@ -1418,6 +1419,34 @@ bool test_spinapi_spinspace_spinmanagement2()
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
+bool test_function_finding()
+{
+	// Setup objects for the test
+	std::string sp1 = "spin1";
+	std::string sp1Contents = "spin=1/2;";
+	auto spin1 = std::make_shared<SpinAPI::Spin>(sp1, sp1Contents);
+
+	SpinAPI::SpinSystem spinsys("System");
+	spinsys.Add(spin1);
+
+	std::string state_name = "TestState";
+	std::string state_contents = "x=3.14159265;spins(spin1)=cos(0.5x)|1/2>;";
+	SpinAPI::State state(state_name, state_contents);
+
+	bool isCorrect = true;
+	
+	// Perform the test
+	isCorrect &= state.ParseFromSystem(spinsys);
+	auto func = state.GetFunctions()[0];
+	auto str = func->GetFunctionString();
+
+	if(str.compare("cos(0.5x)") == 0)
+	{
+		isCorrect &= true;
+	}
+
+	return isCorrect;
+}
 // Add all the SpinAPI test cases
 void AddSpinAPITests(std::vector<test_case> &_cases)
 {
@@ -1454,5 +1483,6 @@ void AddSpinAPITests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("SpinAPI::SpinSpace basis reordering methods (sparse matrix)", test_spinapi_reorderbasis_sparsematrix));
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Add, Contains, Remove)", test_spinapi_spinspace_spinmanagement1));
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Vector Add,Vector Contains, Clear)", test_spinapi_spinspace_spinmanagement2));
+	_cases.push_back(test_case("SpinAPI::StateFunctions validating function parsing", test_function_finding));
 }
 //////////////////////////////////////////////////////////////////////////////

@@ -87,6 +87,12 @@ namespace SpinAPI
 		// Public method for creating ActionTargets
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
 
+		//returns a vector of functions
+		std::vector<std::shared_ptr<Function>> GetFunctions()
+		{
+			return Functions;
+		}
+
 		//Applies all the functions to the factors
 		bool Update();
 	
