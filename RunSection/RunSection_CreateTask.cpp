@@ -35,8 +35,8 @@
 #include "TaskStaticSSNakajimaZwanzigTimeEvo.h"
 #include "TaskMultiStaticSSNakajimaZwanzigTimeEvo.h"
 
-#include "TaskStaticSSSpectra.h"
-#include "TaskStaticSSCIDNP.h"
+#include "TaskStaticSSSpectra.h" 
+#include "TaskStaticSSCIDNP.h" 
 
 #include "TaskStaticHSStochYields.h"
 #include "TaskStaticHSStochTimeEvo.h"
@@ -149,20 +149,22 @@ namespace RunSection
 		}
 
 		// NEW (ADDED by Luca Gerhards): Including spectroscopy task such as CIDNP
-		else if (_tasktype.compare("staticss-spectra") == 0 || _tasktype.compare("StaticSS-Spectra") == 0)
-		{
-			task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);
-		}
 		else if (_tasktype.compare("staticss-cidnp") == 0 || _tasktype.compare("StaticSS-CIDNP") == 0)
 		{
 			task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);
 		}
 
+		// NEW (Added by Irina Anisimova):Spectroscopy module
+		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0)
+		{
+			task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);
+		}
+
 		// NEW (Added by Luca Gerhards): Including spectroscopy multi-spin system task
-    	else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
-        {
-            task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
-        }
+    		else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
+        	{
+           	 task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
+        	}	
 
 		// NEW (Added by Gediminas Pazera and Luca Gerhards): Including SSE theory as CreateTask member.
 		else if (_tasktype.compare("statichs-stoch-yields") == 0 || _tasktype.compare("StaticHS-Stoch-Yields") == 0)

@@ -98,6 +98,18 @@ namespace SpinAPI
 		void ClearInteractions();								   // Removes all interactions from the spin space
 
 		// ------------------------------------------------
+		// Pulse management (SpinSpace_management.cpp)
+		// ------------------------------------------------
+		// Adding Pulses to the space
+		bool Add(const pulse_ptr &);						   // Add the Pulses to the space
+		bool Add(const std::vector<pulse_ptr> &);			   // Add all Pulses in the list to space (Pulses will not be duplicated)
+		bool Remove(const pulse_ptr &);					   // Removes the Pulses from the space
+		bool Remove(const std::vector<pulse_ptr> &);		   // Removes all Pulses in the list from the space
+		bool Contains(const pulse_ptr &) const;			   // Checks single Pulses
+		bool Contains(const std::vector<pulse_ptr> &) const; // Checks whether all Pulses in range are contained in the space
+		void ClearPulses();								   // Removes all Pulses from the spin space
+		
+		// ---------------------------------------------
 		// Transition management (SpinSpace_management.cpp)
 		// ------------------------------------------------
 		// Adding transitions to the space
@@ -244,7 +256,8 @@ namespace SpinAPI
 		// ------------------------------------------------
 		// Pulse operators (SpinSpace_pulses.cpp)
 		// ------------------------------------------------
-		bool PulseOperator(const pulse_ptr &_pulse, arma::cx_mat &_out) const;
+		bool PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_out) const;
+		bool PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_left, arma::sp_cx_mat &_right) const;
 		bool CreateRotAngle(double _angle_deg, double &result) const;
 
 		// ------------------------------------------------

@@ -78,7 +78,7 @@ namespace SpinAPI
 		Unspecified,
 		InstantPulse, // Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
 		LongPulse,
-		LongPulseZeeman,
+		LongPulseStaticField,
 		ShapedPulse,
 	};
 

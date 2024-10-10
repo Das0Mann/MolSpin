@@ -20,7 +20,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the pulse parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Pulse::Pulse(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), type(PulseType::Unspecified), group(), timestep(1.0), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}), frequency(0.001), prefactor(1.0), addCommonPrefactor(true), prefactor_list()
+	Pulse::Pulse(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), type(PulseType::Unspecified), group(), timestep(0.1), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}), frequency(0.0), addCommonPrefactorList(), ignoreTensorsList(), prefactorList()
 	{
 		// Filling required parameter
 		std::string str = "";
@@ -31,8 +31,8 @@ namespace SpinAPI
 			this->type = PulseType::InstantPulse;
 		else if (str.compare("longpulse") == 0 || str.compare("LongPulse") == 0)
 			this->type = PulseType::LongPulse;
-		else if (str.compare("longpulsezeeman") == 0 || str.compare("LongPulseZeeman") == 0)
-			this->type = PulseType::LongPulseZeeman;
+		else if (str.compare("longpulsestaticfield") == 0 || str.compare("LongPulseStaticField") == 0)
+			this->type = PulseType::LongPulseStaticField;
 
 		if (this->type == PulseType::InstantPulse)
 		{
@@ -55,7 +55,15 @@ namespace SpinAPI
 			// Get pulse time
 			if (!this->properties->Get("pulsetime", pulsetime))
 			{
-				std::cout << "Warning: Failed to obtain input for pulsetime." << std::endl;
+				std::
+						cout
+					<< "Warning: Failed to obtain input for pulsetime." << std::endl;
+			}
+
+			// Get Pulse timestep
+			if (!this->properties->Get("timestep", timestep))
+			{
+				std::cout << "Warning: Failed to obtain input for pulse timestep." << std::endl;
 			}
 
 			// Get Pulse field
@@ -73,17 +81,34 @@ namespace SpinAPI
 			}
 
 			// Get prefactor list
-			if (!this->properties->GetList("prefactor_list", prefactor_list))
+			if (!this->properties->GetList("prefactorlist", prefactorList))
 			{
-				std::cout << "Warning: Failed to obtain input for the prefactor list." << std::endl;
+				std::cout << "Warning: Failed to obtain input for the prefactorList." << std::endl;
+			}
+
+			// Get prefactor properties
+			if (!this->properties->GetList("commonprefactorlist", addCommonPrefactorList))
+			{
+				std::cout << "Warning: Failed to obtain input for the commonPrefactorList." << std::endl;
+			}
+
+			if (!this->properties->GetList("ignoretensorslist", ignoreTensorsList))
+			{
+				std::cout << "Warning: Failed to obtain input for the ignoreTensorList." << std::endl;
 			}
 		}
-		else if (this->type == PulseType::LongPulseZeeman)
+		else if (this->type == PulseType::LongPulseStaticField)
 		{
 			// Get pulse time
 			if (!this->properties->Get("pulsetime", pulsetime))
 			{
 				std::cout << "Warning: Failed to obtain input for pulsetime." << std::endl;
+			}
+
+			// Get Pulse timestep
+			if (!this->properties->Get("timestep", timestep))
+			{
+				std::cout << "Warning: Failed to obtain input for pulse timestep." << std::endl;
 			}
 
 			// Get Pulse field
@@ -94,9 +119,20 @@ namespace SpinAPI
 			}
 
 			// Get prefactor list
-			if (!this->properties->GetList("prefactor_list", prefactor_list))
+			if (!this->properties->GetList("prefactorlist", prefactorList))
 			{
-				std::cout << "Warning: Failed to obtain input for the prefactor list." << std::endl;
+				std::cout << "Warning: Failed to obtain input for the prefactorList." << std::endl;
+			}
+
+			// Get prefactor properties
+			if (!this->properties->GetList("commonprefactorlist", addCommonPrefactorList))
+			{
+				std::cout << "Warning: Failed to obtain input for the CommonPrefactorList." << std::endl;
+			}
+
+			if (!this->properties->GetList("ignoretensorslist", ignoreTensorsList))
+			{
+				std::cout << "Warning: Failed to obtain input for the ignoreTensorList." << std::endl;
 			}
 		}
 		else if (this->type == PulseType::ShapedPulse)
@@ -109,7 +145,7 @@ namespace SpinAPI
 		}
 	}
 
-	Pulse::Pulse(const Pulse &_pulse) : properties(_pulse.properties), type(_pulse.type), group(_pulse.group), timestep(_pulse.timestep), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), field(_pulse.field), frequency(_pulse.frequency), prefactor(_pulse.prefactor), addCommonPrefactor(_pulse.addCommonPrefactor), prefactor_list(_pulse.prefactor_list)
+	Pulse::Pulse(const Pulse &_pulse) : properties(_pulse.properties), type(_pulse.type), group(_pulse.group), timestep(_pulse.timestep), rotationaxis(_pulse.rotationaxis), angle(_pulse.angle), pulsetime(_pulse.pulsetime), field(_pulse.field), frequency(_pulse.frequency), addCommonPrefactorList(_pulse.addCommonPrefactorList), ignoreTensorsList(_pulse.ignoreTensorsList), prefactorList(_pulse.prefactorList)
 	{
 	}
 
@@ -130,9 +166,10 @@ namespace SpinAPI
 		this->pulsetime = _pulse.pulsetime;
 		this->field = _pulse.field;
 		this->frequency = _pulse.frequency;
-		this->prefactor = _pulse.prefactor;
-		this->addCommonPrefactor = _pulse.addCommonPrefactor;
-		this->prefactor_list = _pulse.prefactor_list;
+		this->addCommonPrefactorList = _pulse.addCommonPrefactorList;
+		this->ignoreTensorsList = _pulse.ignoreTensorsList;
+		this->prefactorList = _pulse.prefactorList;
+
 		return (*this);
 	}
 	// -----------------------------------------------------
@@ -151,7 +188,7 @@ namespace SpinAPI
 			return true;
 		else if (this->type == PulseType::LongPulse && !this->group.empty())
 			return true;
-		else if (this->type == PulseType::LongPulseZeeman && !this->group.empty())
+		else if (this->type == PulseType::LongPulseStaticField && !this->group.empty())
 			return true;
 		else if (this->type == PulseType::ShapedPulse && !this->group.empty())
 			return true;
@@ -197,15 +234,9 @@ namespace SpinAPI
 		return _pulse.Type();
 	}
 
-	// Returns the prefactor value
-	const double Pulse::Prefactor() const
+	const arma::vec Pulse::PrefactorList() const
 	{
-		return this->prefactor;
-	}
-
-	const arma::vec Pulse::Prefactor_list() const
-	{
-		return this->prefactor_list;
+		return this->prefactorList;
 	}
 
 	// Returns the timestep of the pulse
@@ -306,13 +337,12 @@ namespace SpinAPI
 				vectors.push_back(RunSection::NamedActionVector(_system + "." + this->Name() + ".rotationaxis", rotationaxisVector));
 			}
 
-			if (this->type == PulseType::LongPulse || this->type == PulseType::LongPulseZeeman)
+			if (this->type == PulseType::LongPulse || this->type == PulseType::LongPulseStaticField)
 			{
 				// The field vector
 				RunSection::ActionVector fieldVector = RunSection::ActionVector(this->field, &CheckActionVectorPulseField);
 				vectors.push_back(RunSection::NamedActionVector(_system + "." + this->Name() + ".field", fieldVector));
 			}
-
 		}
 
 		return vectors;
@@ -325,7 +355,7 @@ namespace SpinAPI
 
 		if (this->IsValid())
 		{
-			
+
 			if (this->type == PulseType::InstantPulse)
 			{
 				// We should always have a scalar for the prefactor
@@ -338,12 +368,12 @@ namespace SpinAPI
 				// We should always have a scalar for the prefactor
 				RunSection::ActionScalar pulsetimeScalar = RunSection::ActionScalar(this->pulsetime, &CheckActionScalarPulseScalar);
 				scalars.push_back(RunSection::NamedActionScalar(_system + "." + this->Name() + ".pulsetime", pulsetimeScalar));
-				
+
 				RunSection::ActionScalar frequencyScalar = RunSection::ActionScalar(this->frequency, &CheckActionScalarPulseScalar);
 				scalars.push_back(RunSection::NamedActionScalar(_system + "." + this->Name() + ".frequency", frequencyScalar));
 			}
 
-			if (this->type == PulseType::LongPulseZeeman)
+			if (this->type == PulseType::LongPulseStaticField)
 			{
 				// We should always have a scalar for the prefactor
 				RunSection::ActionScalar pulsetimeScalar = RunSection::ActionScalar(this->pulsetime, &CheckActionScalarPulseScalar);

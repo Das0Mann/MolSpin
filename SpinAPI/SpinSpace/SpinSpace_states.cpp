@@ -380,6 +380,8 @@ namespace SpinAPI
 		result /= arma::trace(result);
 		_mat = result;
 
+		_space.UseSuperoperatorSpace(true);
+
 		return true;
 	}
 }

@@ -172,7 +172,7 @@ namespace SpinAPI
 					}
 					else
 					{
-						// TODO: Be carfeul with the sign here!!! Usually you would use a minus sign to at the whol interaction.
+						// TODO: Be careful with the sign here!!! Usually you would use a minus sign to at the whole interaction.
 						//  If there is no interaction tensor or if the tensor is isotropic, just take the dot product
 						tmp += 2.0 * (S1x * S2x + S1y * S2y + S1z * S2z);
 						arma::cx_mat half = 0.5 * arma::eye<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
@@ -237,7 +237,7 @@ namespace SpinAPI
 
 		// Multiply by common prefactor (bohr magneton / hbar)
 		if (_interaction->AddCommonPrefactor())
-			tmp *= 8.794e+1;
+			tmp *= 8.79410005e+1;
 
 		// Check whether we want a superspace or Hilbert space result
 		if (this->useSuperspace)
@@ -493,7 +493,7 @@ namespace SpinAPI
 
 		// Multiply by common prefactor. TODO: Consider which system of units to use
 		if (_interaction->AddCommonPrefactor())
-			tmp *= 8.794e+1;
+			tmp *= 8.79410005e+1;
 
 		// Check whether we want a superspace or Hilbert space result
 		if (this->useSuperspace)

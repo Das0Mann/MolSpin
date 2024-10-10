@@ -501,7 +501,7 @@ namespace RunSection
 												// Multiply by common prefactor (bohr magneton / hbar)
 												if ((*interaction)->AddCommonPrefactor())
 												{
-													A *= (2.0023 * 8.794e+1);
+													A *= (2.0023 * 8.79410005e+1);
 													A *= (*interaction)->Prefactor();
 												}
 
@@ -885,7 +885,7 @@ namespace RunSection
 													// Multiply by common prefactor (bohr magneton / hbar)
 													if ((*interaction)->AddCommonPrefactor())
 													{
-														A *= (2.0023 * 8.794e+1);
+														A *= (2.0023 * 8.79410005e+1);
 														A *= (*interaction)->Prefactor();
 													}
 
@@ -1282,7 +1282,7 @@ namespace RunSection
 											// Multiply by common prefactor (bohr magneton / hbar)
 											if ((*interaction)->AddCommonPrefactor())
 											{
-												A *= (2.0023 * 8.794e+1);
+												A *= (2.0023 * 8.79410005e+1);
 												A *= (*interaction)->Prefactor();
 											}
 
@@ -1775,7 +1775,7 @@ namespace RunSection
 												// Multiply by common prefactor (bohr magneton / hbar)
 												if ((*interaction)->AddCommonPrefactor())
 												{
-													A *= (2.0023 * 8.794e+1);
+													A *= (2.0023 * 8.79410005e+1);
 													A *= (*interaction)->Prefactor();
 												}
 

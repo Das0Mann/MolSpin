@@ -289,7 +289,7 @@ namespace RunSection
                     transition_hamiltonian *= (*interaction)->Prefactor();
                     // Multiply by common prefactor (bohr magneton / hbar)
                     if ((*interaction)->AddCommonPrefactor())
-                        transition_hamiltonian *= 8.794e+1;
+                        transition_hamiltonian *= 8.79410005e+1;
                 }
             }
             arma::vec resonance_effects = GetResonanceEffects(eigenvectors, rho0, transition_hamiltonian);

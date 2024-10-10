@@ -115,7 +115,6 @@ namespace MSDParser
 		}
 		// vector<double>
 		_out = tmp;
-		// std::cout << _out << std::endl;
 		return true;
 	}
 
@@ -342,6 +341,41 @@ namespace MSDParser
 		return true;
 	}
 
+	bool ObjectParser::GetList(const std::string &_str, std::vector<bool> &_out, const char &_delimiter) const
+	{
+		// Get a list of strings from the keyword
+		std::vector<std::string> strs;
+		if (!this->GetList(_str, strs, _delimiter))
+			return false;
+
+		std::vector<bool> tmp;
+		bool tmpBool;
+		tmp.reserve(strs.size());
+
+		try
+		{
+			// Attemp to parse the values
+			for (auto i = strs.cbegin(); i != strs.cend(); i++)
+			{					
+				if ((*i).compare("true") == 0 || (*i).compare("yes") == 0 || (*i).compare("1") == 0)
+					tmpBool = true;
+				else if ((*i).compare("false") == 0 || (*i).compare("no") == 0 || (*i).compare("0") == 0)
+					tmpBool = false;
+				else
+					return false;
+
+				tmp.push_back(tmpBool);
+			}
+		}
+		catch (const std::exception &)
+		{
+			return false;
+		}
+
+		_out = tmp;
+		return true;
+	}
+
 	// -----------------------------------------------------
 	// ObjectParser public Getmatrix method overloads
 	// - Similar to Get, but allows multiple values to be specifed
@@ -548,10 +582,10 @@ namespace MSDParser
 	// Specialized Get method to get a pulse sequence
 	// -----------------------------------------------------
 	// Attempt to find a pulse sequence
-	bool ObjectParser::GetPulseSequence(const std::string &_str, std::vector<std::tuple<std::string, std::string, double, double>> &_out) const
-	{
+    bool ObjectParser::GetPulseSequence(const std::string &_str, std::vector<std::tuple<std::string, double>> &_out) const
+    {
 		// Step 1: Output the initial message indicating the start of the reading process.
-		std::cout << "Starting with reading: " << _str << std::endl;
+		// std::cout << "Starting with reading: " << _str << std::endl;
 
 		// Step 2: Initialize an empty vector to hold the split strings.
 		std::vector<std::string> strs;
@@ -591,17 +625,15 @@ namespace MSDParser
 			// Check if the number of elements in each row is consistent
 			if (numElements == 0)
 				numElements = count;
-			else if (count != numElements)
+			else if (count < numElements)
 				return false;
 		}
 
-		// Step 8: Output the number of rows and columns.
-		std::cout << "Number of Pulses: " << strs.size() << std::endl;
-
-		// Step 9: Create two tuples/pair that store the two strings (pulse and direction) and the free evolution time frame (t1 and t2)
+		// Step 8: Create tuple/pair that store the pulse, and the free evolution time t_evo
 		for (const std::string &str : strs)
 		{
 			std::string modified_str = str;
+
 			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), '['), modified_str.end());
 			modified_str.erase(std::remove(modified_str.begin(), modified_str.end(), ']'), modified_str.end());
 			trim(modified_str);
@@ -614,17 +646,16 @@ namespace MSDParser
 				tokens.push_back(token);
 			}
 
-			if (tokens.size() != 4)
+			if (tokens.size() < 2)
 			{
-				std::cerr << "Invalid number of elements in sequence. Expected 4, got " << tokens.size() << std::endl;
+				std::cerr << "Invalid number of elements in sequence. Expected 2, got " << tokens.size() << std::endl;
 				return false;
 			}
 
-			double t1, t2;
+			double t_evo;
 			try
 			{
-				t1 = std::stod(tokens[2]);
-				t2 = std::stod(tokens[3]);
+				t_evo = std::stod(tokens[1]);
 			}
 			catch (const std::exception &e)
 			{
@@ -632,11 +663,11 @@ namespace MSDParser
 				return false;
 			}
 
-			_out.emplace_back(tokens[0], tokens[1], t1, t2);
+			_out.emplace_back(tokens[0], t_evo);
 		}
-
-		std::cout << "Number of Pulses: " << _out.size() << std::endl;
+		
 		return true;
+
 	}
 	// -----------------------------------------------------
 	// Specialized Get method to get a spin quantum number
@@ -712,3 +743,4 @@ namespace MSDParser
 	}
 	// -----------------------------------------------------
 }
+

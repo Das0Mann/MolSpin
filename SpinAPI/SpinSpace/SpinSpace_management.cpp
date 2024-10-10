@@ -52,7 +52,7 @@ namespace SpinAPI
 	bool SpinSpace::Add(const std::shared_ptr<SpinSystem> &_system)
 	{
 		if (_system != nullptr)
-			return (this->Add(_system->Spins()) & this->Add(_system->Interactions()) & this->Add(_system->Transitions()));
+			return (this->Add(_system->Spins()) & this->Add(_system->Interactions()) & this->Add(_system->Transitions()) & this->Add(_system->Pulses()));
 
 		return false;
 	}
@@ -60,7 +60,7 @@ namespace SpinAPI
 	// Adds all the spins and interactions from the SpinSystem to the spin space.
 	bool SpinSpace::Add(const SpinSystem &_system)
 	{
-		return (this->Add(_system.Spins()) & this->Add(_system.Interactions()) & this->Add(_system.Transitions()));
+		return (this->Add(_system.Spins()) & this->Add(_system.Interactions()) & this->Add(_system.Transitions()) & this->Add(_system.Pulses()));
 	}
 
 	// Add missing spins (if any) to make the space comeplete with respect to the state
@@ -267,6 +267,92 @@ namespace SpinAPI
 			found_all &= this->Contains(*i);
 		return found_all;
 	}
+
+	// -----------------------------------------------------
+	// Pulse Management
+	// -----------------------------------------------------
+	// Add pulse if not already contained by the SpinSpace, and returns true if is was added
+	bool SpinSpace::Add(const pulse_ptr &_pulse)
+	{
+		if (_pulse == nullptr)
+			return false;
+
+		if (std::find(this->pulses.cbegin(), this->pulses.cend(), _pulse) != this->pulses.cend())
+			return false;
+
+		this->pulses.push_back(_pulse);
+		return true;
+	}
+
+	// Adds all the pulses from a given list, without allowing any duplicates. Returns true if any elements were added
+	// NOTE: This method may change the order of the pulses in the vector if and only if new elements were inserted. TODO: Fix this before it causes confusion.
+	bool SpinSpace::Add(const std::vector<pulse_ptr> &_list)
+	{
+		// Merge the two lists without keeping any duplicates
+		std::vector<pulse_ptr> tmpvec;												 // Make a temporary list...
+		tmpvec.reserve(this->pulses.size() + _list.size());							 // ...and reserve memory to hold the following three inserts
+		tmpvec.insert(tmpvec.end(), _list.cbegin(), _list.cend());							 // Insert all new elements from the list
+		tmpvec.insert(tmpvec.end(), this->pulses.cbegin(), this->pulses.cend()); // Insert all previous elements
+		std::sort(tmpvec.begin(), tmpvec.end());											 // Sort the elements
+		auto newEnd = std::unique(tmpvec.begin(), tmpvec.end());							 // Remove duplicates (requires list to be sorted)
+		tmpvec.resize(std::distance(tmpvec.begin(), newEnd));								 // Shrink vector size to get rid of removed objects (std::unique cannot do that)
+
+		// Check if any pulses were added (if the new collection contains more elements than the old)
+		if (tmpvec.size() > this->pulses.size())
+		{
+			this->pulses = tmpvec;
+			return true;
+		}
+
+		return false;
+	}
+
+	// Remove a single pulse
+	bool SpinSpace::Remove(const pulse_ptr &_pulse)
+	{
+		auto i = std::find(this->pulses.cbegin(), this->pulses.cend(), _pulse);
+		if (i != this->pulses.cend())
+		{
+			this->pulses.erase(i);
+			return true;
+		}
+
+		return false;
+	}
+
+	// Remove a list of pulses
+	bool SpinSpace::Remove(const std::vector<pulse_ptr> &_list) // TODO: Implement more efficient version of the method
+	{
+		bool removed_any = false;
+		for (auto i = _list.cbegin(); i != _list.cend(); i++)
+			removed_any |= this->Remove(*i);
+		return removed_any;
+	}
+
+	// Removes all pulses
+	void SpinSpace::ClearPulses()
+	{
+		this->pulses.clear();
+	}
+
+	// Checks whether the pulse is included in the spin space
+	bool SpinSpace::Contains(const pulse_ptr &_pulse) const
+	{
+		if (std::find(this->pulses.cbegin(), this->pulses.cend(), _pulse) != this->pulses.cend())
+			return true;
+
+		return false;
+	}
+
+	// Checks whether every pulse in the list is contained in the spin space
+	bool SpinSpace::Contains(const std::vector<pulse_ptr> &_list) const // TODO: Implement more efficient version of the method
+	{
+		bool found_all = true;
+		for (auto i = _list.cbegin(); i != _list.cend(); i++)
+			found_all &= this->Contains(*i);
+		return found_all;
+	}
+
 	// -----------------------------------------------------
 	// Transition Management
 	// -----------------------------------------------------

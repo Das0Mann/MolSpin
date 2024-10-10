@@ -152,6 +152,10 @@ set(SOURCES_MODULE_RUNSECTION_TASKS
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSCIDNP.cpp
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskMultiStaticSSRedfieldTimeEvo.h
 	${PATH_SOURCE_RUNSECTION}/Tasks/TaskMultiStaticSSRedfieldTimeEvo.cpp
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSNakajimaZwanzig.h
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSNakajimaZwanzig.cpp
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSNakajimaZwanzigTimeEvo.h
+	${PATH_SOURCE_RUNSECTION}/Tasks/TaskStaticSSNakajimaZwanzigTimeEvo.cpp
 
 	# TODO: Add custom tasks here
 	#${PATH_SOURCE_RUNSECTION}/Tasks/Custom/TaskCheckPMP.h

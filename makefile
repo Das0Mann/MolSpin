@@ -65,7 +65,7 @@ DEP_TESTS =
 # --------------------------------------------------------------------------
 # General Compilation Options
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
-CC = g++ -std=c++14		# Compiler to use
+CC = g++ -std=c++17		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
 LFLAGS = -Wall -Ofast		# Linker Flags
 CFLAGS = -g -Wall -c -march=native -funroll-loops -fconcepts -Ofast # Compile flags to .o
@@ -103,7 +103,7 @@ test: $(OBJS_TESTS)
 	$(CC) $(LFLAGS) $(OBJS_TESTS) $(SEARCHDIR_TESTS) -o $(PATH_TESTS)/molspintest
 	$(PATH_TESTS)/molspintest
 	
-$(PATH_TESTS)/testmain.o: $(PATH_TESTS)/testmain.cpp $(PATH_TESTS)/tests_spinapi.cpp $(PATH_TESTS)/tests_msdparser.cpp $(PATH_TESTS)/tests_actions.cpp $(PATH_TESTS)/tests_TaskStaticHSSymmetricDecay.cpp $(PATH_TESTS)/tests_TaskStaticSS.cpp $(PATH_TESTS)/tests_TaskStaticRPOnlyHSSymDec.cpp $(PATH_TESTS)/assertfunctions.cpp
+$(PATH_TESTS)/testmain.o: $(PATH_TESTS)/testmain.cpp $(PATH_TESTS)/tests_spinapi.cpp $(PATH_TESTS)/tests_msdparser.cpp $(PATH_TESTS)/tests_actions.cpp $(PATH_TESTS)/tests_TaskStaticHSSymmetricDecay.cpp $(PATH_TESTS)/tests_TaskStaticSS.cpp $(PATH_TESTS)/tests_TaskStaticSSSpectra.cpp $(PATH_TESTS)/tests_TaskStaticRPOnlyHSSymDec.cpp $(PATH_TESTS)/assertfunctions.cpp
 	$(CC) $(CFLAGS) $(SEARCHDIR_TESTS) $(PATH_TESTS)/testmain.cpp -o $(PATH_TESTS)/testmain.o
 # --------------------------------------------------------------------------
 # Misc tasks

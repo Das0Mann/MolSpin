@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// Operator class (SpinAPI Module)
+// Operator class (SpinAPI Module)  developed by Luca Gerhards and Irina Anisimova.
 // ------------------
 // Special operators to be used in some task types.
 // 
@@ -27,14 +27,14 @@ namespace SpinAPI
 			PulseType type;                                         // Different Pulsetype options are available
             std::vector<spin_ptr> group;							// Spins that are affected by the pulse
 			double timestep;                                        // Timestep with which propagation should be done 
-            arma::vec rotationaxis;                                  // Direction around which a pulse should rotate
+            arma::vec rotationaxis;                                 // Direction around which a pulse should rotate
             double angle;                                           // Rotation around a certain direction with angler (deg)
             double pulsetime;                                       // Time of the applied pulse (ns)
-            arma::vec field;                                       // Magnetic field strength of pulse (T)
-			double frequency;                                        // Frequency of the applied field in HHz;
-			double prefactor;										// An optional additional prefactor that can be specified in input file (default = 1.0)
-			bool addCommonPrefactor;								// Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
-			std::vector<double> prefactor_list;							   // Spins that are affected by the pulse
+            arma::vec field;                                        // Magnetic field strength of pulse (T)
+			double frequency;                                       // Frequency of the applied field in HHz;
+			std::vector<bool> addCommonPrefactorList;				// Whether or not to multiply by "mu_B" for electronic spins, or the equivalent for nuclear spins
+			std::vector<bool> ignoreTensorsList;					// Whether or not to multiply by "g" for the spins
+			std::vector<double> prefactorList;						// Spins that are affected by the pulse
 
             // Helper method called by ParseSpinGroups
 			bool AddSpinList(const std::string&, const std::vector<spin_ptr>&, std::vector<spin_ptr>&, const std::vector<spin_ptr>* _crossCheck = nullptr);
@@ -63,19 +63,20 @@ namespace SpinAPI
 			// Public property methods
 			PulseType Type() const {return this->type;};
 			std::vector<spin_ptr> Group() const {return this->group;};
-			const bool AddCommonPrefactor() const {return this->addCommonPrefactor;};
+			const std::vector<bool> AddCommonPrefactorList() const {return this->addCommonPrefactorList;};
+			const std::vector<bool> IgnoreTensorsList() const { return this->ignoreTensorsList;};
 			const double Timestep() const;
-			const double Prefactor() const;
             const arma::vec Rotationaxis() const;
             const double Angle() const;
             const double Pulsetime() const;
             const arma::vec Field() const;
 			const double Frequency() const;
-			const arma::vec Prefactor_list() const ;
+			const arma::vec PrefactorList() const;
 			
 			
 			// Allow access to custom properties to be used for custom tasks
 			std::shared_ptr<const MSDParser::ObjectParser> Properties() const;
+
 
             	// Public method for creating ActionTargets
 			void GetActionTargets(std::vector<RunSection::NamedActionScalar>&, std::vector<RunSection::NamedActionVector>&, const std::string&);
