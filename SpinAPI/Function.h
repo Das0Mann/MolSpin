@@ -62,17 +62,15 @@ namespace SpinAPI
 			void SetFunctionString(std::string FuncString)
 			{
 				m_FunctionString = FuncString;
-				std::cout << FuncString << std::endl;
 			}
 			std::string GetFunctionString()
 			{
-				std::cout << m_FunctionString << std::endl;
 				return m_FunctionString;
 			}
     		//using FunctionPtr = std::shared_ptr<Function>;
     	};
 
-    std::shared_ptr<Function> FunctionParser(std::string&, std::string&);
+    std::shared_ptr<Function> FunctionParser(std::string&, std::string&); //function name i.e sin and function contents i.e 0.5x
 
     namespace MathematicalFunctions
 	{

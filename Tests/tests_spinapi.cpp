@@ -1447,6 +1447,38 @@ bool test_function_finding()
 
 	return isCorrect;
 }
+//////////////////////////////////////////////////////////////////////////////
+bool test_function_evaluation()
+{
+	// Setup objects for the test
+	std::string function = "cos";
+	std::string contents = "0.5x*x+y*y+c";
+	auto TestFunc = SpinAPI::FunctionParser(function, contents);
+
+	arma::cx_double val1 = {-0.1634667676,0};
+	arma::cx_double val2 = {0.1403316058,0};
+	arma::cx_double val3 = {0.3010526538,0};
+	double tolerance = 1e-5;
+
+	bool isCorrect = true;
+
+	double d1 = 0.5; 
+	double d2 = 1.1; 
+	double d3 = 0.4;
+	void* v1 = (void*)&d1;
+	void* v2 = (void*)&d2; 
+	void* v3 = (void*)&d3;
+
+	arma::cx_double val = TestFunc->operator()({v1,v2,v3});
+	isCorrect &= (std::abs(val.real() - val1.real()) < tolerance);
+	val = TestFunc->operator()({v3,v1,v2});
+	isCorrect &= (std::abs(val.real() - val2.real()) < tolerance);
+	val = TestFunc->operator()({v2, v3, v1});
+	isCorrect &= (std::abs(val.real() - val3.real()) < tolerance);
+	
+	return isCorrect;
+}
+
 // Add all the SpinAPI test cases
 void AddSpinAPITests(std::vector<test_case> &_cases)
 {
@@ -1484,5 +1516,6 @@ void AddSpinAPITests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Add, Contains, Remove)", test_spinapi_spinspace_spinmanagement1));
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Vector Add,Vector Contains, Clear)", test_spinapi_spinspace_spinmanagement2));
 	_cases.push_back(test_case("SpinAPI::StateFunctions validating function parsing", test_function_finding));
+	_cases.push_back(test_case("SpinAPI::Functions validating function evaluation", test_function_evaluation));
 }
 //////////////////////////////////////////////////////////////////////////////
