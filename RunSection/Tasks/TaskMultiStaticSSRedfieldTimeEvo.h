@@ -30,7 +30,6 @@ namespace RunSection
 		void WriteHeader(std::ostream &); // Write header for the output file
 
 		// Private method that gathers and outputs the results from a given time-integrated density operator
-		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &);
 		bool Redfieldtensor(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, arma::cx_mat &_redfieldtensor);															   // Contruction of Redfieldtensor with operator basis
 		bool ConstructSpecDensGeneral(const int &_spectral_function, const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_domega, arma::cx_mat &_specdens); // Construction of Spectral Density
 		bool ConstructSpecDensSpecific(const int &_spectral_function, const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_domega, arma::cx_mat &_specdens);

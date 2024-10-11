@@ -1005,7 +1005,7 @@ namespace SpinAPI
 		// End of taylor select function
 
 		int m;
-		double s;
+		double s = 0;
 		if (abs(t) == 0)
 		{
 			m = 0;

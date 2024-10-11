@@ -25,8 +25,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskDynamicHSStochTimeEvo Constructors and Destructor
 	// -----------------------------------------------------
-	TaskDynamicHSStochTimeEvo::TaskDynamicHSStochTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-																																  productYieldsOnly(false)
+	TaskDynamicHSStochTimeEvo::TaskDynamicHSStochTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), timedependentInteractions(false), timedependentTransitions(false), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(false)
 	{
 	}
 
@@ -521,7 +520,10 @@ namespace RunSection
 
 						auto transitions = (*i)->Transitions();
 
-						this->Data() << current_time;
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << current_time << " ";
+						this->WriteStandardOutput(this->Data());
 
 						int idx = 0;
 						for (auto o = transitions.begin(); o != transitions.end(); o++)
@@ -592,11 +594,16 @@ namespace RunSection
 						}
 						B.col(itr) = prop_state;
 					}
+					
 					ExptValues /= mc_samples;
 
 					for (int k = 0; k < num_steps; k++)
 					{
-						this->Data() << time(k);
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << time(k) << " ";
+						this->WriteStandardOutput(this->Data());
+
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
@@ -622,7 +629,10 @@ namespace RunSection
 							double current_time = k * dt;
 							time(k) = current_time;
 
-							this->Data() << current_time;
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << current_time << " ";
+							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
@@ -660,7 +670,10 @@ namespace RunSection
 							double current_time = k * dt;
 							time(k) = current_time;
 
-							this->Data() << current_time;
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << current_time << " ";
+							this->WriteStandardOutput(this->Data());
 
 							// Set the currentime for the Dynamic Hamiltonian
 							space.SetTime(current_time);
@@ -727,11 +740,16 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= mc_samples;
 
 						for (int k = 0; k < num_steps; k++)
 						{
-							this->Data() << time(k);
+							// Obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << time(k) << " ";
+							this->WriteStandardOutput(this->Data());
+
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -775,10 +793,16 @@ namespace RunSection
 							}
 							B.col(itr) = prop_state;
 						}
+
 						ExptValues /= mc_samples;
+						
 						for (int k = 0; k < num_steps; k++)
 						{
-							this->Data() << time(k);
+							// obtain results
+							this->Data() << this->RunSettings()->CurrentStep() << " ";
+							this->Data() << time(k) << " ";
+							this->WriteStandardOutput(this->Data());
+		
 							for (int idx = 0; idx < num_transitions; idx++)
 							{
 								this->Data() << " " << ExptValues(k, idx);
@@ -809,7 +833,10 @@ namespace RunSection
 						double current_time = k * dt;
 						time(k) = current_time;
 
-						this->Data() << current_time;
+						// obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << current_time << " ";
+						this->WriteStandardOutput(this->Data());
 
 						// Set the currentime for the Dynamic Hamiltonian
 						space.SetTime(current_time);
@@ -895,13 +922,15 @@ namespace RunSection
 						}
 						B.col(itr) = prop_state;
 					}
+
 					ExptValues /= mc_samples;
-					// Obtain results
-					this->Data() << this->RunSettings()->CurrentStep() << " ";
-					this->WriteStandardOutput(this->Data());
+
 					for (int k = 0; k < num_steps; k++)
 					{
-						this->Data() << time(k);
+						// Obtain results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << time(k) << " ";
+						this->WriteStandardOutput(this->Data());
 						for (int idx = 0; idx < num_transitions; idx++)
 						{
 							this->Data() << " " << ExptValues(k, idx);
@@ -951,28 +980,18 @@ namespace RunSection
 	// Writes the header of the data file (but can also be passed to other streams)
 	void TaskDynamicHSStochTimeEvo::WriteHeader(std::ostream &_stream)
 	{
-		_stream << "Time_ns ";
+		_stream << "Step ";
+		_stream << "Time(ns) ";
 		this->WriteStandardOutputHeader(_stream);
 
 		// Get header for each spin system
 		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i != systems.cend(); i++)
 		{
-			// Should yields be written per transition or per defined state?
-			if (this->productYieldsOnly)
-			{
-				// Write each transition name
-				auto transitions = (*i)->Transitions();
-				for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
-					_stream << (*i)->Name() << "." << (*j)->Name() << ".yield ";
-			}
-			else
-			{
-				// Write each state name
-				auto states = (*i)->States();
-				for (auto j = states.cbegin(); j != states.cend(); j++)
-					_stream << (*i)->Name() << "." << (*j)->Name() << " ";
-			}
+			// Write each state name
+			auto states = (*i)->States();
+			for (auto j = states.cbegin(); j != states.cend(); j++)
+				_stream << (*i)->Name() << "." << (*j)->Name() << " ";
 		}
 		_stream << std::endl;
 	}

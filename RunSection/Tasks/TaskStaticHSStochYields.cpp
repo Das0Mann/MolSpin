@@ -24,8 +24,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskStaticHSStochYields Constructors and Destructor
 	// -----------------------------------------------------
-	TaskStaticHSStochYields::TaskStaticHSStochYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-																															  productYieldsOnly(false)
+	TaskStaticHSStochYields::TaskStaticHSStochYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(true)
 	{
 	}
 
@@ -457,9 +456,6 @@ namespace RunSection
 			ExptValues.zeros(num_steps, num_transitions);
 			arma::vec time(num_steps);
 
-			// Current step
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-
 			// Propagate the system in time using the specified method
 
 			// Propagation using autoexpm for matrix exponential
@@ -683,7 +679,7 @@ namespace RunSection
 			arma::mat ans = arma::trapz(time, ExptValues);
 
 			// Obtain results
-			// this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			this->WriteStandardOutput(this->Data());
 
 			for (int it = 0; it < num_transitions; it++)

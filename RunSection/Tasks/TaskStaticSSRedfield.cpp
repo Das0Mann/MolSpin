@@ -894,14 +894,6 @@ namespace RunSection
 																}
 
 																// SpecDens *= ((*interaction)->Prefactor() * (*interaction)->Prefactor());
-
-																for (int kok = 0; kok < (int)SpecDens.n_rows; kok++)
-																{
-																	for (int kek = 0; kek < (int)SpecDens.n_cols; kek++)
-																	{
-																		SpecDens(kok, kek) = std::real(SpecDens(kok, kek));
-																	}
-																}
 															}
 															else
 															{

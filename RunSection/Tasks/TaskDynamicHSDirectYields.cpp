@@ -25,8 +25,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskDynamicHSDirectYields Constructors and Destructor
 	// -----------------------------------------------------
-	TaskDynamicHSDirectYields::TaskDynamicHSDirectYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-																																  productYieldsOnly(false)
+	TaskDynamicHSDirectYields::TaskDynamicHSDirectYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), timedependentInteractions(false), timedependentTransitions(false), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(true)
 	{
 	}
 
@@ -432,9 +431,6 @@ namespace RunSection
 			ExptValues.zeros(num_steps, num_transitions);
 			arma::vec Identity(num_steps);
 			arma::vec time(num_steps);
-
-			// Current step
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
 
 			if (time_dependent_transitions && !time_dependent_hamiltonian)
 			{
@@ -887,6 +883,8 @@ namespace RunSection
 
 	bool TaskDynamicHSDirectYields::Validate()
 	{
+		this->Properties()->Get("transitionyields", this->productYieldsOnly);
+		
 		// Get the reaction operator type
 		std::string str;
 		if (this->Properties()->Get("reactionoperators", str))

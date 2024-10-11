@@ -21,11 +21,8 @@ namespace RunSection
 	{
 	private:
 		// Things for time dependent Hamiltonian
-
 		double timestep;
 		double totaltime;
-		unsigned int outputstride;
-		bool modeQuantumYield;
 		bool timedependentInteractions;
 		bool timedependentTransitions;
 

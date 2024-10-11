@@ -24,8 +24,6 @@ namespace RunSection
 
 		double timestep;
 		double totaltime;
-		unsigned int outputstride;
-		bool modeQuantumYield;
 		bool timedependentInteractions;
 		bool timedependentTransitions;
 

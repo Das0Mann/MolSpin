@@ -252,7 +252,7 @@ namespace RunSection
 						transitionhamiltonian *= (*interaction)->Prefactor();
 						// Multiply by common prefactor (bohr magneton / hbar)
 						if ((*interaction)->AddCommonPrefactor())
-							transitionhamiltonian *= 8.794e+1;
+							transitionhamiltonian *= 8.79410005e+1;
 					}
 				}
 

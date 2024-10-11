@@ -25,8 +25,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskDynamicHSStochYields Constructors and Destructor
 	// -----------------------------------------------------
-	TaskDynamicHSStochYields::TaskDynamicHSStochYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn),
-																																productYieldsOnly(false)
+	TaskDynamicHSStochYields::TaskDynamicHSStochYields(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(0.1), totaltime(1000), timedependentInteractions(false), timedependentTransitions(false), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn), productYieldsOnly(true)
 	{
 	}
 
@@ -512,9 +511,6 @@ namespace RunSection
 			arma::vec Identity(num_steps);
 			arma::vec time(num_steps);
 
-			// Current step
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
-
 			if (time_dependent_transitions && !time_dependent_hamiltonian)
 			{
 				// Case 1: time_dependent_transitions is true but time_dependent_hamiltonian is false
@@ -883,6 +879,7 @@ namespace RunSection
 					// Quantym yields without correction factor
 					ans(0, it) = ans(0, it) * rates(it);
 				}
+
 				this->Data() << std::setprecision(6) << ans(0, it) << " ";
 			}
 
@@ -956,6 +953,9 @@ namespace RunSection
 
 	bool TaskDynamicHSStochYields::Validate()
 	{
+
+		this->Properties()->Get("transitionyields", this->productYieldsOnly);
+		
 		// Get the reaction operator type
 		std::string str;
 		if (this->Properties()->Get("reactionoperators", str))

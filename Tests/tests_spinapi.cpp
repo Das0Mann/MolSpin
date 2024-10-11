@@ -15,6 +15,7 @@
 #include "SpinSystem.h"
 #include "SpinSpace.h"
 #include "Function.h"
+#include "Pulse.h"
 //////////////////////////////////////////////////////////////////////////////
 // Tests whether the spin quantum number is stored correctly.
 // DEPENDENCY NOTE: ObjectParser
@@ -1479,6 +1480,107 @@ bool test_function_evaluation()
 	return isCorrect;
 }
 
+// Tests an Pulse object with an instantpulse type.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_instantpulse()
+{
+	// Setup objects for the test
+	std::string name = "pulse1";
+	std::string contents = "type=instantpulse;group=RPElectron1;rotationaxis=1 1 1;angle=42.24;";
+	SpinAPI::Pulse P(name, contents);
+
+	auto rotationaxis = arma::vec("1 1 1")/arma::norm(arma::vec("1 1 1"));
+	double angle = 42.24;
+
+	bool isCorrect = true;
+
+	// Perform the test
+	isCorrect &= P.Type() == SpinAPI::PulseType::InstantPulse;
+	isCorrect &= equal_vec(P.Rotationaxis(), rotationaxis);
+	isCorrect &= equal_double(P.Angle(), angle);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+// Tests an Pulse object with an longpulsestaticfield type.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_longpulsestaticfield()
+{
+	// Setup objects for the test
+	std::string name = "pulse2";
+	std::string contents = "type=longpulsestaticfield;group=RPElectron1;field=0.0 7.1 14.2;pulsetime=42.24;prefactorlist=-176.085;commonprefactorlist=false;ignoretensorslist=true;timestep=0.42;";
+	SpinAPI::Pulse P(name, contents);
+
+	auto field = arma::vec("0.0 7.1 14.2");
+	double pulsetime = 42.24;
+	auto prefactorlist = arma::vec("-176.085");
+	std::vector<bool> commonprefactorlist {0};
+	std::vector<bool> ignortensorslist {1};
+	double timestep = 0.42;
+	
+
+	bool isCorrect = true;
+
+	// Perform the test
+	isCorrect &= P.Type() == SpinAPI::PulseType::LongPulseStaticField;
+	isCorrect &= equal_vec(P.Field(), field);
+	isCorrect &= equal_double(P.Pulsetime(), pulsetime);
+	isCorrect &= equal_vec(P.PrefactorList(), prefactorlist);
+	for (auto i = 0; i < (int)commonprefactorlist.size(); i++)
+	{
+		isCorrect &= commonprefactorlist[i] == P.AddCommonPrefactorList()[i];
+	}
+	for (auto i = 0; i < (int)ignortensorslist.size(); i++)
+	{
+		isCorrect &= ignortensorslist[i] == P.IgnoreTensorsList()[i];
+	}
+	isCorrect &= equal_double(P.Timestep(), timestep);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+// Tests an Pulse object with an longpulsed type.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_longpulse()
+{
+	// Setup objects for the test
+	std::string name = "pulse3";
+	std::string contents = "type=longpulse;group=RPElectron1;field=0.0 7.1 14.2;pulsetime=42.24;prefactorlist=-176.085;commonprefactorlist=false;ignoretensorslist=true;timestep=0.42;frequency=0.0004224;";
+	SpinAPI::Pulse P(name, contents);
+
+	auto field = arma::vec("0.0 7.1 14.2");
+	double pulsetime = 42.24;
+	auto prefactorlist = arma::vec("-176.085");
+	std::vector<bool> commonprefactorlist {0};
+	std::vector<bool> ignortensorslist {1};
+	double timestep = 0.42;
+	double frequency = 0.0004224;
+	
+
+	bool isCorrect = true;
+
+	// Perform the test
+	isCorrect &= P.Type() == SpinAPI::PulseType::LongPulse;
+	isCorrect &= equal_vec(P.Field(), field);
+	isCorrect &= equal_double(P.Pulsetime(), pulsetime);
+	isCorrect &= equal_vec(P.PrefactorList(), prefactorlist);
+	for (auto i = 0; i < (int)commonprefactorlist.size(); i++)
+	{
+		isCorrect &= commonprefactorlist[i] == P.AddCommonPrefactorList()[i];
+	}
+	for (auto i = 0; i < (int)ignortensorslist.size(); i++)
+	{
+		isCorrect &= ignortensorslist[i] == P.IgnoreTensorsList()[i];
+	}
+	isCorrect &= equal_double(P.Timestep(), timestep);
+	isCorrect &= equal_double(P.Frequency(), frequency);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
 // Add all the SpinAPI test cases
 void AddSpinAPITests(std::vector<test_case> &_cases)
 {
@@ -1517,5 +1619,8 @@ void AddSpinAPITests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Vector Add,Vector Contains, Clear)", test_spinapi_spinspace_spinmanagement2));
 	_cases.push_back(test_case("SpinAPI::StateFunctions validating function parsing", test_function_finding));
 	_cases.push_back(test_case("SpinAPI::Functions validating function evaluation", test_function_evaluation));
+	_cases.push_back(test_case("SpinAPI::Pulse InstantPulse", test_spinapi_instantpulse));
+	_cases.push_back(test_case("SpinAPI::Pulse LongPulseStaticField", test_spinapi_longpulsestaticfield));
+	_cases.push_back(test_case("SpinAPI::Pulse LongPulse", test_spinapi_longpulse));
 }
 //////////////////////////////////////////////////////////////////////////////

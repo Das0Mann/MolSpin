@@ -441,7 +441,6 @@ namespace SpinAPI
 			}
 		}
 
-		// TODO: Remove range failedInteractions from this->interactions
 		return failedPulses;
 	}
 
@@ -739,6 +738,10 @@ namespace SpinAPI
 			else if ((*i)->Type() == PulseType::LongPulse)
 			{
 				std::cout << "LongPulse";
+			}
+			else if ((*i)->Type() == PulseType::LongPulseStaticField)
+			{
+				std::cout << "LongPulseStaticField";
 			}
 			else if ((*i)->Type() == PulseType::ShapedPulse)
 			{

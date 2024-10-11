@@ -501,7 +501,7 @@ namespace RunSection
 												// Multiply by common prefactor (bohr magneton / hbar)
 												if ((*interaction)->AddCommonPrefactor())
 												{
-													A *= (2.0023 * 8.794e+1);
+													A *= (2.0023 * 8.79410005e+1);
 													A *= (*interaction)->Prefactor();
 												}
 
@@ -885,7 +885,7 @@ namespace RunSection
 													// Multiply by common prefactor (bohr magneton / hbar)
 													if ((*interaction)->AddCommonPrefactor())
 													{
-														A *= (2.0023 * 8.794e+1);
+														A *= (2.0023 * 8.79410005e+1);
 														A *= (*interaction)->Prefactor();
 													}
 
@@ -1282,7 +1282,7 @@ namespace RunSection
 											// Multiply by common prefactor (bohr magneton / hbar)
 											if ((*interaction)->AddCommonPrefactor())
 											{
-												A *= (2.0023 * 8.794e+1);
+												A *= (2.0023 * 8.79410005e+1);
 												A *= (*interaction)->Prefactor();
 											}
 
@@ -1775,7 +1775,7 @@ namespace RunSection
 												// Multiply by common prefactor (bohr magneton / hbar)
 												if ((*interaction)->AddCommonPrefactor())
 												{
-													A *= (2.0023 * 8.794e+1);
+													A *= (2.0023 * 8.79410005e+1);
 													A *= (*interaction)->Prefactor();
 												}
 
@@ -2156,11 +2156,11 @@ namespace RunSection
 			}
 
 			// Loop through all states
-			arma::cx_mat P;
+			arma::cx_mat Px;
 			auto sstates = i->first->States();
 			for (auto j = sstates.cbegin(); j < sstates.cend(); j++)
 			{
-				if (!i->second->GetState((*j), P))
+				if (!i->second->GetState((*j), Px))
 				{
 					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
 					continue;
@@ -2173,15 +2173,12 @@ namespace RunSection
 				if (i_index < eigveclist.size())
 				{
 					arma::cx_mat &eigvec_i = eigveclist[i_index];
-					P = eigvec_i.t() * P * eigvec_i;
+					Px = eigvec_i.t() * Px * eigvec_i;
 				}
 
 				// Return the yield for this state - note that no reaction rates are included here.
-				this->Data() << std::abs(arma::trace(P * rho_result)) << " ";
+				this->Data() << std::abs(arma::trace(Px * rho_result)) << " ";
 			}
-
-			// Get the results
-			// this->GatherResults(rho_result, *(i->first), *(i->second));
 
 			// Move on to next spin space
 			nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());
@@ -2223,11 +2220,11 @@ namespace RunSection
 				}
 
 				// Loop through all states
-				arma::cx_mat P;
+				arma::cx_mat Px;
 				auto sstates = i->first->States();
 				for (auto j = sstates.cbegin(); j < sstates.cend(); j++)
 				{
-					if (!i->second->GetState((*j), P))
+					if (!i->second->GetState((*j), Px))
 					{
 						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << i->first->Name() << "\"." << std::endl;
 						continue;
@@ -2240,15 +2237,12 @@ namespace RunSection
 					if (i_index < eigveclist.size())
 					{
 						arma::cx_mat &eigvec_i = eigveclist[i_index];
-						P = eigvec_i.t() * P * eigvec_i;
+						Px = eigvec_i.t() * Px * eigvec_i;
 					}
 
 					// Return the yield for this state - note that no reaction rates are included here.
-					this->Data() << std::abs(arma::trace(P * rho_result)) << " ";
+					this->Data() << std::abs(arma::trace(Px * rho_result)) << " ";
 				}
-
-				// Get the results
-				// this->GatherResults(rho_result, *(i->first), *(i->second));
 
 				// Move on to next spin space
 				nextDimension += (i->second->SpaceDimensions() * i->second->SpaceDimensions());
@@ -2261,25 +2255,6 @@ namespace RunSection
 		this->Log() << "Done with calculation." << std::endl;
 
 		return true;
-	}
-
-	// Gathers and outputs the results from a given time-integrated density operator
-	void TaskMultiStaticSSRedfieldTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space)
-	{
-		// Loop through all states
-		arma::cx_mat P;
-		auto states = _system.States();
-		for (auto j = states.cbegin(); j < states.cend(); j++)
-		{
-			if (!_space.GetState((*j), P))
-			{
-				this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << _system.Name() << "\"." << std::endl;
-				continue;
-			}
-
-			// Return the yield for this state - note that no reaction rates are included here.
-			this->Data() << std::abs(arma::trace(P * _rho)) << " ";
-		}
 	}
 
 	// Writes the header of the data file (but can also be passed to other streams)

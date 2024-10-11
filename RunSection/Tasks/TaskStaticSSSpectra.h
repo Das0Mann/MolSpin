@@ -1,18 +1,26 @@
-//////////////////////////////////////////////////////////////////////////////
-// MolSpin - Redfield Theory Task - developed by Luca Gerhards
+/////////////////////////////////////////////////////////////////////////
+// TaskStaticSSSpectra (RunSection module)  developed by Irina Anisimova and Luca Gerhards.
+// ------------------
 //
-// Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
-// (c) 2019 Quantum Biology and Computational Physics Group.
+// Simple quantum yield calculation in Liouville space, derived from the
+// properties of the Laplace transformation.
+//
+// Molecular Spin Dynamics Software - developed by Irina Anisimova and Luca Gerhards.
+// (c) 2022 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
-//////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 #ifndef MOD_RunSection_TaskStaticSSSpectra
 #define MOD_RunSection_TaskStaticSSSpectra
 
 #include "BasicTask.h"
 #include "SpinAPIDefines.h"
+#include "SpinSpace.h"
 
 namespace RunSection
 {
+	//Because the declaration of i is long define it as a new variable that is easier to use
+	using SystemIterator = std::vector<SpinAPI::system_ptr>::const_iterator;
+
 	class TaskStaticSSSpectra : public BasicTask
 	{
 	private:
@@ -29,8 +37,9 @@ namespace RunSection
 	public:
 		// Constructors / Destructors
 		TaskStaticSSSpectra(const MSDParser::ObjectParser &, const RunSection &); // Normal constructor
-		~TaskStaticSSSpectra();													  // Destructor
+		~TaskStaticSSSpectra();													// Destructor
 	};
+
 }
 
 #endif

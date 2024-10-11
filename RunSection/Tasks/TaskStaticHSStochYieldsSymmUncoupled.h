@@ -17,6 +17,10 @@ namespace RunSection
 	class TaskStaticHSStochYieldsSymmUncoupled : public BasicTask
 	{
 	private:
+
+		double timestep;
+		double totaltime;
+
 		SpinAPI::ReactionOperatorType reactionOperators;
 		bool productYieldsOnly;			  // If true, a quantum yield will be calculated from each Transition object and multiplied by the rate constant
 										  // If false, a quantum yield will be calculated each defined State object
