@@ -30,6 +30,7 @@ namespace RunSection
 		unsigned int first;
 		unsigned int last;
 		unsigned int period;
+		bool m_loop; 
 
 	protected:
 		// Protected methods
@@ -40,6 +41,7 @@ namespace RunSection
 		// Methods to be overwritten in derived classes
 		virtual bool DoStep() = 0;
 		virtual bool DoValidate() = 0;
+		virtual bool Reset() = 0;
 
 	public:
 		// Constructors / Destructors
@@ -58,6 +60,8 @@ namespace RunSection
 		void Step(unsigned int);
 		bool IsValid() const;
 		std::string Name();
+
+		const std::shared_ptr<MSDParser::ObjectParser> GetProperties() const { return this->properties; };
 
 		// Public method to be overwritten
 		bool Validate();

@@ -30,7 +30,7 @@ ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
 # --------------------------------------------------------------------------
 # SpinAPI module
 PATH_SPINAPI = ./SpinAPI
-OBJS_SPINAPI = $(PATH_SPINAPI)/SpinSystem.o $(PATH_SPINAPI)/Spin.o $(PATH_SPINAPI)/Interaction.o $(PATH_SPINAPI)/Transition.o $(PATH_SPINAPI)/Operator.o $(PATH_SPINAPI)/Pulse.o $(PATH_SPINAPI)/State.o $(PATH_SPINAPI)/SpinSpace.o $(PATH_SPINAPI)/StandardOutput.o $(PATH_SPINAPI)/Tensor.o $(PATH_SPINAPI)/Trajectory.o
+OBJS_SPINAPI = $(PATH_SPINAPI)/SpinSystem.o $(PATH_SPINAPI)/Spin.o $(PATH_SPINAPI)/Interaction.o $(PATH_SPINAPI)/Transition.o $(PATH_SPINAPI)/Operator.o $(PATH_SPINAPI)/Pulse.o $(PATH_SPINAPI)/State.o $(PATH_SPINAPI)/SpinSpace.o $(PATH_SPINAPI)/StandardOutput.o $(PATH_SPINAPI)/Tensor.o $(PATH_SPINAPI)/Trajectory.o $(PATH_SPINAPI)/SubSystem.o $(PATH_SPINAPI)/Function.o
 DEP_SPINAPI = 
 # --------------------------------------------------------------------------
 # MSD-Parser module
@@ -49,13 +49,13 @@ OBJS_RUNSECTION_CUSTOMTASKS =
 DEP_RUNSECTION_CUSTOMTASKS = 
 # ---
 # RunSection tasks
-PATH_RUNSECTION_TASKS = ./RunSection/Tasks
-OBJS_RUNSECTION_TASKS = $(PATH_RUNSECTION_TASKS)/TaskStaticSS.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSSymmetricDecay.o $(PATH_RUNSECTION_TASKS)/TaskHamiltonianEigenvalues.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskGammaCompute.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskMultiDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfield.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldSparse.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvoSparse.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSSpectra.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSCIDNP.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDecRedfield.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochYields.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectYields.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSDirectYields.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSDirectTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSStochYields.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSStochTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectYieldsSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectTimeEvoSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochYieldsSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochTimeEvoSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskActionSpectrumHistogram.o $(PATH_RUNSECTION_TASKS)/TaskActionSpectrumHistogramRPOnlyDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSPump.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSNakajimaZwanzigTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSNakajimaZwanzig.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvoSpectra.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSNakajimaZwanzigTimeEvo.o $(OBJS_RUNSECTION_CUSTOMTASKS) 
+PATH_RUNSECTION_TASKS = ./RunSection/Tasks 
+OBJS_RUNSECTION_TASKS = $(PATH_RUNSECTION_TASKS)/TaskStaticSS.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSSymmetricDecay.o $(PATH_RUNSECTION_TASKS)/TaskHamiltonianEigenvalues.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskPeriodicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskGammaCompute.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskMultiDynamicHSTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfield.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldSparse.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSRedfieldTimeEvoSparse.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSRedfieldTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSSpectra.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSCIDNP.o $(PATH_RUNSECTION_TASKS)/TaskStaticRPOnlyHSSymDecRedfield.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochYields.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectYields.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSDirectYields.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSDirectTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSStochYields.o $(PATH_RUNSECTION_TASKS)/TaskDynamicHSStochTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectYieldsSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSDirectTimeEvoSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochYieldsSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskStaticHSStochTimeEvoSymmUncoupled.o $(PATH_RUNSECTION_TASKS)/TaskActionSpectrumHistogram.o $(PATH_RUNSECTION_TASKS)/TaskActionSpectrumHistogramRPOnlyDec.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSPump.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSNakajimaZwanzigTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskStaticSSNakajimaZwanzig.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSTimeEvoSpectra.o $(PATH_RUNSECTION_TASKS)/TaskMultiStaticSSNakajimaZwanzigTimeEvo.o $(PATH_RUNSECTION_TASKS)/TaskMultiRadicalPairSSTimeEvo.o $(OBJS_RUNSECTION_CUSTOMTASKS) 
 DEP_RUNSECTION_TASKS = $(DEP_RUNSECTION_CUSTOMTASKS)
 # ---
 # RunSection actions
 PATH_RUNSECTION_ACTIONS = ./RunSection/Actions
-OBJS_RUNSECTION_ACTIONS = $(PATH_RUNSECTION_ACTIONS)/ActionRotateVector.o $(PATH_RUNSECTION_ACTIONS)/ActionScaleVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionMultiplyScalar.o
+OBJS_RUNSECTION_ACTIONS = $(PATH_RUNSECTION_ACTIONS)/ActionRotateVector.o $(PATH_RUNSECTION_ACTIONS)/ActionScaleVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionMultiplyScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionFibonacciSphere.o
 DEP_RUNSECTION_ACTIONS = 
 # --------------------------------------------------------------------------
 # Unit testing module
@@ -67,8 +67,8 @@ DEP_TESTS =
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
 CC = g++ -std=c++17		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
-LFLAGS = -Wall -Ofast		# Linker Flags
-CFLAGS = -g -Wall -c -march=native -funroll-loops -fconcepts -Ofast # Compile flags to .o
+LFLAGS = -Wall -Ofast -g	# Linker Flags
+CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g #-Ofast  # Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------

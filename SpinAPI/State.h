@@ -12,7 +12,10 @@
 
 #include <memory>
 #include <armadillo>
+#include <unordered_map>
 #include "SpinAPIfwd.h"
+#include "SpinSystem.h"
+#include "Function.h"
 
 namespace SpinAPI
 {
@@ -26,11 +29,14 @@ namespace SpinAPI
 
 		using CompleteState = std::vector<StatePair>; // A collection of states that are entangled together,
 													  // or only 1 state if it is not entangled with any other states.
-
 	private:
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::vector<CompleteState> substates;				 // A list of complete states, i.e. see the alias definition above
+		std::vector<std::shared_ptr<Function>> Functions; 	 // A list of functions that act as factors before states, e.g. cos or sin
+		std::vector<int> BracketDepth;						 // A description of the state when it comes to how to apply factors
+		std::vector<arma::cx_double> InitialFactors; 				 // stores the initial factors (see UpdateFactors for reasoning)
+		std::unordered_map<std::string, double> Variables; 	// Variable name and function and it's value(stored as a void* for type casting)
 		bool isValid;
 
 		// Private methods
@@ -40,6 +46,11 @@ namespace SpinAPI
 
 		const CompleteState *FindState(const spin_ptr &, StateSeries **_state = nullptr) const; // Returns a CompleteState pointer if the spin_ptr was found, nullptr otherwise
 																								// Sets the StateSeries pointer if the pointer-to-pointer is not nullptr
+
+		// Private methods to create ActionTargets
+		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &); 
+
+		bool UpdateFactors();   
 
 	public:
 		// Constructors / Destructors
@@ -72,10 +83,27 @@ namespace SpinAPI
 		// The print function writes the contents of the State object to an output-stream
 		// This function is intended for testing/debugging purposes and is specific to the class implementation
 		void Print(std::ostream &, unsigned int _name_width = 20, unsigned int _data_width = 8) const;
+
+		// Public method for creating ActionTargets
+		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
+
+		//returns a vector of functions
+		std::vector<std::shared_ptr<Function>> GetFunctions()
+		{
+			return Functions;
+		}
+
+		//Applies all the functions to the factors
+		bool Update();
+	
 	};
 
 	// Define alias for state-pointers
 	using state_ptr = std::shared_ptr<State>;
+
+	bool CheckActionScalarVariable(const double &);
+
+
 }
 
 #endif

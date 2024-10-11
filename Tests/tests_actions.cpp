@@ -12,7 +12,10 @@
 #include "ActionMultiplyScalar.h"
 #include "ActionAddVector.h"
 #include "ActionScaleVector.h"
+#include "ActionFibonacciSphere.h"
 #include "ActionRotateVector.h"
+
+#include <iostream>
 //////////////////////////////////////////////////////////////////////////////
 // Tests the ActionTarget alias ActionScalar
 // First we define a check-function
@@ -241,6 +244,49 @@ bool test_action_rotatevector()
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
+// Tests the FibonacciSphere Action
+bool test_action_fibonaccisphere()
+{
+	arma::vec value1("0 1 0");
+	arma::vec value2("0.707203326 0.4974874372 0.5023641165"); //i = 50;
+	arma::vec value3("0.3292513656 -0.005025125628 0.9442289375"); //i = 100
+	arma::vec value4("-0.09728003857 -0.9899497487 -0.1026454532"); //i = 198
+	arma::vec v = value1;
+	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr);
+	std::map<std::string, RunSection::ActionScalar> asMap;
+	std::map<std::string, RunSection::ActionVector> avMap;
+	avMap.insert(RunSection::NamedActionVector("testvec", av));
+	std::string actioname = "test";
+	std::string actioncontents = "vector=testvec;points=200;";
+	MSDParser::ObjectParser parser(actioname, actioncontents);
+	RunSection::ActionFibonacciSphere action(parser, asMap, avMap);
+	RunSection::Action *action_ptr = &action;
+
+	bool isCorrect = true;
+
+	//perform the test
+	isCorrect &= action_ptr->Validate();
+	isCorrect &= equal_vec(v, value1, 1e-4);
+	for(int i = 1; i <= 50; i++ )
+	{
+		action.Step(i);
+	}
+	isCorrect &= equal_vec(v, value2, 1e-4);
+	for(int i = 51; i <= 100; i++)
+	{
+		action_ptr->Step(i);
+	}
+	isCorrect &= equal_vec(av.Get(), value3, 1e-4);
+	for(int i = 101; i <= 198; i++)
+	{
+		action.Step(i);
+	}
+	isCorrect &= equal_vec(v, value4, 1e-4);
+
+	// Return the result
+	return isCorrect;
+
+}
 // Add all the Action classes test cases
 void AddActionsTests(std::vector<test_case> &_cases)
 {
@@ -251,5 +297,6 @@ void AddActionsTests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("Action AddVector", test_action_addvector));
 	_cases.push_back(test_case("Action ScaleVector", test_action_scalevector));
 	_cases.push_back(test_case("Action RotateVector", test_action_rotatevector));
+	_cases.push_back(test_case("Action FibonacciSphere", test_action_fibonaccisphere));
 }
 //////////////////////////////////////////////////////////////////////////////

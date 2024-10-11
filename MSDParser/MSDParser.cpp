@@ -20,6 +20,7 @@
 #include "Pulse.h"
 #include "StandardOutput.h"
 #include "SpinSystem.h"
+#include "SubSystem.h"
 
 namespace MSDParser
 {
@@ -93,6 +94,9 @@ namespace MSDParser
 					break;
 				case ObjectType::Pulse:
 					(*i)->Add(std::make_shared<SpinAPI::Pulse>(obj.Name(), obj.Contents()));
+					break;
+				case ObjectType::SubSystem:
+					(*i)->Add(std::make_shared<SpinAPI::SubSystem>(obj.Name(), obj.Contents(), (*i)));
 					break;
 				case ObjectType::Properties:
 					if (!(*i)->SetProperties(std::make_shared<ObjectParser>(obj.Name(), obj.Contents())))
@@ -172,6 +176,18 @@ namespace MSDParser
 			auto failedTransitions = (*i)->ValidateTransitions(this->systems);
 			for (auto j = failedTransitions.cbegin(); j != failedTransitions.cend(); j++)
 				std::cout << "Failed to load transition " << (*j)->Name() << "!" << std::endl;
+		}
+		
+		//validating subsystems;
+		for(auto i = this->systems.cbegin(); i != this->systems.cend(); i++)
+		{
+			auto failedsubsystems = (*i)->ValidateSubSystems();
+			for(auto j = failedsubsystems.cbegin(); j != failedsubsystems.cend(); j++)
+			{
+				std::cout << "Failed to load SubSystem " << (*j)->Name() << "!" << std::endl;
+			}
+
+			SpinAPI::LinkTransitions(*i);
 		}
 
 		return true;

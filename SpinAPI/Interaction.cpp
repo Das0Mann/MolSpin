@@ -21,7 +21,7 @@ namespace SpinAPI
 	// The constructor sets up the interaction parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
 	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
-																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false),
+																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0})
 	{
@@ -151,7 +151,7 @@ namespace SpinAPI
 
 	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
 																group1(_interaction.group1), group2(_interaction.group2), type(_interaction.type), fieldType(_interaction.fieldType),
-																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors),
+																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors), isValid(_interaction.isValid),
 																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor),
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
 																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdAxis(_interaction.tdAxis),
@@ -177,6 +177,7 @@ namespace SpinAPI
 		this->prefactor = _interaction.prefactor;
 		this->addCommonPrefactor = _interaction.addCommonPrefactor;
 		this->ignoreTensors = _interaction.ignoreTensors;
+		this->isValid = _interaction.isValid;
 
 		this->trjHasTime = _interaction.trjHasTime;
 		this->trjHasField = _interaction.trjHasField;
@@ -205,6 +206,8 @@ namespace SpinAPI
 
 	bool Interaction::IsValid() const
 	{
+		if(!isValid) { return false; } //by default this function should never return at this point; the only time it should ever return is if the interaction hasn't been assigned a subsystem in a task where subsystems are used 
+		
 		if (this->type == InteractionType::SingleSpin && !this->group1.empty())
 			return true;
 		else if (this->type == InteractionType::DoubleSpin && !this->group1.empty() && !this->group2.empty())

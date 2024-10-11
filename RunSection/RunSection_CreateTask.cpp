@@ -56,6 +56,8 @@
 
 #include "TaskStaticSSPump.h"
 
+#include "TaskMultiRadicalPairSSTimeEvo.h" //added by Benji 
+
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
 {
@@ -231,6 +233,18 @@ namespace RunSection
 		else if (_tasktype.compare("staticss-pump") == 0)
 		{
 			task = std::make_shared<TaskStaticSSPump>(_obj, *this);
+		}
+
+		//NEW (ADDED by Benji Tigg)
+		else if(_tasktype.compare("multiradicalpairss-timeevolution") == 0)
+		{
+			task = std::make_shared<TaskMultiRadicalPairSSTimeEvo>(_obj, *this);
+		}
+		//NEW (ADDED by Benji Tigg)
+		else if(_tasktype.compare("multiradicalpair-yields"))
+		{
+			//task = std::make_shared<TaskMutliRadicalPairSSYield>(_obj, *this);
+			//Task doesn't exist yet
 		}
 
 		// NOTE: To add a new task class, just add another "else if" here...

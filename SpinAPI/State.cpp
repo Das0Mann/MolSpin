@@ -13,6 +13,9 @@
 #include "State.h"
 #include "SpinSystem.h"
 
+#include <cctype>
+#include <math.h> 
+
 namespace SpinAPI
 {
 	// -----------------------------------------------------
@@ -214,10 +217,19 @@ namespace SpinAPI
 		}
 
 		std::string buffer = "";
+		std::string functionName = "";
+		std::string variable = "";
 		arma::cx_double factor;
+		std::vector<arma::cx_double> PreFactor = {1};
+		std::shared_ptr<Function> Func;
 		int mz = 0;
 		bool inState = false;
 		auto currentSpinPair = newState.begin();
+		bool brackets = false;
+		bool function = false;
+		int depth = 0;
+		int FunctionDepth = -1;
+		int FuncNum = 0;
 
 		// Loop through all characters in the string
 		for (auto i = _states.cbegin(); i != _states.cend(); i++)
@@ -228,6 +240,7 @@ namespace SpinAPI
 				if (!this->ParseFactor(buffer, factor))
 					return false;
 
+				factor = factor * PreFactor.back();
 				// We are now inside a state (not the factor), so reset the buffer
 				inState = true;
 				buffer = "";
@@ -250,7 +263,26 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
+				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				this->InitialFactors.push_back(factor);
+				if(Func == nullptr)
+				{
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+				}
+				std::vector<std::string> vars = Func->GetVariable();
+				int VarNum = 0;
+				for(auto x : vars)
+				{
+					double var;
+					if(properties->Get(x, var))
+					{
+						Variables[x] = var;
+					}
+				}
+				Functions.push_back(Func);
+				BracketDepth.push_back(depth);
+				FuncNum++;
 
 				// Reset buffer and prepare reading next mz value
 				buffer = "";
@@ -274,7 +306,27 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
+				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				this->InitialFactors.push_back(factor);
+				if(Func == nullptr)
+				{
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+				}
+				std::vector<std::string> vars = Func->GetVariable();
+				int VarNum = 0;
+				for(auto x : vars)
+				{
+					double var;
+					if(properties->Get(x, var))
+					{
+						Variables[x] = var;
+					}
+				}
+				//throw a error if var not found 
+				Functions.push_back(Func);
+				BracketDepth.push_back(depth);
+				FuncNum++;
 
 				// Reset buffer and prepare to read the next state
 				buffer = "";
@@ -288,11 +340,64 @@ namespace SpinAPI
 				// Reset the CompleteState iterator
 				currentSpinPair = newState.begin();
 			}
+			else if (!inState && (*i) == '(' && !function)
+			{
+				if (!this->ParseFactor(buffer, factor))
+					return false;
+				
+				buffer = "";
+				PreFactor.push_back(factor * PreFactor[depth]);
+				depth++;
+			}
+			else if (!inState && (*i) == ')' && !function)
+			{
+				PreFactor.pop_back();
+				depth--;
+			}
+			else if(!function && std::isalpha((*i)) != 0)
+			{
+				buffer +=(*i);
+				function = true;
+			}
+			else if(function && (*i) == '(')
+			{
+				FunctionDepth++;
+				if(FunctionDepth != 0)
+				{
+					buffer += (*i);
+					continue;
+				}
+				functionName = buffer;
+				buffer = "";
+			}
+			else if(function && (*i) == ')')
+			{
+				FunctionDepth--;
+				if(FunctionDepth != -1)
+				{
+					buffer += (*i);
+					continue;
+				}
+				variable = buffer;
+				function = false;
+				Func = FunctionParser(functionName, variable);
+
+				buffer = functionName;
+			}
+			else if((*i) == '*')
+			{
+				if(function)
+					buffer += (*i);
+			}
 			else
 			{
-				buffer += (*i);
+				buffer +=(*i);
 			}
 		}
+
+		//Function sin_test(MathematicalFunctions::sin, Function::ReturnType::d, "sin", "x", 0.5);
+
+		//std::cout << sin_test((void*)((double*)&val)) << std::endl;
 
 		this->substates.push_back(newState);
 		return true;
@@ -380,6 +485,9 @@ namespace SpinAPI
 		// Don't waste any unnecessary memory
 		this->substates.shrink_to_fit();
 
+		//make sure all the factors are correct
+		this->UpdateFactors();
+
 		// If we were successful, the state is now valid
 		this->isValid = true;
 		return true;
@@ -412,6 +520,36 @@ namespace SpinAPI
 
 		return nullptr;
 	}
+
+	// -----------------------------------------------------
+	// Methods to create ActionTarget objects
+	// -----------------------------------------------------
+	// Create ActionScalar for the Rate of the transition
+	std::vector<RunSection::NamedActionScalar> State::CreateActionScalars(const std::string &_system)
+	{
+		std::vector<RunSection::NamedActionScalar> scalars;
+		if (this->IsValid())
+		{
+			for(auto i = Variables.begin(); i != Variables.end(); i++)
+			{
+				RunSection::ActionScalar VarScalar = RunSection::ActionScalar(i->second, &CheckActionScalarVariable);
+				scalars.push_back(RunSection::NamedActionScalar(_system + "." + this->Name() + "." + i->first, VarScalar));
+			}
+		}
+
+		return scalars;
+	} 
+
+	// Method that calls the methods to generate ActionVectors and ActionScalars and inserts them into the given collections
+	void State::GetActionTargets(std::vector<RunSection::NamedActionScalar> &_scalars, std::vector<RunSection::NamedActionVector> &_vectors, const std::string &_system)
+	{
+		// Get ActionTargets from private methods
+		auto scalars = this->CreateActionScalars(_system);
+
+		// Insert them
+		_scalars.insert(_scalars.end(), scalars.begin(), scalars.end());
+	}
+
 	// -----------------------------------------------------
 	// Name and validation
 	// -----------------------------------------------------
@@ -645,6 +783,58 @@ namespace SpinAPI
 			if (i + 1 != this->substates.cend())
 				_stream << "\n";
 		}
+	}
+
+	bool State::UpdateFactors()
+	{
+		for(auto i = substates.begin(); i != substates.end(); i++)
+		{
+			for(auto e = i->begin(); e != i->end(); e++)
+			{
+				int FuncNum = e - i->begin(); //Functions exist for each state of each spin object, so the nth spin object will have it's functions offset by n
+				arma::cx_double factor = 1;
+				for(auto a = e->second.begin(); a != e->second.end(); a++)
+				{	
+					auto f = this->Functions[FuncNum];
+					if(f->GetVariable()[0] == "") //checks whether it acutally has a function to apply 
+					{
+						FuncNum = FuncNum + i->size();
+						continue;
+					}
+
+					if(Variables.size() == 1)
+					{
+						factor = this->InitialFactors[FuncNum] * f->operator()((void*)(double*)&Variables[f->GetVariable()[0]]);
+					}
+					else
+					{
+						std::vector<void*> v;
+						for(int i = 0; i < Variables.size(); i++)
+						{
+							v.push_back((void*)(double*)&Variables[f->GetVariable()[i]]);
+						}
+						factor = this->InitialFactors[FuncNum] * f->operator()(v);
+					}
+					a->second = factor; //can't use a->second as this would have a culmative effect over time
+					FuncNum = FuncNum + i->size();
+				}
+			}
+		}
+		return true;
+	}
+
+	bool State::Update()
+	{
+		return UpdateFactors();
+	}
+
+	// -----------------------------------------------------
+	// Non-member non-friend ActionTarget Check functions
+	// -----------------------------------------------------
+	// Make sure that the Variable has a valid value (positive, not NaN or infinite)
+	bool CheckActionScalarVariable(const double &_d)
+	{
+		return std::isfinite(_d);
 	}
 	// -----------------------------------------------------
 }

@@ -60,10 +60,16 @@ namespace SpinAPI
 	using output_ptr = std::shared_ptr<StandardOutput>;
 #endif
 
+#ifndef MOD_SpinAPI_SubSystem
+	class SubSystem;
+	using subsystem_ptr = std::shared_ptr<SubSystem>;
+#endif
+
 #ifndef MOD_SpinAPI_SpinSystem
 	class SpinSystem;
 	using system_ptr = std::shared_ptr<SpinSystem>;
 #endif
+
 }
 
 #endif

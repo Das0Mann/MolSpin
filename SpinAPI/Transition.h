@@ -57,6 +57,11 @@ namespace SpinAPI
 		bool IsValid() const;
 		bool HasTrajectory() const;
 
+		void SetValid(bool valid)
+		{
+			isValid = valid;
+		}
+
 		// Public property methods
 		double Rate() const;
 		TransitionType Type() const;

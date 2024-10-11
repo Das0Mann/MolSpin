@@ -14,3 +14,10 @@ CMakeLists.txt.user
 build
 .idea
 .vscode
+
+#ignore personal msd files
+/msd files
+
+#ignore vscode workspase files
+MolSpin.code-workspace
+MolSpin copy.code-workspace

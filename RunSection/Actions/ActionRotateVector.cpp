@@ -134,5 +134,10 @@ namespace RunSection
 
 		return false;
 	}
+
+	bool ActionRotateVector::Reset()
+	{
+		this->actionVector->Reset();
+	}
 	// -----------------------------------------------------
 }

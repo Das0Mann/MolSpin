@@ -37,6 +37,7 @@ namespace SpinAPI
 		double prefactor;									 // An optional additional prefactor that can be specified in input file (default = 1.0)
 		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
+		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
 
 		// Trajectory parameters
 		Trajectory trajectory;
@@ -78,6 +79,10 @@ namespace SpinAPI
 		// Name and validation
 		std::string Name() const;
 		bool IsValid() const;
+		void SetValid(bool valid)
+		{
+			isValid = valid;
+		};
 
 		// Read spins into group1 and group2, returns false if some spins were not found
 		bool ParseSpinGroups(const std::vector<spin_ptr> &);

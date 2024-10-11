@@ -14,6 +14,7 @@
 #include "Transition.h"
 #include "SpinSystem.h"
 #include "SpinSpace.h"
+#include "Function.h"
 #include "Pulse.h"
 //////////////////////////////////////////////////////////////////////////////
 // Tests whether the spin quantum number is stored correctly.
@@ -295,7 +296,7 @@ bool test_spinapi_state()
 	std::string spin4_name = "spin4";
 	std::string spin4_contents = "spin=1/2;";
 	auto spin4 = std::make_shared<SpinAPI::Spin>(spin4_name, spin4_contents);
-
+    
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
@@ -1419,6 +1420,66 @@ bool test_spinapi_spinspace_spinmanagement2()
 	return isCorrect;
 }
 //////////////////////////////////////////////////////////////////////////////
+bool test_function_finding()
+{
+	// Setup objects for the test
+	std::string sp1 = "spin1";
+	std::string sp1Contents = "spin=1/2;";
+	auto spin1 = std::make_shared<SpinAPI::Spin>(sp1, sp1Contents);
+
+	SpinAPI::SpinSystem spinsys("System");
+	spinsys.Add(spin1);
+
+	std::string state_name = "TestState";
+	std::string state_contents = "x=3.14159265;spins(spin1)=cos(0.5x)|1/2>;";
+	SpinAPI::State state(state_name, state_contents);
+
+	bool isCorrect = true;
+	
+	// Perform the test
+	isCorrect &= state.ParseFromSystem(spinsys);
+	auto func = state.GetFunctions()[0];
+	auto str = func->GetFunctionString();
+
+	if(str.compare("cos(0.5x)") == 0)
+	{
+		isCorrect &= true;
+	}
+
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+bool test_function_evaluation()
+{
+	// Setup objects for the test
+	std::string function = "cos";
+	std::string contents = "0.5x*x+y*y+c";
+	auto TestFunc = SpinAPI::FunctionParser(function, contents);
+
+	arma::cx_double val1 = {-0.1634667676,0};
+	arma::cx_double val2 = {0.1403316058,0};
+	arma::cx_double val3 = {0.3010526538,0};
+	double tolerance = 1e-5;
+
+	bool isCorrect = true;
+
+	double d1 = 0.5; 
+	double d2 = 1.1; 
+	double d3 = 0.4;
+	void* v1 = (void*)&d1;
+	void* v2 = (void*)&d2; 
+	void* v3 = (void*)&d3;
+
+	arma::cx_double val = TestFunc->operator()({v1,v2,v3});
+	isCorrect &= (std::abs(val.real() - val1.real()) < tolerance);
+	val = TestFunc->operator()({v3,v1,v2});
+	isCorrect &= (std::abs(val.real() - val2.real()) < tolerance);
+	val = TestFunc->operator()({v2, v3, v1});
+	isCorrect &= (std::abs(val.real() - val3.real()) < tolerance);
+	
+	return isCorrect;
+}
+
 // Tests an Pulse object with an instantpulse type.
 // DEPENDENCY NOTE: ObjectParser
 bool test_spinapi_instantpulse()
@@ -1556,6 +1617,8 @@ void AddSpinAPITests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("SpinAPI::SpinSpace basis reordering methods (sparse matrix)", test_spinapi_reorderbasis_sparsematrix));
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Add, Contains, Remove)", test_spinapi_spinspace_spinmanagement1));
 	_cases.push_back(test_case("SpinAPI::SpinSpace spin management (Vector Add,Vector Contains, Clear)", test_spinapi_spinspace_spinmanagement2));
+	_cases.push_back(test_case("SpinAPI::StateFunctions validating function parsing", test_function_finding));
+	_cases.push_back(test_case("SpinAPI::Functions validating function evaluation", test_function_evaluation));
 	_cases.push_back(test_case("SpinAPI::Pulse InstantPulse", test_spinapi_instantpulse));
 	_cases.push_back(test_case("SpinAPI::Pulse LongPulseStaticField", test_spinapi_longpulsestaticfield));
 	_cases.push_back(test_case("SpinAPI::Pulse LongPulse", test_spinapi_longpulse));
