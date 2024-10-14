@@ -27,6 +27,7 @@ namespace RunSection
 		point* m_Points; //stores y and theta
 		int m_Num;
 		int m_Step;
+		double m_Magnitude; //Maginitude of the intial vector;
 
 	private:
 		bool CalculatePoints(int n);
