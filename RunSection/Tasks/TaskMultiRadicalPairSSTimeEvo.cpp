@@ -633,7 +633,8 @@ namespace RunSection
 		std::vector<double> ylist;
 		for(int i = 0; i < _traj.size(); i++)
 		{
-			ylist.push_back(f(_traj[i].real(), _time[i], _rate));
+			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
+			ylist.push_back(_traj[i].real());
 		}
 		_yeild = _rate * simpson_integration(_time, ylist);
 	}
