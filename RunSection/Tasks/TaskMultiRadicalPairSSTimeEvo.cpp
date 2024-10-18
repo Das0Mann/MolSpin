@@ -96,8 +96,11 @@ namespace RunSection
 				{
 					if(*tr.TransitionObject == SubSystemsTransitions[i].transition)
 					{
-						duplicate = true;
-						break;
+						std::string d = "";
+						SubSystemsTransitions[i].transition->Properties()->Get("duplicate", d);
+						if(d[0] != 't') //only need to check first letter
+							duplicate = true;
+							break;
 					}
 
 				}
@@ -383,6 +386,7 @@ namespace RunSection
 				this->Log() << "ERROR: Failed to obtain the superspace Hamiltonian for spin spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
 			}
+			auto offset = SpinSpace->second->SpaceDimensions();
 			L.submat(nextDimension, nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextDimension + SpinSpace->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
 			
 			// Then get the reaction operators
@@ -427,6 +431,7 @@ namespace RunSection
 				}
 				//std::cout << T << std::endl;
 				L.submat(nextDimension, nextCDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += T;
+				//T.print();
 				//modify L for the transition leading out of the subsytem;
 				//L.submat(nextCDimension, nextCDimension, nextCDimension + SpinSpace->second->SpaceDimensions() - 1, nextCDimension + SpinSpace->second->SpaceDimensions() - 1) += -1 * T;
 				//std::cout << L << std::endl;
@@ -434,7 +439,6 @@ namespace RunSection
 			spinsystem++;
 			nextDimension += dimensions;
 		}
-		
 		// Write results for initial state as well (i.e. at time 0)
 		this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
 		this->WriteStandardOutput(this->Data());
@@ -529,7 +533,7 @@ namespace RunSection
 
 		this->Log() << "Done with calculation." << std::endl;
 		this->Log() << "Calculating Total Yield." << std::endl;
-		this->Data() << "\n" << "Yeilds ";
+		//this->Data() << "\n" << "Yeilds ";
 		std::vector<double> time;
 		std::vector<double> yields;
 
@@ -616,10 +620,10 @@ namespace RunSection
 
 			// Return the yield for this state - note that no reaction rates are included here.
 			//std::cout << P << std::endl;
-			std::complex<double> tr = arma::trace(P * _rho);
-			//this->Data() << std::abs(arma::trace(P * _rho)) << " ";
-			this->Data() << tr.real() << " ";
-			traj.push_back(tr.real());
+			double tr = std::abs(arma::trace(P * _rho));
+			this->Data() << tr << " ";
+			//this->Data() << tr.real() << " ";
+			traj.push_back(tr);
 		}
 	}
 
@@ -671,9 +675,11 @@ namespace RunSection
 			if (!SpinSystem->InteractionOperator((*i), tmp))
 				return false;
 			result += tmp;
+			//tmp.print();
 		}
 
 		H = result;
+		//std::cout << H << std::endl;
 		return true;
 	}
 
@@ -695,6 +701,8 @@ namespace RunSection
 				return false;
 		}
 
+		//result.print();
+
 		// We have already used the first transition
 		i++;
 
@@ -709,9 +717,11 @@ namespace RunSection
 			if (!SpinSystem->ReactionOperator(i->transition, tmp, SpinAPI::ReactionOperatorType::Unspecified))
 				return false;
 			result += tmp;
+			//tmp.print();
 		}
 
 		K = result;
+		//K.print();
 		return true;
 
 	}
