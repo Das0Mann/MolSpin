@@ -7,7 +7,7 @@ https://molspin.eu/
 NOTE THAT THIS REPOSITORY IS IN ACTIVE DEVELOPMENT! PRODUCTION VERSIONS ARE AVAILABLE AT THE MOLSPIN WEBSITE!
 
 
-LICENCE
+LICENCE:
 
 Developed by Luca Gerhards & Claus Nielsen and copyright 2019 Quantum Biology and Computational Physics Group.
 
