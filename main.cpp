@@ -26,7 +26,7 @@ extern "C" void omp_set_num_threads(int);
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-	const std::string MolSpin_version = "v2.0";
+	const std::string MolSpin_version = "v2.2";
 	const std::string hline = "# ---------------------------------------------------------------------------------";
 
 	// Check for proper input
