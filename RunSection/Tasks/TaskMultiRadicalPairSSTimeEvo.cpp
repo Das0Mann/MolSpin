@@ -849,13 +849,13 @@ namespace RunSection
 		return true;
 	}
     
-	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
-    {
-        return false;
-    }
-    
-	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, amra::cx_vec &RhoNaugt)
-    {
-        return arma::cx_vec();
-    }
+// 	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
+//     {
+//         return false;
+//     }
+//     
+// 	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, amra::cx_vec &RhoNaugt)
+//     {
+//         return arma::cx_vec();
+//     }
 }
