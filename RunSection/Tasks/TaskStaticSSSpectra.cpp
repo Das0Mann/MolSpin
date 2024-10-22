@@ -23,7 +23,7 @@ namespace RunSection
 	// -----------------------------------------------------
 	// TaskStaticSSSpectra Constructors and Destructor
 	// -----------------------------------------------------
-	TaskStaticSSSpectra::TaskStaticSSSpectra(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn)
+	TaskStaticSSSpectra::TaskStaticSSSpectra(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(1.0), totaltime(1.0e+4), reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn)
 	{
 	}
 
