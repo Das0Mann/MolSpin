@@ -39,13 +39,17 @@ namespace SpinAPI
 		if(m_funcType == ReturnType::d)
 		{
 			double val = m_factors[0] * *(double*)value; //
-			double _val = *(double*)m_func((void*)(double*)&val);
+			double* temp = (double*)m_func((void*)(double*)&val);
+			double _val = *temp;
+			delete temp;
 			ReturnValue = arma::cx_double(_val, 0);
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
 			double val = m_factors[0] * *(double*)value; 
-			arma::cx_double _val = *(arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			arma::cx_double _val = *temp;
+			delete temp;
 			ReturnValue = _val;
 		}
 
@@ -58,13 +62,17 @@ namespace SpinAPI
 		if(m_funcType == ReturnType::d)
 		{
 			double val = EvaluateFuncValue(value);
-			double _val = *(double*)m_func((void*)(double*)&val);
+			double* temp = (double*)m_func((void*)(double*)&val);
+			double _val = *temp;
+			delete temp;
 			ReturnValue = arma::cx_double(_val, 0);
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
 			double val = EvaluateFuncValue(value);
-			arma::cx_double _val = *(arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			arma::cx_double _val = *temp;
+			delete temp;
 			ReturnValue = _val;
 		}
 
@@ -692,24 +700,24 @@ namespace SpinAPI
 		void* sin(void* value) //double
 		{
 			double val = *(double*)value;
-			double _val = std::sin(val);
-			double* v = &_val;
-			return (void*)v;
+			double* _val = new double;
+			*_val = std::sin(val);
+			return (void*)_val;
 		} 
 
 		void* cos(void* value) //double
 		{
+			double* _val = new double;
 			double val = *(double*)value;
-			double _val = std::cos(val);
-			double* v = &_val;
-			return (void*)v;
+			*_val = std::cos(val);
+			return (void*)_val;
 		}
 
 		void* scalar(void* value) //scalar not scaler
 		{
-			double _val = *(double*)value ;
-			double* v = &_val;
-			return (void*)v;
+			double* _val = new double;
+			*_val = *(double*)value;
+			return (void*)_val;
 		}
 	}
 }

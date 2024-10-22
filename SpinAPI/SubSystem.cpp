@@ -348,7 +348,9 @@ namespace SpinAPI
                     continue;
                 }
                 auto tr2_ptr = tr2->TransitionObject->get();
-                if(tr_ptr == tr2_ptr)
+                std::string d = "";
+                if(tr2->TransitionObject->get()->Properties()->Get("duplicate", d));
+                if(tr_ptr == tr2_ptr && d[0] != 't')
                 {
                     tr->type = 1;
                     if(tr->source == "")
