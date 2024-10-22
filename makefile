@@ -67,8 +67,8 @@ DEP_TESTS =
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
 CC = g++ -std=c++17		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
-LFLAGS = -Wall -Ofast -g	# Linker Flags
-CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g #-Ofast  # Compile flags to .o
+LFLAGS = -Wall -O3 -g	# Linker Flags
+CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g -O3 #-fopenmp  # Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------
