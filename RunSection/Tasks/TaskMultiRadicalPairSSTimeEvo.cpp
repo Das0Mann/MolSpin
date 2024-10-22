@@ -634,7 +634,7 @@ namespace RunSection
 		for(int i = 0; i < _traj.size(); i++)
 		{
 			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
-			ylist.push_back(_traj[i].real());
+			ylist.push_back(_rate * _traj[i].real());
 		}
 		_yeild = _rate * simpson_integration(_time, ylist);
 	}
@@ -848,5 +848,14 @@ namespace RunSection
 		}
 		return true;
 	}
-	// -----------------------------------------------------
+    
+	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
+    {
+        return false;
+    }
+    
+	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, amra::cx_vec &RhoNaugt)
+    {
+        return arma::cx_vec();
+    }
 }
