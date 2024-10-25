@@ -99,8 +99,10 @@ namespace RunSection
 						std::string d = "";
 						SubSystemsTransitions[i].transition->Properties()->Get("duplicate", d);
 						if(d[0] != 't') //only need to check first letter
+						{
 							duplicate = true;
 							break;
+						}
 					}
 
 				}
@@ -483,9 +485,9 @@ namespace RunSection
 		this->Data() << std::endl;
 
 		// We need the propagator
-		this->Log() << "Calculating the propagator..." << std::endl;
+		//this->Log() << "Calculating the propagator..." << std::endl;
 		//this->timestep = 1e-4;
-		arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
+		//arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
 		//arma::cx_mat P = arma::conv_to<arma::cx_mat>::from(L) * this->timestep;
 	
 		// Perform the calculation
@@ -500,11 +502,14 @@ namespace RunSection
 			this->WriteStandardOutput(this->Data());
 			trajectory.push_back({time, {}});
 
-			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
-				arma::cx_vec tmp = P * rho0;
-				rho0 = tmp;
+				RungeKutta4(L, rho0, rho0, this->timestep);
 			}
+			// Propagate (use special scope to be able to dispose of the temporary vector asap)
+			//{
+			//	arma::cx_vec tmp = P * rho0;
+			//	rho0 = tmp;
+			//}
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
 			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
@@ -849,13 +854,42 @@ namespace RunSection
 		return true;
 	}
     
-// 	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
-//     {
-//         return false;
-//     }
-//     
-// 	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, amra::cx_vec &RhoNaugt)
-//     {
-//         return arma::cx_vec();
-//     }
+ 	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
+    {
+		arma::cx_vec k0;
+		arma::cx_vec k1;
+		arma::cx_vec k2;
+		arma::cx_vec k3;
+		arma::cx_vec k4;
+		{
+			k0.zeros(L.n_rows);
+			k1 = ComputeRhoDot(L, k0, RhoNaught);
+			k0.clear();
+		}
+		{
+			arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k1;
+			k2 = ComputeRhoDot(L, temp, RhoNaught);
+		}
+		{
+			arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k2;
+			k3 = ComputeRhoDot(L, temp, RhoNaught);
+		}
+		{
+			arma::cx_vec temp = arma::cx_double(timestep,0.0) * k3;
+			k4 = ComputeRhoDot(L, temp, RhoNaught);
+		}
+
+		drhodt = RhoNaught + ((timestep/6.0) * (k1 + (arma::cx_double(2.0,0.0) * k2) + (arma::cx_double(2.0,0.0) * k3) + k4));
+
+        return true;
+	}
+     
+ 	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, arma::cx_vec RhoNaught)
+    {
+		arma::cx_vec ReturnVec;
+		ReturnVec.zeros(L.n_rows);
+		RhoNaught = RhoNaught + K;
+		ReturnVec = L * RhoNaught;
+		return ReturnVec;
+    }
 }

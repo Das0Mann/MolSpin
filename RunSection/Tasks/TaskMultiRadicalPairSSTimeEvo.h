@@ -53,8 +53,8 @@ namespace RunSection
 		bool ValidateSubSystems();
 
 		//RungeKutta4 method 
-		//bool RungeKutta4(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& drhodt, double timestep);
-		//arma::cx_vec ComputeRhoDot(arma::sp_cx_mat& L, arma::cx_vec& K, amra::cx_vec& RhoNaugt); //k in this case isn't refering to the reaction operator K but k_i, i E {1,2,3,4} for the RK4 method
+		bool RungeKutta4(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& drhodt, double timestep);
+		arma::cx_vec ComputeRhoDot(arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaugt); //k in this case isn't refering to the reaction operator K but k_i, i E {1,2,3,4} for the RK4 method
 
 	protected:
 		bool RunLocal() override;
