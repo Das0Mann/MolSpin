@@ -125,7 +125,7 @@ namespace RunSection
 			while(system2 != system && IsState)
 			{
 				SpinSystem++;
-				if(SpinSystem == this->systems.size())
+				if((unsigned int)SpinSystem == this->systems.size())
 				{
 					IsState = false;
 				}

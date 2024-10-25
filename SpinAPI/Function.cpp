@@ -29,7 +29,7 @@ namespace SpinAPI
 		if(m_duplicates.size() != 0) //if there's duplicates but only one variable the overload gets called
 		{
 			std::vector<void*> values;
-			for(int i = 0; i < m_duplicates.size(); i++)
+			for(unsigned int i = 0; i < m_duplicates.size(); i++)
 			{
 				values.push_back(value);
 			}
@@ -83,7 +83,7 @@ namespace SpinAPI
 	{
 		std::vector<double> VarValues;
 		std::string AllocatedVariables = "";
-		for(int i = 0; i < m_variables.size(); i++)
+		for(unsigned int i = 0; i < m_variables.size(); i++)
 		{
 			if(AllocatedVariables.find(m_variables[i]) != AllocatedVariables.npos)
 				continue;
@@ -140,7 +140,7 @@ namespace SpinAPI
 			std::cout << "[WARNING] : TOO MANY VALUES SUPPLIED FOR THIS FUNCTION, UNDEFINED BEHAVIOUR MAY OCCUR" << std::endl;
 		}
 
-		for(int i = 0; i < VarValues.size(); i++)
+		for(unsigned int i = 0; i < VarValues.size(); i++)
 		{
 			VarValues[i]= m_factors[i] * VarValues[i];
 		}
@@ -152,7 +152,7 @@ namespace SpinAPI
 		std::unordered_map<std::string, double> ValueMap;
 
 		std::string CarriedForward = "";
-		for(int i = 0; i < VarValues.size(); i++)
+		for(unsigned int i = 0; i < VarValues.size(); i++)
 		{
 			if(m_VarDepth[i] > current_depth)
 			{
@@ -178,7 +178,7 @@ namespace SpinAPI
 			ValueMap[key] = VarValues[i];
 			number++;
 			
-			if(i != VarValues.size()-1)
+			if((unsigned int)i != VarValues.size()-1)
 			{
 				std::string temp;
 				switch(m_op[i])
@@ -227,7 +227,7 @@ namespace SpinAPI
 		};
 
 		std::vector<char> chr = {'+', '-', '/', '*', '(', ')'};
-		for(int i = 0; i < func.length(); i++)
+		for(unsigned int i = 0; i < func.length(); i++)
 		{
 			char c = func[i];
 			auto it = std::find(chr.begin(), chr.end(), c);
@@ -250,7 +250,7 @@ namespace SpinAPI
 			}
 			else
 			{
-				while(!st.empty() && prec(c) < prec(st.top()) || !st.empty() && prec(c) == prec(st.top()))
+				while((!st.empty() && prec(c) < prec(st.top())) || (!st.empty() && prec(c) == prec(st.top())))
 				{
 					Postfix += st.top();
 					st.pop();
@@ -269,7 +269,7 @@ namespace SpinAPI
 
 		//evaluate using the same method using rpn
 		std::stack<double> ValueStack;
-		for(int i = 0; i < Postfix.length(); i++)
+		for(unsigned int i = 0; i < Postfix.length(); i++)
 		{
 			char c = Postfix[i];
 			auto it = std::find(chr.begin(), chr.end(), c);
@@ -392,14 +392,12 @@ namespace SpinAPI
 
 	std::shared_ptr<Function> FunctionParser(std::string& func, std::string& var)
 	{
-		bool value = true;
 
 		std::vector<double> factors;
 		std::vector<std::string> variables;
 		std::vector<Function::InternalOperations> operations;
 		std::vector<int> VarDepth;
 		bool VarPreFactor = true;
-		bool Initial = false;
 		bool decimal = false;
 		std::pair<double,double> nums = {0.0, 0.0};
 		std::vector<char> SpecialCharacters = {'+', '-', '*', '/','(', ')'};
@@ -531,7 +529,6 @@ namespace SpinAPI
 				}
 				else if((*it) == '(')
 				{
-					Initial = true;
 					depth = depth + 1;
 					if(operations[VarNum - 2] != Function::InternalOperations::mu && operations[VarNum - 2] != Function::InternalOperations::d)
 					{
@@ -656,7 +653,6 @@ namespace SpinAPI
 		std::vector<int> removed = {};
 		for(auto c = func.cbegin(); c != func.cend(); c++)
 		{
-			auto a = func.cend() - func.cbegin();
 			if((*c) == '+' || (*c) == '-')
 			{
 				continue;
@@ -668,7 +664,7 @@ namespace SpinAPI
 			}
 		}
 		int r = 0;
-		for(int i = 0; i < removed.size(); i++)
+		for(unsigned int i = 0; i < removed.size(); i++)
 		{
 			func.erase(func.begin() + removed[i] - r);
 			r++;

@@ -84,7 +84,7 @@ namespace RunSection
 		}
 
         // Retrieve the vector we want to change
-        std::array<double,3> points;
+        std::array<double,3> points = {0,0,0};
         GetPoint(points);
 		arma::vec vec = {m_Magnitude*points[0], m_Magnitude*points[1], m_Magnitude*points[2]};
 
@@ -134,7 +134,7 @@ namespace RunSection
 
         m_Magnitude = std::sqrt(m_Magnitude);
 
-        std::array<double,3> points;
+        std::array<double,3> points = {0,0,0};
         GetPoint(points);
 
 		arma::vec vec = {m_Magnitude*points[0], m_Magnitude*points[1], m_Magnitude*points[2]};
@@ -149,9 +149,10 @@ namespace RunSection
     bool ActionFibonacciSphere::Reset()
 	{
 		m_Step = 0;
-        std::array<double,3> points;
+        std::array<double,3> points = {0,0,0};
         GetPoint(points);
 		arma::vec vec = {points[0], points[1], points[2]};
         this->actionVector->Set(vec);
+        return true;
 	}
 }

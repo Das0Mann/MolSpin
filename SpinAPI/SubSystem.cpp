@@ -19,7 +19,7 @@
 namespace SpinAPI
 {
     SubSystem::SubSystem(std::string _name, std::string _contents, system_ptr _system)
-        :m_name(_name), m_properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), m_system(_system), m_spins({}), m_transtions({}), m_interactions({}), m_operators({}), m_pulses({})
+        :m_name(_name), m_system(_system), m_spins({}), m_interactions({}), m_transtions({}), m_operators({}), m_pulses({}), m_properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents))
     {
     }
 
@@ -270,26 +270,26 @@ namespace SpinAPI
             }
         }
 
-        for(int i = 0; i < SubSystemSpins.size(); i++)
+        for(unsigned int i = 0; i < SubSystemSpins.size(); i++)
         {
             m_spins.push_back(std::make_shared<spin_ptr>(m_system->spins_find(SubSystemSpins[i])));
         }
 
-        for(int i = 0; i < SubSystemTransitionsOut.size(); i++)
+        for(unsigned int i = 0; i < SubSystemTransitionsOut.size(); i++)
         {
             std::shared_ptr<transition_ptr> t = std::make_shared<transition_ptr>(m_system->transitions_find(SubSystemTransitionsOut[i]));
             Transition tr(t, t->get()->Name());
             tr.source = this->Name();
             m_transtions.push_back(tr);
         }
-        for(int i = 0; i < SubSystemTransitionsIn.size(); i++)
+        for(unsigned int i = 0; i < SubSystemTransitionsIn.size(); i++)
         {
             std::shared_ptr<transition_ptr> t = std::make_shared<transition_ptr>(m_system->transitions_find(SubSystemTransitionsIn[i]));
             Transition tr(t, t->get()->Name());
             tr.target = this->Name();
             m_transtions.push_back(tr);
         }
-        for(int i = 0; i < SubSystemInteractions.size(); i++)
+        for(unsigned int i = 0; i < SubSystemInteractions.size(); i++)
         {
             m_interactions.push_back(std::make_shared<interaction_ptr>(m_system->interactions_find(SubSystemInteractions[i])));
         }
@@ -370,7 +370,7 @@ namespace SpinAPI
                 }
                 index2++;
             }
-            if(index2 == AllTransitions.size() and tr->target == "")
+            if((unsigned int)index2 == AllTransitions.size() and tr->target == "")
             {
                 tr->type = 0;
             }
