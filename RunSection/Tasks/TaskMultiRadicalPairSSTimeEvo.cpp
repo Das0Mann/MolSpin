@@ -8,6 +8,7 @@
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <omp.h>
 #include "TaskMultiRadicalPairSSTimeEvo.h"
 #include "Transition.h"
 #include "Interaction.h"
@@ -83,7 +84,6 @@ namespace RunSection
 		//	}
 		//}
 
-		int num = 0;
 		for(auto s : ss)
 		{
 			SubSystemSpins.push_back({s->Name(), s->GetSpinNames()});
@@ -92,7 +92,7 @@ namespace RunSection
 			{
 				//remove duplicates
 				bool duplicate = false;
-				for(int i = 0; i < SubSystemsTransitions.size(); i++)
+				for(unsigned int i = 0; i < SubSystemsTransitions.size(); i++)
 				{
 					if(*tr.TransitionObject == SubSystemsTransitions[i].transition)
 					{
@@ -131,165 +131,6 @@ namespace RunSection
 			SubSystemsInteractions.push_back({s->Name(), s->GetInteractions()});
 
 		}
-
-		//Verify that the subsytems are valid by checking if all the spin objects listed have been loaded 
-		//num = 0;
-		//for(auto system : SubSystemSpins)
-		//{
-		//	//std::vector<std::string> SubSystemTemp;
-		//	//std::string SpinObjects = "";
-		//	//if(!this->Properties().get()->Get(system.first, SpinObjects))
-		//	//{
-		//	//	this->Log() << "Error: Failed to Load SubSystem " << system.first << std::endl;
-		//	//	std::cout << "Error: Failed to Load SubSystem " << system.first << std::endl;
-		//	//	num++;
-		//	//	continue;
-		//	//}
-
-		//	//std::stringstream ss(SpinObjects);
-		//	//while(ss.good())
-		//	//{
-		//	//	std::string Name;
-		//	//	std::getline(ss,Name, ',');
-		//	//	SubSystemTemp.push_back(Name);
-		//	//}
-		//	//{
-		//	//	auto space = std::make_shared<SpinAPI::SpinSpace>(*(*systems.cbegin()));
-		//	//	bool loaded = true;
-		//	//	for(std::string i : SubSystemTemp)
-		//	//	{
-		//	//		if(!space->Contains(i))
-		//	//		{
-		//	//			this->Log() << "Error: " << i << " is not a loaded spin object" << std::endl;
-		//	//			std::cout << "Error: " << i << " is not a loaded spin object" << std::endl;
-		//	//			loaded &= false;
-		//	//			continue;
-		//	//		}
-		//	//		loaded &= true;
-		//	//	}
-		//	//	if(!loaded)
-		//	//	{
-		//	//		this->Log() << "Failed to load SubSystem " << system.first << std::endl;
-		//	//		std::cout << "Failed to load SubSystem " << system.first << std::endl;
-		//	//		num++;
-		//	//		continue;
-		//	//	}
-		//	//	
-		//	//}
-
-		//	//SubSystemSpins[num].second = SubSystemTemp;
-		//	auto FindInVec = [&SubSystemSpins](std::string str)
-		//	{
-		//		for(int i = 0; i < SubSystemSpins.size(); i++)
-		//		{
-		//			if(SubSystemSpins[i].first == str)
-		//			{
-		//				return true;
-		//			}
-		//		}
-		//		return false;
-		//	};
-
-		//	auto MainSpinSystem = systems.cbegin();
-
-		//	//SubSystemsTransitions.push_back({system.first, {}});
-		//	for(auto transiton : MainSpinSystem->get()->Transitions())
-		//	{
-		//		int TransitionType = 0; //0 = Transition out of one subsystem, 1 = Transition between two subsytems
-		//		std::string SourceSubSystem = "";
-		//		//All transitions need a source sub system
-		//		if(transiton->Properties()->Get("sourcesubsystem", SourceSubSystem))
-		//		{
-		//			if(SourceSubSystem != system.first)
-		//			{
-		//				continue;
-		//			}
-		//			if(!FindInVec(SourceSubSystem))
-		//			{
-		//				this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
-		//				std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
-		//				transiton->SetValid(false);
-		//				continue;
-		//			}
-		//		}
-		//		else
-		//		{
-		//			this->Log() << "Error: No source sub system specified for transition " << transiton->Name() << std::endl;
-		//			std::cout << "Failed to load transition " << transiton->Name() << ". No source sub system specified" << std::endl;
-		//			transiton->SetValid(false);
-		//			continue;
-		//		}
-
-		//		std::string TargetSubSystem = "";
-		//		if(transiton->Properties()->Get("targetsubsystem", TargetSubSystem))
-		//		{
-		//			if(!FindInVec(TargetSubSystem))
-		//			{
-		//				this->Log() << "Error: No target sub system specified for transition " << transiton->Name() << std::endl;
-		//				std::cout << "Failed to load transition " << transiton->Name() << ". No target sub system specified" << std::endl;
-		//				transiton->SetValid(false);
-		//				continue;
-		//			}
-		//			TransitionType = 1;
-		//		}
-
-		//		SubSystemTransition TransitionData;
-		//		TransitionData.transition = transiton;
-		//		TransitionData.type = TransitionType;
-		//		TransitionData.source = SourceSubSystem;
-		//		TransitionData.type = TransitionType;
-
-		//		switch (TransitionType)
-		//		{
-		//		case 0:
-		//			SubSystemsTransitions.push_back(TransitionData);
-		//			break;
-		//		case 1:
-		//			TransitionData.target = TargetSubSystem;
-		//			SubSystemsTransitions.push_back(TransitionData);
-		//			break;
-		//		default:
-		//			break;
-		//		}
-		//	}
-
-		//	//similar system for interactions
-		//	for(auto interaction : MainSpinSystem->get()->Interactions())
-		//	{
-		//		std::string SubSystem = "";
-		//		SubSystemsInteractions.push_back({system.first, {}});
-		//		if(!interaction->Properties()->Get("subsystem", SubSystem))
-		//		{
-		//			this->Log() << "Error: No sub system specified for interaction " << interaction->Name() << std::endl;
-		//			std::cout << "Failed to load interaction " << interaction->Name() << ". No sub system specified" << std::endl;
-		//			interaction->SetValid(false);
-		//			continue;
-		//		}
-
-		//		std::vector<std::string> systems; 
-		//		std::stringstream ss(SubSystem);
-		//		while(ss.good())
-		//		{
-		//			std::string Name;
-		//			std::getline(ss,Name, ',');
-		//			systems.push_back(Name);
-		//		}
-		//		
-		//		for(auto i : systems)
-		//		{
-		//			if(i != system.first)
-		//			{
-		//				continue;
-		//			}
-
-		//			//TODO: checks that the spin objects involved are in that subsystem
-		//			SubSystemsInteractions[num].second.push_back(interaction);
-		//			break;
-		//		}
-		//	}
-
-		//	num++;
-		//}
 
 		std::vector<std::pair<std::shared_ptr<SpinAPI::SpinSystem>, std::shared_ptr<SpinAPI::SpinSpace>>> spaces;
 		unsigned int dimensions = 0;
@@ -388,7 +229,6 @@ namespace RunSection
 				this->Log() << "ERROR: Failed to obtain the superspace Hamiltonian for spin spin subsystem \"" << SubSystemSpins[spinsystem].first << "\"!" << std::endl;
 				return false;
 			}
-			auto offset = SpinSpace->second->SpaceDimensions();
 			L.submat(nextDimension, nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1, nextDimension + SpinSpace->second->SpaceDimensions() - 1) = arma::cx_double(0.0, -1.0) * H;
 			
 			// Then get the reaction operators
@@ -483,12 +323,6 @@ namespace RunSection
 			nextDimension += SpinSpace->second->SpaceDimensions();
 		}
 		this->Data() << std::endl;
-
-		// We need the propagator
-		//this->Log() << "Calculating the propagator..." << std::endl;
-		//this->timestep = 1e-4;
-		//arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
-		//arma::cx_mat P = arma::conv_to<arma::cx_mat>::from(L) * this->timestep;
 	
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
@@ -501,15 +335,10 @@ namespace RunSection
 			this->Data() << time << " ";
 			this->WriteStandardOutput(this->Data());
 			trajectory.push_back({time, {}});
-
+			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
 				RungeKutta4(L, rho0, rho0, this->timestep);
 			}
-			// Propagate (use special scope to be able to dispose of the temporary vector asap)
-			//{
-			//	arma::cx_vec tmp = P * rho0;
-			//	rho0 = tmp;
-			//}
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
 			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
@@ -542,12 +371,12 @@ namespace RunSection
 		std::vector<double> time;
 		std::vector<double> yields;
 
-		for(int i = 0; i < SpinSpace->first->States().size(); i++)
+		for(unsigned int i = 0; i < SpinSpace->first->States().size(); i++)
 		{
 			yields.push_back(0.0);
 		}
 
-		for(int i = 0; i < SubSystemSpins.size(); i++)
+		for(unsigned int i = 0; i < SubSystemSpins.size(); i++)
 		{
 			std::vector<std::vector<std::complex<double>>> data;
 			for(auto e = trajectory.begin(); e != trajectory.end(); e++)
@@ -634,9 +463,9 @@ namespace RunSection
 
 	void TaskMultiRadicalPairSSTimeEvo::StateYield(double _rate, double& _yeild, const std::vector<std::complex<double>>& _traj, std::vector<double>& _time)
 	{
-		auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
+		//auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
 		std::vector<double> ylist;
-		for(int i = 0; i < _traj.size(); i++)
+		for(unsigned int i = 0; i < _traj.size(); i++)
 		{
 			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
 			ylist.push_back(_rate * _traj[i].real());
@@ -647,7 +476,7 @@ namespace RunSection
 	double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
 	{
 		double area = 0;
-		for (int i = 0; i < x_list.size()-1; i++)
+		for (unsigned int i = 0; i < x_list.size()-1; i++)
 		{
 			double diff = x_list[i + 1] - x_list[i];
 			double ab = y_list[i] + y_list[i + 1];

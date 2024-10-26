@@ -45,7 +45,7 @@ namespace SpinAPI
         std::vector<std::shared_ptr<operator_ptr>> m_operators;
         std::vector<std::shared_ptr<pulse_ptr>> m_pulses;
 
-        std::shared_ptr<MSDParser::ObjectParser> m_properties; 
+        std::shared_ptr<MSDParser::ObjectParser> m_properties;
 
     public:
         SubSystem(std::string, std::string, system_ptr); //Normal constructor
