@@ -323,7 +323,7 @@ namespace RunSection
 			nextDimension += SpinSpace->second->SpaceDimensions();
 		}
 		this->Data() << std::endl;
-	
+
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));

@@ -23,7 +23,8 @@ namespace RunSection
 						   notificationLevel(DefaultNotificationLevel),
 						   time(0),
 						   trajectoryStep(0),
-						   setTrajectoryStepBeforeTime(true)
+						   setTrajectoryStepBeforeTime(true),
+						   m_Parallelize(false)
 	{
 		// Note: These cannot be initialized in the initializer list as the default values are initialized after the fields (unless header file is reordered)
 		steps = DefaultSteps;
@@ -32,7 +33,7 @@ namespace RunSection
 	}
 
 	Settings::Settings(const Settings &_settings) : steps(_settings.steps), currentStep(_settings.currentStep), dataDelimiter(_settings.dataDelimiter), notificationLevel(_settings.notificationLevel),
-													time(_settings.time), trajectoryStep(_settings.trajectoryStep), setTrajectoryStepBeforeTime(_settings.setTrajectoryStepBeforeTime)
+													time(_settings.time), trajectoryStep(_settings.trajectoryStep), setTrajectoryStepBeforeTime(_settings.setTrajectoryStepBeforeTime), m_Parallelize(_settings.m_Parallelize)
 	{
 	}
 
@@ -51,6 +52,7 @@ namespace RunSection
 		this->time = _settings.time;
 		this->trajectoryStep = _settings.trajectoryStep;
 		this->setTrajectoryStepBeforeTime = _settings.setTrajectoryStepBeforeTime;
+		this->m_Parallelize = _settings.m_Parallelize;
 
 		return (*this);
 	}
@@ -140,6 +142,15 @@ namespace RunSection
 		else
 		{
 			this->notificationLevel |= MessageType_Error;
+		}
+
+		std::string parallelize;
+		if(_settings.Get("parallelize", parallelize))
+		{
+			if(parallelize.compare("true"))
+				this->m_Parallelize = true;
+			else
+				this->m_Parallelize = false;
 		}
 	}
 

@@ -28,6 +28,7 @@ namespace RunSection
 		double time;
 		unsigned int trajectoryStep;
 		bool setTrajectoryStepBeforeTime;
+		bool m_Parallelize;
 
 	public:
 		// Constructors / Destructors
@@ -52,6 +53,7 @@ namespace RunSection
 		double Time() const { return this->time; };
 		unsigned int TrajectoryStep() const { return this->trajectoryStep; };
 		bool SetTrajectoryStepBeforeTime() const { return this->setTrajectoryStepBeforeTime; };
+		bool GetParallel() const { return this->m_Parallelize; };
 
 		// Method to define ActionTargets for the Settings object
 		void GetActionTargets(std::map<std::string, ActionScalar> &, std::map<std::string, ActionVector> &);
