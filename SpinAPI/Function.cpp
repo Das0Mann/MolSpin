@@ -124,6 +124,23 @@ namespace SpinAPI
 			Varit->second = VarValues[index];
 		}
 
+		std::vector<std::string> AllVariables;
+		for(auto v = this->m_variables.begin(); v != this->m_variables.end(); v++)
+		{
+			for(auto a = v->InternalVariables.begin(); a != v->InternalVariables.end(); a++)
+			{
+				AllVariables.push_back((*a));
+			}
+		}
+
+		index = 0;
+		std::vector<double> VarValuesTemp;
+		for(auto v = AllVariables.begin(); v != AllVariables.end(); v++)
+		{
+			VarValuesTemp.push_back(VarList[(*v)].real());
+		}
+		VarValues = VarValuesTemp;
+
 		auto Evaluate = [](std::unordered_map<std::string,std::complex<double>> ValueMap, std::string PostFixEQ) {
 			std::stack<std::complex<double>> ValueStack;
 			std::complex<double> Val1(0);
@@ -483,6 +500,11 @@ namespace SpinAPI
 			if(std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) != SpecialCharacters.end())
 			{
 				if((*c) != '(')
+				{
+					buffer.clear();
+					continue;
+				}
+				if(c != FunctionString.begin() && CheckFloat(std::string(1,*(c-1)))== false)
 				{
 					buffer.clear();
 					continue;
