@@ -115,7 +115,7 @@ namespace MSDParser
 	// In contents, more than alphanumerics are allowed
 	bool FileReader::isAllowedCharacter(const char& _c) const
 	{
-		const std::string allowed("().-+,;=|>/*");
+		const std::string allowed("().-+,;=|>/*^");
 		
 		if(this->isAlphanumericCharacter(_c))
 			return true;

@@ -16,6 +16,10 @@
 #include "State.h"
 #include "ObjectParser.h"
 #include "SubSystem.h"
+#include "Utility.h"
+
+#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/Sparse>
 
 
 namespace RunSection
@@ -324,6 +328,17 @@ namespace RunSection
 		}
 		this->Data() << std::endl;
 
+		arma::umat locations = { {0,0,1,1},{0,1,0,1}};
+		arma::cx_vec values = {1,2,3,4};
+
+		arma::sp_cx_mat m(locations, values);
+		std::cout << m << std::endl;
+
+		Matrix m2 = ConvertArmadilloToEigen(m);
+		std::cout << Eigen::MatrixXcd(m2) << std::endl;
+		std::cout << ConvertEigenToArmadillo(m2) << std::endl;
+
+		
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
