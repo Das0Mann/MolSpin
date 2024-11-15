@@ -17,6 +17,7 @@
 #include "SpinSpace.h"
 #include "SpinSystem.h"
 #include "SpinAPIDefines.h"
+#include "Utility.h"
 
 namespace RunSection
 {
@@ -54,7 +55,8 @@ namespace RunSection
 
 		//RungeKutta4 method 
 		bool RungeKutta4(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& drhodt, double timestep);
-		arma::cx_vec ComputeRhoDot(arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaugt); //k in this case isn't refering to the reaction operator K but k_i, i E {1,2,3,4} for the RK4 method
+		//static Matrix ComputeRhoDot(Matrix& L, Matrix& K, Matrix RhoNaugt);  //k in this case isn't refering to the reaction operator K but k_i, i E {1,2,3,4} for the RK4 method
+		static arma::cx_vec ComputeRhoDot(double t, arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaught);
 
 	protected:
 		bool RunLocal() override;

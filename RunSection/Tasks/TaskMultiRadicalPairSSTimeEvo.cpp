@@ -16,7 +16,6 @@
 #include "State.h"
 #include "ObjectParser.h"
 #include "SubSystem.h"
-#include "Utility.h"
 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Sparse>
@@ -328,32 +327,43 @@ namespace RunSection
 		}
 		this->Data() << std::endl;
 
-		arma::umat locations = { {0,0,1,1},{0,1,0,1}};
-		arma::cx_vec values = {1,2,3,4};
+		//arma::umat locations = { {0,0,1,1},{0,1,0,1}};
+		//arma::cx_vec values = {1,2,3,4};
+//
+		//arma::sp_cx_mat m(locations, values);
+		//std::cout << m << std::endl;
+//
+		//Matrix m2 = ConvertArmadilloToEigen(m);
+		//std::cout << Eigen::MatrixXcd(m2) << std::endl;
+		//std::cout << ConvertEigenToArmadillo(m2) << std::endl;
 
-		arma::sp_cx_mat m(locations, values);
-		std::cout << m << std::endl;
+		//auto LEigen = ConvertArmadilloToEigen(L);
 
-		Matrix m2 = ConvertArmadilloToEigen(m);
-		std::cout << Eigen::MatrixXcd(m2) << std::endl;
-		std::cout << ConvertEigenToArmadillo(m2) << std::endl;
-
-		
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
+		double Currenttime = 0;
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
-		for (unsigned int n = 1; n <= steps; n++)
+		double InitialTimestep = this->timestep;
+		unsigned int n = 1;
+		while(Currenttime <= this->totaltime)
 		{
+		//for (unsigned int n = 1; n <= steps; n++)
+		//{
 			// Write first part of the data output
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
-			double time = static_cast<double>(n) * this->timestep;
-			this->Data() << time << " ";
+			Currenttime += this->timestep;
+			this->Data() << Currenttime << " ";
 			this->WriteStandardOutput(this->Data());
-			trajectory.push_back({time, {}});
+			trajectory.push_back({Currenttime, {}});
 			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
-				RungeKutta4(L, rho0, rho0, this->timestep);
+				//RungeKutta4(L, rho0, rho0, this->timestep);
+				//auto rho0Eigen = ConvertAramdilloToEigen(rho0);
+				//this->timestep = RungeKutta4AdaptiveTimeStep(LEigen, rho0Eigen, rho0Eigen, this->timestep, TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot, {1e-4,1e-3}, InitialTimestep * 1e-2);
+				//rho0 = ConvertEigenToArmadillo(rho0Eigen).col(0);
+				this->timestep = RungeKutta45Armadillo(L,rho0,rho0,this->timestep,ComputeRhoDot,{1e-7,1e-6},InitialTimestep * 1e-3, InitialTimestep * 1e4);
 			}
+
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
 			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
@@ -378,6 +388,7 @@ namespace RunSection
 
 			// Terminate the line in the data file after iteration through all spin systems
 			this->Data() << std::endl;
+			n++;
 		}
 
 		this->Log() << "Done with calculation." << std::endl;
@@ -478,14 +489,15 @@ namespace RunSection
 
 	void TaskMultiRadicalPairSSTimeEvo::StateYield(double _rate, double& _yeild, const std::vector<std::complex<double>>& _traj, std::vector<double>& _time)
 	{
-		//auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
+		auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
 		std::vector<double> ylist;
 		for(unsigned int i = 0; i < _traj.size(); i++)
 		{
 			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
 			ylist.push_back(_rate * _traj[i].real());
 		}
-		_yeild = _rate * simpson_integration(_time, ylist);
+		//_yeild = _rate * simpson_integration(_time, ylist);
+		_yeild = simpson_integration(_time, ylist);
 	}
 
 	double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
@@ -700,40 +712,41 @@ namespace RunSection
     
  	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
     {
-		arma::cx_vec k0;
-		arma::cx_vec k1;
-		arma::cx_vec k2;
-		arma::cx_vec k3;
-		arma::cx_vec k4;
-		{
-			k0.zeros(L.n_rows);
-			k1 = ComputeRhoDot(L, k0, RhoNaught);
-			k0.clear();
-		}
-		{
-			arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k1;
-			k2 = ComputeRhoDot(L, temp, RhoNaught);
-		}
-		{
-			arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k2;
-			k3 = ComputeRhoDot(L, temp, RhoNaught);
-		}
-		{
-			arma::cx_vec temp = arma::cx_double(timestep,0.0) * k3;
-			k4 = ComputeRhoDot(L, temp, RhoNaught);
-		}
+		//arma::cx_vec k0;
+		//arma::cx_vec k1;
+		//arma::cx_vec k2;
+		//arma::cx_vec k3;
+		//arma::cx_vec k4;
+		//{
+	//		k0.zeros(L.n_rows);
+	//		k1 = ComputeRhoDot(L, k0, RhoNaught);
+	//		k0.clear();
+		//}
+		//{
+	//		arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k1;
+	//		k2 = ComputeRhoDot(L, temp, RhoNaught);
+		//}
+		//{
+	//		arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k2;
+	//		k3 = ComputeRhoDot(L, temp, RhoNaught);
+		//}
+		//{
+	//		arma::cx_vec temp = arma::cx_double(timestep,0.0) * k3;
+	//		k4 = ComputeRhoDot(L, temp, RhoNaught);
+		//}
 
-		drhodt = RhoNaught + ((timestep/6.0) * (k1 + (arma::cx_double(2.0,0.0) * k2) + (arma::cx_double(2.0,0.0) * k3) + k4));
+		//drhodt = RhoNaught + ((timestep/6.0) * (k1 + (arma::cx_double(2.0,0.0) * k2) + (arma::cx_double(2.0,0.0) * k3) + k4));
 
-        return true;
+        //return true;
+		return true;
 	}
-     
- 	arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(arma::sp_cx_mat &L, arma::cx_vec &K, arma::cx_vec RhoNaught)
+
+    arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(double t, arma::sp_cx_mat &L, arma::cx_vec &K, arma::cx_vec RhoNaught)
     {
-		arma::cx_vec ReturnVec;
-		ReturnVec.zeros(L.n_rows);
+        arma::cx_vec ReturnVec(L.n_rows);
 		RhoNaught = RhoNaught + K;
 		ReturnVec = L * RhoNaught;
 		return ReturnVec;
     }
+
 }
