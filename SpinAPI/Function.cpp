@@ -406,12 +406,17 @@ namespace SpinAPI
 		return (*it);
     }
 
+	static std::vector<std::pair<std::string,bool>> s_MathmaticalFunctions = {{"cos", 0}, {"sin", 0}, {"scalar", 0}, {"scalarcx", 1}, {"exp", 0}, {"expcx",1}};
     std::shared_ptr<Function> FunctionParser(std::string& func, std::string& var, int FuncStartNum, bool ResetComplexNum)
 	{
 		std::string FunctionString = var;
 		std::vector<char> SpecialCharacters = {'+', '-', '*', '/', '^' ,'(', ')'};
 		std::vector<char> IgnoreCharacters = {'.', 'i', ',', 'j'}; //characters to ignore as part of text i.e 3+4ix gets read as 3 + (4i * x) not 3 + 4 * ix
-		std::vector<std::string> MathematicalFunctionsList = {"cos", "sin", "exp", "expcd", "scalar"};
+		std::vector<std::string> MathematicalFunctionsList;
+		for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.cend(); a++)
+		{
+			MathematicalFunctionsList.push_back(a->first);
+		}
 
 		std::string buffer = "";
 		std::vector<char>::iterator it = SpecialCharacters.end();
@@ -846,9 +851,18 @@ namespace SpinAPI
 			}
 		}
 
-		auto ReturnType = [](std::string MathematicalFunction) {
-			std::vector<std::string> vd = {"sin", "cos", "exp", "expcd"};
-			std::vector<std::string> cdd = {"expcd"};
+		auto ReturnType = [&s_MathmaticalFunctions](std::string MathematicalFunction) {
+			std::vector<std::string> vd;
+			std::vector<std::string> cdd;
+			for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.end(); a++)
+			{
+				if(a->second == 0)
+				{
+					vd.push_back(a->first);
+					continue;
+				}
+				cdd.push_back(a->first);
+			}
 			if(std::find(vd.begin(), vd.end(), MathematicalFunction) != vd.end())
 				return Function::VarType::d;
 			else if(std::find(cdd.begin(), cdd.end(), MathematicalFunction) != cdd.end())
@@ -918,11 +932,15 @@ namespace SpinAPI
 		{
 			_func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, FunctionName, vardef);
 		}
+		else if(FunctionName.compare("scalarcx") == 0)
+		{
+			_func = std::make_shared<Function>(MathematicalFunctions::scalarcx, Function::ReturnType::cd, FunctionName, vardef);
+		}
 		else if(FunctionName.compare("exp") == 0)
 		{
 			_func = std::make_shared<Function>(MathematicalFunctions::exp, Function::ReturnType::d, FunctionName, vardef);
 		}
-		else if(FunctionName.compare("expcd") == 0)
+		else if(FunctionName.compare("expcx") == 0)
 		{
 			_func = std::make_shared<Function>(MathematicalFunctions::expcd, Function::ReturnType::cd, FunctionName, vardef);
 		}
@@ -960,7 +978,15 @@ namespace SpinAPI
 			return (void*)_val;
 		}
 
-		void* exp(void* value)
+        void *scalarcx(void* value)
+        {
+            std::complex<double>* _val = new std::complex<double>;
+			std::complex<double> val = *(std::complex<double>*)value;
+			*_val = val;
+			return (void*)_val;
+        }
+
+        void* exp(void* value)
 		{
 			double* _val = new double;
 			std::complex<double> val2 = *(std::complex<double>*)value;
