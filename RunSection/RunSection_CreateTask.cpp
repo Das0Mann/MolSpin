@@ -36,6 +36,7 @@
 #include "TaskMultiStaticSSNakajimaZwanzigTimeEvo.h"
 
 #include "TaskStaticSSSpectra.h" 
+#include "TaskStaticSSSpectraNakajimaZwanzig.h"
 #include "TaskStaticSSCIDNP.h" 
 
 #include "TaskStaticHSStochYields.h"
@@ -162,11 +163,17 @@ namespace RunSection
 			task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);
 		}
 
+		// NEW (Added by Luca Gerhards):Spectroscopy module with spin relaxation through Nakahima-Zwanzig equation
+		else if(_tasktype.compare("staticss-spectra-nakajimazwanzig") ==0 || _tasktype.compare("StaticSS-Spectra-Nakajimazwanzig") == 0)
+		{
+			task = std::make_shared<TaskStaticSSSpectraNakajimaZwanzig>(_obj, *this);
+		}
+
 		// NEW (Added by Luca Gerhards): Including spectroscopy multi-spin system task
-    		else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
-        	{
-           	 task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
-        	}	
+    	else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
+        {
+         	task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
+        }	
 
 		// NEW (Added by Gediminas Pazera and Luca Gerhards): Including SSE theory as CreateTask member.
 		else if (_tasktype.compare("statichs-stoch-yields") == 0 || _tasktype.compare("StaticHS-Stoch-Yields") == 0)
