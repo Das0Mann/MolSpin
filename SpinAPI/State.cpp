@@ -225,7 +225,6 @@ namespace SpinAPI
 		int mz = 0;
 		bool inState = false;
 		auto currentSpinPair = newState.begin();
-		bool brackets = false;
 		bool function = false;
 		int depth = 0;
 		int FunctionDepth = -1;
@@ -271,7 +270,6 @@ namespace SpinAPI
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
 				std::vector<std::string> vars = Func->GetVariable();
-				int VarNum = 0;
 				for(auto x : vars)
 				{
 					double var;
@@ -314,7 +312,6 @@ namespace SpinAPI
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
 				}
 				std::vector<std::string> vars = Func->GetVariable();
-				int VarNum = 0;
 				for(auto x : vars)
 				{
 					double var;
@@ -809,7 +806,7 @@ namespace SpinAPI
 					else
 					{
 						std::vector<void*> v;
-						for(int i = 0; i < Variables.size(); i++)
+						for(unsigned int i = 0; i < Variables.size(); i++)
 						{
 							v.push_back((void*)(double*)&Variables[f->GetVariable()[i]]);
 						}
