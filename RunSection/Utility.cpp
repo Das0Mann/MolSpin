@@ -13,159 +13,160 @@ namespace RunSection
     typedef arma::sp_cx_mat MatrixArma;
     typedef arma::cx_vec VecType;
 
-    Matrix ConvertArmadilloToEigen(arma::sp_cx_mat &ArmaMat)
-    {
-        std::vector<T> Triplets(ArmaMat.n_nonzero);
+    //Matrix ConvertArmadilloToEigen(arma::sp_cx_mat &ArmaMat)
+    //{
+    //    std::vector<T> Triplets(ArmaMat.n_nonzero);
+//
+    //    int index = 0;
+    //    #pragma omp parallel for schedule(static,1)
+    //	for(unsigned int i = 0; i < ArmaMat.n_rows; i++)
+    //	{
+    //		arma::sp_cx_mat temp = ArmaMat.row(i);
+    //		for(arma::sp_cx_mat::const_iterator it = temp.begin(); it != temp.end(); it++)
+    //		{
+    //            #pragma omp critical
+    //            {
+    //                Triplets[index] = T(i,it.col(),(*it));
+    //                index++;
+    //            }
+    //		}
+    //	}
+//
+    //    Matrix ReturnMat(ArmaMat.n_rows, ArmaMat.n_rows);
+    //	ReturnMat.setFromTriplets(Triplets.begin(), Triplets.end());
+    //    return ReturnMat;
+    //}
 
-        int index = 0;
-        #pragma omp parallel for schedule(static,1)
-    	for(unsigned int i = 0; i < ArmaMat.n_rows; i++)
-    	{
-    		arma::sp_cx_mat temp = ArmaMat.row(i);
-    		for(arma::sp_cx_mat::const_iterator it = temp.begin(); it != temp.end(); it++)
-    		{
-                #pragma omp critical
-                {
-                    Triplets[index] = T(i,it.col(),(*it));
-                    index++;
-                }
-    		}
-    	}
-
-        Matrix ReturnMat(ArmaMat.n_rows, ArmaMat.n_rows);
-    	ReturnMat.setFromTriplets(Triplets.begin(), Triplets.end());
-        return ReturnMat;
-    }
-
-    Matrix ConvertAramdilloToEigen(arma::cx_vec &ArmaVec)
-    {
-        std::vector<T> Triplets(ArmaVec.n_elem);
-        int index = 0;
-
-        #pragma omp parallel for schedule(static,1)
-        for(unsigned int i = 0; i < ArmaVec.n_rows; i++)
-        {
-            Triplets[i] = T(i,0,ArmaVec[i]);
-        }
-
-        Matrix ReturnMat(ArmaVec.n_rows, 1);
-        ReturnMat.setFromTriplets(Triplets.begin(), Triplets.end());
-        return ReturnMat;
-    }
-
-    arma::sp_cx_mat ConvertEigenToArmadillo(Matrix &EigenMat)
-    {
-        unsigned int a = EigenMat.nonZeros();
-        arma::umat positions(2,a);
-        arma::cx_vec values(a);
-        int ind = 0;
-        #pragma omp parallel for schedule(static,1)
-        for(unsigned int i = 0; i < EigenMat.rows(); i++)
-        {
-            Eigen::SparseVector<std::complex<double>> vec = EigenMat.row(i);
-            unsigned int s = vec.nonZeros();
-            for(unsigned int e = 0; e < s; e++)
-            {
-                int index = vec.data().index(e);
-                std::complex val = vec.coeff(index);
-                #pragma omp critical
-                {
-                    positions(0, ind) = i;
-                    positions(1,ind) = e;
-                    values(ind) = val;
-                    ind++;
-                }
-            }
-        }
-
-        return arma::sp_cx_mat(positions, values);
-    }
-
-    double RungeKutta4AdaptiveTimeStepEigen(Matrix& L, Matrix& rho0, Matrix& drhodt, double dumpstep, RungeKuttaFunc func, std::pair<double, double> tolerance, double MinTimeStep)
-    {
-        std::vector<double> timesteps = {dumpstep*0.5, dumpstep, dumpstep * 2};
-        Matrix k0(rho0.rows(),1);
-
-        auto RungeKutta4 = [&k0](Matrix& L1, Matrix& rho01, double timestep1, RungeKuttaFunc func1) {
-            Matrix k1(rho01.rows(),1);
-            Matrix k2(rho01.rows(),1);
-            Matrix k3(rho01.rows(),1);
-            Matrix k4(rho01.rows(),1);
-
-            k1 = func1(L1, k0, rho01);
-            {
-                Matrix temp = std::complex<double>(0.5*timestep1,0) * k1;
-                k2 = func1(L1, temp, rho01);
-            }  
-            {
-                Matrix temp = std::complex<double>(0.5*timestep1,0) * k2;
-                k3 = func1(L1, temp, rho01);
-            }
-            {
-                Matrix temp = std::complex<double>(timestep1,0) * k3;
-                k4 = func1(L1, temp, rho01);
-            }
-
-            {
-                Matrix temp1 = std::complex<double>(2.0,0.0) * k2;
-                Matrix temp2 = std::complex<double>(2.0,0.0) * k3;
-                Matrix temp3 = k1 + temp1 + temp2 + k4;
-                Matrix temp4 = (timestep1/6.0) * temp3;
-                Matrix temp5 = rho01+temp4;
-                return temp5;
-            }
-            //return rho0 + ((timestep/6.0) * (k1 + (std::complex<double>(2.0,0.0) * k2) + (std::complex<double>(2.0,0.0) * k3) + k4));
-        };
-
-        auto Change = [&rho0](const Matrix rho1) {
-            Matrix diff = rho0 - rho1;
-            double abs = std::abs(diff.sum());
-            double abs2 = std::abs(rho0.sum());
-            double change = abs/abs2;
-            return change;
-        };
-
-        std::vector<Matrix> steps(3);
-        if(timesteps[0] > MinTimeStep)
-        {
-            #pragma omp parallel for schedule(static,1)
-            for (int i = 0; i < 3; i++)
-            {
-                steps[i] = RungeKutta4(L, rho0, timesteps[i], func);
-            }
-        }
-        else 
-        {
-            #pragma omp parallel for schedule(static,1)
-            for (int i = 1; i < 3; i++)
-            {
-                steps[i] = RungeKutta4(L, rho0, timesteps[i], func);
-            }
-        }
-
-        if(timesteps[0] > MinTimeStep)
-        {
-            if(Change(steps[0]) > tolerance.second)
-            {
-                drhodt = steps[0];
-                return timesteps[0];
-            }
-        }
-        else if(Change(steps[2]) < tolerance.first)
-        {
-            drhodt = steps[2];
-            return timesteps[2];
-        }
-        else
-        {
-            drhodt = steps[1];
-            return dumpstep;
-        }
-
-        drhodt = RungeKutta4(L, rho0, timesteps[1], func);
-        
-        return dumpstep;
-    }
+    //Matrix ConvertAramdilloToEigen(arma::cx_vec &ArmaVec)
+    //{
+    //    std::vector<T> Triplets(ArmaVec.n_elem);
+    //    int index = 0;
+//
+    //    #pragma omp parallel for schedule(static,1)
+    //    for(unsigned int i = 0; i < ArmaVec.n_rows; i++)
+    //    {
+    //        Triplets[i] = T(i,0,ArmaVec[i]);
+    //    }
+//
+    //    Matrix ReturnMat(ArmaVec.n_rows, 1);
+    //    ReturnMat.setFromTriplets(Triplets.begin(), Triplets.end());
+    //    return ReturnMat;
+    //}
+//
+    //arma::sp_cx_mat ConvertEigenToArmadillo(Matrix &EigenMat)
+    //{
+    //    unsigned int a = EigenMat.nonZeros();
+    //    arma::umat positions(2,a);
+    //    arma::cx_vec values(a);
+    //    int ind = 0;
+    //    #pragma omp parallel for schedule(static,1)
+    //    for(unsigned int i = 0; i < EigenMat.rows(); i++)
+    //    {
+    //        Eigen::SparseVector<std::complex<double>> vec = EigenMat.row(i);
+    //        unsigned int s = vec.nonZeros();
+    //        for(unsigned int e = 0; e < s; e++)
+    //        {
+    //            int index = vec.data().index(e);
+    //            std::complex val = vec.coeff(index);
+    //            #pragma omp critical
+    //            {
+    //                positions(0, ind) = i;
+    //                positions(1,ind) = e;
+    //                values(ind) = val;
+    //                ind++;
+    //            }
+    //        }
+    //    }
+//
+    //    return arma::sp_cx_mat(positions, values);
+    //}
+//
+    //double RungeKutta4AdaptiveTimeStepEigen(Matrix& L, Matrix& rho0, Matrix& drhodt, double dumpstep, RungeKuttaFunc func, std::pair<double, double> tolerance, double MinTimeStep)
+    //{
+    //    std::vector<double> timesteps = {dumpstep*0.5, dumpstep, dumpstep * 2};
+    //    Matrix k0(rho0.rows(),1);
+//
+    //    auto RungeKutta4 = [&k0](Matrix& L1, Matrix& rho01, double timestep1, RungeKuttaFunc func1) {
+    //        Matrix k1(rho01.rows(),1);
+    //        Matrix k2(rho01.rows(),1);
+    //        Matrix k3(rho01.rows(),1);
+    //        Matrix k4(rho01.rows(),1);
+//
+    //        k1 = func1(L1, k0, rho01);
+    //        {
+    //            Matrix temp = std::complex<double>(0.5*timestep1,0) * k1;
+    //            k2 = func1(L1, temp, rho01);
+    //        }  
+    //        {
+    //            Matrix temp = std::complex<double>(0.5*timestep1,0) * k2;
+    //            k3 = func1(L1, temp, rho01);
+    //        }
+    //        {
+    //            Matrix temp = std::complex<double>(timestep1,0) * k3;
+    //            k4 = func1(L1, temp, rho01);
+    //        }
+//
+    //        {
+    //            Matrix temp1 = std::complex<double>(2.0,0.0) * k2;
+    //            Matrix temp2 = std::complex<double>(2.0,0.0) * k3;
+    //            Matrix temp3 = k1 + temp1 + temp2 + k4;
+    //            Matrix temp4 = (timestep1/6.0) * temp3;
+    //            Matrix temp5 = rho01+temp4;
+    //            return temp5;
+    //        }
+    //        //return rho0 + ((timestep/6.0) * (k1 + (std::complex<double>(2.0,0.0) * k2) + (std::complex<double>(2.0,0.0) * k3) + k4));
+    //    };
+//
+    //    auto Change = [&rho0](const Matrix rho1) {
+    //        Matrix diff = rho0 - rho1;
+    //        double abs = std::abs(diff.sum());
+    //        double abs2 = std::abs(rho0.sum());
+    //        double change = abs/abs2;
+    //        return change;
+    //    };
+//
+    //    std::vector<Matrix> steps(3);
+    //    if(timesteps[0] > MinTimeStep)
+    //    {
+    //        #pragma omp parallel for schedule(static,1)
+    //        for (int i = 0; i < 3; i++)
+    //        {
+    //            steps[i] = RungeKutta4(L, rho0, timesteps[i], func);
+    //        }
+    //    }
+    //    else 
+    //    {
+    //        #pragma omp parallel for schedule(static,1)
+    //        for (int i = 1; i < 3; i++)
+    //        {
+    //            steps[i] = RungeKutta4(L, rho0, timesteps[i], func);
+    //        }
+    //    }
+//
+    //    if(timesteps[0] > MinTimeStep)
+    //    {
+    //        if(Change(steps[0]) > tolerance.second)
+    //        {
+    //            drhodt = steps[0];
+    //            return timesteps[0];
+    //        }
+    //    }
+    //    else if(Change(steps[2]) < tolerance.first)
+    //    {
+    //        drhodt = steps[2];
+    //        return timesteps[2];
+    //    }
+    //    else
+    //    {
+    //        drhodt = steps[1];
+    //        return dumpstep;
+    //    }
+//
+    //    drhodt = RungeKutta4(L, rho0, timesteps[1], func);
+    //    
+    //    return dumpstep;
+    //}
+    
     double RungeKutta45Armadillo(arma::sp_cx_mat& L, arma::cx_vec& rho0, arma::cx_vec& drhodt, double dumpstep, RungeKuttaFuncArma func, std::pair<double, double> tolerance, double MinTimeStep, double MaxTimeStep, double time)
     {
         VecType k0(rho0.n_rows);

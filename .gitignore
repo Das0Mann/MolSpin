@@ -16,6 +16,9 @@ build
 .vscode
 *.Identifier
 
+#Eigen-Free branch
+/Vendor/
+
 #ignore personal msd files
 /msd-files
 *.py

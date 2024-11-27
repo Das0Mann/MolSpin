@@ -64,7 +64,7 @@ OBJS_TESTS = $(PATH_TESTS)/testmain.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_R
 DEP_TESTS = 
 # --------------------------------------------------------------------------
 #LinearAlgebra Vendor code
-PATH_LINALG_VENDOR = ./Vendor/
+PATH_LINALG_VENDOR = #./Vendor/
 #---------------------------------------------------------------------------
 # General Compilation Options
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
