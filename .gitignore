@@ -17,7 +17,7 @@ build
 *.Identifier
 
 #Eigen-Free branch
-/Vendor/
+Vendor/
 
 #ignore personal msd files
 /msd-files
