@@ -86,6 +86,7 @@ namespace SpinAPI
 		std::vector<unsigned int> VarSize;
 		std::vector<std::pair<std::string, std::complex<double>>> TopLevelVariables;
 		std::string AllocatedVariables = "";
+		std::unordered_map<std::string, std::complex<double>> VarListTemp;
 		std::unordered_map<std::string, std::complex<double>> VarList;
 		for(unsigned int i = 0; i < m_variables.size(); i++)
 		{
@@ -97,7 +98,7 @@ namespace SpinAPI
 					VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
 				else
 					VarValues.push_back(0.0);
-					VarList.insert({temp[e], 0.0});
+					VarListTemp.insert({temp[e], 0.0});
 
 				if(AllocatedVariables.find(temp[e]) != AllocatedVariables.npos)
 					continue;
@@ -106,6 +107,12 @@ namespace SpinAPI
 			}
 			VarSize.push_back(temp.size());
 		}
+
+		for(auto v = VarListTemp.begin(); v != VarListTemp.end(); v++)
+		{
+			VarList.insert({v->first, v->second});
+		}
+		
 
 		int index = 0;
 		for(auto v = values.begin(); v != values.end(); v++)
@@ -124,6 +131,7 @@ namespace SpinAPI
 			Varit->second = VarValues[index];
 		}
 
+		
 		std::vector<std::string> AllVariables;
 		for(auto v = this->m_variables.begin(); v != this->m_variables.end(); v++)
 		{
@@ -235,14 +243,12 @@ namespace SpinAPI
 						total = 1.0;
 						break;
 					}
-
 					ValueStack.push(total);
 				}
 				i++;
 			}
 			return ValueStack.top();
 		};
-
 		index = 0;
 		int index2 = 0;
 
@@ -252,7 +258,6 @@ namespace SpinAPI
 			}
 			return false; 
 		};
-
 
 		for(auto v = m_variables.begin(); v != m_variables.end(); v++)
 		{
@@ -830,12 +835,16 @@ namespace SpinAPI
 		buffer.clear();
 		for(auto c = PostFix.begin(); c != PostFix.end(); c++)
 		{
+			if((std::isdigit((*c)) || std::find(IgnoreCharacters.begin(), IgnoreCharacters.end(), (*c)) != IgnoreCharacters.end()) && variable == false)
+			{
+				continue;
+			}
 			if(std::isdigit((*c)) == 0 && variable == false && std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) == SpecialCharacters.end())
 			{
 				variable = true;
 				buffer += (*c);
 			}
-			else if(variable)
+			else if(variable && std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) == SpecialCharacters.end())
 			{
 				std::string temp = buffer + (*c);
 				auto it3 = FunctionString3.find(temp);
@@ -848,6 +857,20 @@ namespace SpinAPI
 					continue;
 				}
 				buffer += (*c);
+			}
+			else if(variable)
+			{
+				auto it3 = FunctionString3.find(buffer);
+				if(it3 != std::string::npos)
+				{
+					variables.push_back(buffer);
+					buffer.clear();
+					variable = false;
+					c--;
+					continue;
+				}
+				buffer += (*c);
+
 			}
 		}
 

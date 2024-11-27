@@ -17,7 +17,9 @@ build
 *.Identifier
 
 #ignore personal msd files
-/msd files
+/msd-files
+*.py
+*.csv
 
 #ignore vscode workspase files
 MolSpin.code-workspace
