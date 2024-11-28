@@ -18,9 +18,10 @@
 #include <algorithm>
 
 #include "Function.h"
-
 namespace SpinAPI
 {
+
+	static int s_ComplexNum = 0;
     //Function class stuff
 	arma::cx_double Function::operator()(void* value)
 	{
@@ -38,7 +39,7 @@ namespace SpinAPI
 
 		if(m_funcType == ReturnType::d)
 		{
-			double val = m_factors[0] * *(double*)value; //
+			double val = *(double*)value; //
 			double* temp = (double*)m_func((void*)(double*)&val);
 			double _val = *temp;
 			delete temp;
@@ -46,7 +47,7 @@ namespace SpinAPI
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
-			double val = m_factors[0] * *(double*)value; 
+			double val = *(double*)value; 
 			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
 			arma::cx_double _val = *temp;
 			delete temp;
@@ -61,16 +62,16 @@ namespace SpinAPI
 		arma::cx_double ReturnValue;
 		if(m_funcType == ReturnType::d)
 		{
-			double val = EvaluateFuncValue(value);
-			double* temp = (double*)m_func((void*)(double*)&val);
+			std::complex<double> val = EvaluateFuncValue(value);
+			double* temp = (double*)m_func((void*)(std::complex<double>*)&val);
 			double _val = *temp;
 			delete temp;
 			ReturnValue = arma::cx_double(_val, 0);
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
-			double val = EvaluateFuncValue(value);
-			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			std::complex<double> val = EvaluateFuncValue(value);
+			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(std::complex<double>*)&val);
 			arma::cx_double _val = *temp;
 			delete temp;
 			ReturnValue = _val;
@@ -79,302 +80,308 @@ namespace SpinAPI
 		return ReturnValue;
 	}
 
-	double Function::EvaluateFuncValue(std::vector<void*> values)
+    std::complex<double> Function::EvaluateFuncValue(std::vector<void*> values)
 	{
 		std::vector<double> VarValues;
+		std::vector<unsigned int> VarSize;
+		std::vector<std::pair<std::string, std::complex<double>>> TopLevelVariables;
 		std::string AllocatedVariables = "";
+		std::unordered_map<std::string, std::complex<double>> VarListTemp;
+		std::unordered_map<std::string, std::complex<double>> VarList;
 		for(unsigned int i = 0; i < m_variables.size(); i++)
 		{
-			if(AllocatedVariables.find(m_variables[i]) != AllocatedVariables.npos)
-				continue;
-			
-			if(m_variables[i] == "")
-				VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
-			else
- 				VarValues.push_back(0.0);
-			
-			AllocatedVariables = AllocatedVariables + m_variables[i];
+			std::vector<std::string> temp = m_variables[i].InternalVariables;
+			TopLevelVariables.push_back({m_variables[i].name, std::complex<double>(0)});
+			for(unsigned int e = 0; e < temp.size(); e++)
+			{
+				if(temp[e] == "")
+					VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
+				else
+					VarValues.push_back(0.0);
+					VarListTemp.insert({temp[e], 0.0});
+
+				if(AllocatedVariables.find(temp[e]) != AllocatedVariables.npos)
+					continue;
+				
+				AllocatedVariables = AllocatedVariables + temp[e];
+			}
+			VarSize.push_back(temp.size());
 		}
+
+		for(auto v = VarListTemp.begin(); v != VarListTemp.end(); v++)
+		{
+			VarList.insert({v->first, v->second});
+		}
+		
+
 		int index = 0;
 		for(auto v = values.begin(); v != values.end(); v++)
 		{
-			if(VarValues[index] == 0.0)
-			{
-				VarValues[index] = *(double*)(*v); //gets the variable value
-			}
-			else
+			if(VarValues[index] != 0.0)
 			{
 				v--;
-			}
-			index++;
-
-		} 
-
-		for(auto v = m_duplicates.begin(); v != m_duplicates.end(); v++)
-		{
-			auto it = std::find(m_variables.begin(), m_variables.end(), (*v));
-			int InitialIndex = it  - m_variables.begin();
-
-			std::vector<int> loc = {};
-			it++;
-			while(it < m_variables.end())
-			{
-				it = std::find(it, m_variables.end(), (*v));
-				if(it == m_variables.end())
-				{
-					break;
-				}
-				loc.push_back(it - m_variables.begin());
-				it++;
+				index++;
+				continue;
 			}
 
-			for(auto i : loc)
-			{
-				VarValues.insert(VarValues.begin() + i, VarValues[InitialIndex]);
-			}
-		} //sorts out all the stuff with duplicates making sure all the right values are duplicated, it does this by looking for all copies of a known duplicated variable in a vector
+			VarValues[index] = *(double*)(*v); //gets the variable value;
+			auto Varit = VarList.begin();
+			std::advance(Varit, index);
+
+			Varit->second = VarValues[index];
+		}
+
 		
-
-		if(VarValues.size() != m_factors.size())
+		std::vector<std::string> AllVariables;
+		for(auto v = this->m_variables.begin(); v != this->m_variables.end(); v++)
 		{
-			std::cout << "[WARNING] : TOO MANY VALUES SUPPLIED FOR THIS FUNCTION, UNDEFINED BEHAVIOUR MAY OCCUR" << std::endl;
+			for(auto a = v->InternalVariables.begin(); a != v->InternalVariables.end(); a++)
+			{
+				AllVariables.push_back((*a));
+			}
 		}
 
-		for(unsigned int i = 0; i < VarValues.size(); i++)
+		index = 0;
+		std::vector<double> VarValuesTemp;
+		for(auto v = AllVariables.begin(); v != AllVariables.end(); v++)
 		{
-			VarValues[i]= m_factors[i] * VarValues[i];
+			VarValuesTemp.push_back(VarList[(*v)].real());
 		}
+		VarValues = VarValuesTemp;
 
-		std::string func = "";
-		int current_depth = 0;
-		int number = 0;
-
-		std::unordered_map<std::string, double> ValueMap;
-
-		std::string CarriedForward = "";
-		for(unsigned int i = 0; i < VarValues.size(); i++)
-		{
-			if(m_VarDepth[i] > current_depth)
+		auto Evaluate = [](std::unordered_map<std::string,std::complex<double>> ValueMap, std::string PostFixEQ) {
+			std::stack<std::complex<double>> ValueStack;
+			std::complex<double> Val1(0);
+			std::complex<double> Val2(0);
+			std::vector<char> chr = {'+', '-', '*', '^', '/', '(', ')'};
+			bool Float = false;
+			for(unsigned int i = 0; i < PostFixEQ.size();)
 			{
-				while(current_depth != m_VarDepth[i])
+				char c = PostFixEQ[i];
+				auto it = std::find(chr.begin(), chr.end(), c);
+				if(it == chr.end())
 				{
-					current_depth++;
-					func = func + "(";
-				}
-			}
-			else if(m_VarDepth[i] < current_depth)
-			{
-				while(current_depth != m_VarDepth[i])
-				{
-					current_depth--;
-					func = func + ")";
-				}
-			}
-			
-			func = func + CarriedForward;
-			CarriedForward = "";
-			std::string key = "x" + std::to_string(number);
-			func = func + key;
-			ValueMap[key] = VarValues[i];
-			number++;
-			
-			if((unsigned int)i != VarValues.size()-1)
-			{
-				std::string temp;
-				switch(m_op[i])
-				{
-				case InternalOperations::p:
-					temp = "+";
-					break;
-				case InternalOperations::d:
-					temp =  "/";
-					break;
-				case InternalOperations::mu:
-					temp = "*";
-					break;
-				case InternalOperations::mi:
-					temp = "-";
-					break;
-				}
-
-				if(m_VarDepth[i+1] >= m_VarDepth[i])
-				{
-					func = func + temp;
+					std::string VarName = "";
+					if(std::isdigit(c) != 0)
+					{
+						Float = true;
+					}
+					if(Float)
+					{
+						while(std::isdigit(c) || (c == '.' || c == ',') && std::find(chr.begin(), chr.end(), c) == chr.end())
+						{
+							VarName += c;
+							i++;
+							c = PostFixEQ[i];
+						}
+						i--;
+						ValueStack.push(std::stod(VarName));
+						Float = false;
+					}
+					else
+					{
+						bool exist = true;
+						bool found = false;
+						while(exist && !found)
+						{
+							for(auto key = ValueMap.begin(); key != ValueMap.end(); key++)
+							{
+								if(key->first.find(VarName) != std::string::npos)
+								{
+									if(VarName == key->first)
+									{
+										found = true;
+										break;
+									}
+									exist = true;
+									break;
+								}
+							}
+							if(!found)
+							{
+								VarName += c;
+								i++;
+								c = PostFixEQ[i];
+							}
+						}
+						ValueStack.push(ValueMap[VarName]);
+						i--;
+					}
 				}
 				else
 				{
-					CarriedForward = temp;
+					Val2 = ValueStack.top();
+					ValueStack.pop();
+					if(ValueStack.size() > 0)
+					{
+						Val1 = ValueStack.top();
+						ValueStack.pop();
+					}
+					else
+					{
+						Val1 = std::complex<double>(0);
+					}
+					std::complex<double> total;
+					switch(c)
+					{
+					case '+':
+						total = Val1 + Val2;
+						break;
+					case '-':
+						total = Val1 - Val2;
+						break;
+					case '*':
+						total = Val1 * Val2;
+						break;
+					case '/':
+						total = Val1 / Val2;
+						break;
+					case '^':
+						total = std::pow(Val1,Val2);
+						break;
+					default:
+						total = 1.0;
+						break;
+					}
+					ValueStack.push(total);
 				}
+				i++;
 			}
-		}
+			return ValueStack.top();
+		};
+		index = 0;
+		int index2 = 0;
 
-		//converts the equation back into a string (seems slightly counter intutive as the equation started off as a string )
-
-		//std::cout << func << std::endl; //for debug purposes
-		
-		//using reverse polish notation 
-		//puts the equation into postfix form
-		std::stack<char> st;
-		std::string Postfix;
-
-		auto prec = [](char c) {
-			if(c == '/' || c == '*')
-				return 2;
-			else if(c == '+' || c == '-')
-				return 1;
-			else 
-				return -1;
+		auto findz = [&index, &TopLevelVariables](VariableDefinition& v2) { 
+			if(v2.name == TopLevelVariables[index].first) { 
+				return true; 
+			}
+			return false; 
 		};
 
-		std::vector<char> chr = {'+', '-', '/', '*', '(', ')'};
-		for(unsigned int i = 0; i < func.length(); i++)
+		for(auto v = m_variables.begin(); v != m_variables.end(); v++)
 		{
-			char c = func[i];
-			auto it = std::find(chr.begin(), chr.end(), c);
-			if(it == chr.end())
+			if(v->type == VarType::d)
 			{
-				Postfix += c;
+				TopLevelVariables[index].second = std::complex<double>(VarValues[index2], 0);
+				index2++;
 			}
-			else if(c == '(')
+			else if(v->type == VarType::f)
 			{
-				st.push('(');
-			}
-			else if(c == ')')
-			{
-				while (st.top() != '(')
+				std::vector<void*> val;
+				auto vdef = std::find_if(m_variables.begin(), m_variables.end(), findz);
+				for(int i = 0; i < vdef->InternalVariables.size(); i++)
 				{
-					Postfix += st.top();
-					st.pop();
+					val.push_back((void*)&VarValues[index2]);
+					index2++;
 				}
-				st.pop();
+				TopLevelVariables[index].second = vdef->InternalFunction->operator()(val);//->InternalFunction->EvaluateFuncValue(val);
 			}
-			else
+			else if(v->type == VarType::z)
 			{
-				while((!st.empty() && prec(c) < prec(st.top())) || (!st.empty() && prec(c) == prec(st.top())))
-				{
-					Postfix += st.top();
-					st.pop();
-				}
-				st.push(c);
-			}
-		}
+				auto vdef = std::find_if(m_variables.begin(), m_variables.end(), findz);
 
-		while(!st.empty())
+				std::string str1 = "";
+				std::string str2 = "";
+				
+				bool comma = false;
+				for(unsigned int i = 0; i < vdef->VariableString.size(); i++)
+				{
+					char c = vdef->VariableString[i];
+					if(c == '#')
+					{
+						comma = true;
+						continue;
+					}
+					if(!comma)
+					{
+						str1 = str1 + c;
+					}
+					else
+					{
+						str2 = str2 + c;
+					}
+				}
+				auto v1 = Evaluate(VarList, str1);
+				auto v2 = Evaluate(VarList, str2);
+				TopLevelVariables[index].second = std::complex<double>(v1.real(),v2.real());
+				index2 = index2 + vdef->InternalVariables.size();
+			}
+			index++;
+		}	
+
+		std::unordered_map<std::string, std::complex<double>> TopLevelMap;
+		for(auto a = TopLevelVariables.begin(); a != TopLevelVariables.end(); a++)
 		{
-			Postfix += st.top();
-			st.pop();
-		}
+			TopLevelMap.insert({a->first, a->second});
+		}	
 
-		//std::cout << Postfix << std::endl;
-
-		//evaluate using the same method using rpn
-		std::stack<double> ValueStack;
-		for(unsigned int i = 0; i < Postfix.length(); i++)
-		{
-			char c = Postfix[i];
-			auto it = std::find(chr.begin(), chr.end(), c);
-			if(it == chr.end())
-			{
-				std::string VarName = "";
-				VarName += c;
-				i++;
-				c = Postfix[i];
-				while(c != 'x' && std::find(chr.begin(), chr.end(), c) == chr.end())
-				{
-					VarName += c;
-					i++;
-					c = Postfix[i];
-				}
-				i--;
-				ValueStack.push(ValueMap[VarName]);
-			}
-			else
-			{
-				double Val2 = ValueStack.top();
-				ValueStack.pop();
-				double Val1 = ValueStack.top();
-				ValueStack.pop();
-				double Total;
-
-				switch (c)
-				{
-				case '+':
-					Total = Val1 + Val2;
-					break;
-				case '-':
-					Total = Val1 - Val2;
-					break;
-				case '*':
-					Total = Val1 * Val2;
-					break;
-				case '/':
-					Total = Val1 / Val2;
-					break;
-				default:
-					Total = 1.0;
-					break;
-				}
-
-				ValueStack.push(Total);
-			}
-		}
-		return ValueStack.top();
+		return Evaluate(TopLevelMap,m_PostFixEquation);
 		
 	}
 
-	Function::Function(FuncPtr FunctionPtr, ReturnType type, std::string name, std::string var, double factor)
-	{
-		m_func = FunctionPtr;
-		m_funcType = type;
-		m_FunctionName = name;
-		m_variables = {var};
-		m_factors = {factor};
-		m_op = {};
-		m_VarDepth = {};
-	}
-
-	Function::Function(FuncPtr FunctionPtr, ReturnType type, std::string name, std::vector<std::string> vars, std::vector<double> factors)
-	{
+	Function::Function(FuncPtr FunctionPtr, ReturnType type, std::string name, std::vector<VariableDefinition> vars)
+    {
 		m_func = FunctionPtr;
 		m_funcType = type;
 		m_FunctionName = name;
 		m_variables = vars;
-		m_factors = factors;
-		m_op = {};
-		m_VarDepth = {};
+		m_FunctionString = "";
+		m_PostFixEquation = "";	
 
 		std::vector<std::string> TempVar;
 		for(auto v = m_variables.cbegin(); v != m_variables.cend(); v++)
 		{
-			if((*v) == "")
+			for(auto e = v->InternalVariables.cbegin(); e != v->InternalVariables.cend(); e++)
 			{
-				continue;
-			}
+				if((*e) == "")
+				{
+					continue;
+				}
 
-			if(TempVar.size() == 0)
-			{
-				TempVar.push_back((*v));
-				continue;
-			}
+				if(TempVar.size() == 0)
+				{
+					TempVar.push_back((*e));
+					continue;
+				}
 
-			if(std::find(TempVar.begin(), TempVar.end(), (*v)) == TempVar.end())
-			{
-				TempVar.push_back((*v));
-			}
-			else if(std::find(m_duplicates.begin(), m_duplicates.end(), (*v)) == m_duplicates.end())
-			{
-				m_duplicates.push_back((*v));
-			}
+				if(std::find(TempVar.begin(), TempVar.end(), (*e)) == TempVar.end())
+				{
+					TempVar.push_back((*e));
+				}
+				else if(std::find(m_duplicates.begin(), m_duplicates.end(), (*e)) == m_duplicates.end())
+				{
+					m_duplicates.push_back((*e));
+				}
+			}	
 		}
+    }
 
-	}
+	Function::Function(FuncPtr FunctionPtr, ReturnType type, std::string name, VariableDefinition def)
+    {
+		m_func = FunctionPtr;
+		m_funcType = type;
+		m_FunctionName = name;
+		m_variables = {def};
+		m_FunctionString = "";
+		m_PostFixEquation = "";	
+    }
 
 	std::vector<std::string> Function::GetVariable()
 	{
 		std::vector<std::string> variables;
 		std::unordered_set<std::string> TempSet;
 
-		TempSet.insert(m_variables.begin(), m_variables.end());
+		std::vector<std::string> AllVariables;
+		for(auto v : m_variables)
+		{
+			for(auto v2 : v.InternalVariables)
+			{
+				AllVariables.push_back(v2);
+			}
+		}
+
+		TempSet.insert(AllVariables.begin(), AllVariables.end());
 		for(auto var : TempSet)
 		{
 			variables.push_back(var);
@@ -390,265 +397,530 @@ namespace SpinAPI
 		return m_FunctionName;
 	}
 
-	std::shared_ptr<Function> FunctionParser(std::string& func, std::string& var)
-	{
+    Function::VariableDefinition Function::FindVar(std::string var)
+    {
+        auto FinnVarDef = [&var](const VariableDefinition& def) {
+			return (var == def.name);
+		};
 
-		std::vector<double> factors;
-		std::vector<std::string> variables;
-		std::vector<Function::InternalOperations> operations;
-		std::vector<int> VarDepth;
-		bool VarPreFactor = true;
-		bool decimal = false;
-		std::pair<double,double> nums = {0.0, 0.0};
-		std::vector<char> SpecialCharacters = {'+', '-', '*', '/','(', ')'};
-		int VarNum = 0;
-		int depth = 0;
+		auto it = std::find_if(m_variables.cbegin(), m_variables.cend(), FinnVarDef);
+		if(it == m_variables.cend())
+		{
+			return {"",VarType::d,"",{""},nullptr};
+		}
+		return (*it);
+    }
+
+	static std::vector<std::pair<std::string,bool>> s_MathmaticalFunctions = {{"cos", 0}, {"sin", 0}, {"scalar", 0}, {"scalarcx", 1}, {"exp", 0}, {"expcx",1}};
+    std::shared_ptr<Function> FunctionParser(std::string& func, std::string& var, int FuncStartNum, bool ResetComplexNum)
+	{
+		std::string FunctionString = var;
+		std::vector<char> SpecialCharacters = {'+', '-', '*', '/', '^' ,'(', ')'};
+		std::vector<char> IgnoreCharacters = {'.', 'i', ',', 'j'}; //characters to ignore as part of text i.e 3+4ix gets read as 3 + (4i * x) not 3 + 4 * ix
+		std::vector<std::string> MathematicalFunctionsList;
+		for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.cend(); a++)
+		{
+			MathematicalFunctionsList.push_back(a->first);
+		}
 
 		std::string buffer = "";
+		std::vector<char>::iterator it = SpecialCharacters.end();
+		//std::vector<std::string>::iterator it2 = MathematicalFunctionsList.end();
 
-		for(auto c = var.cbegin(); c != var.cend(); c++)
+		if(ResetComplexNum)
 		{
-			auto it = std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)); 
-			if((*c) == '.' || (*c) == ',')
+			s_ComplexNum = 0;
+		}
+
+		auto prec = [](char c) {
+		 	if (c == '^')
+				return 3;
+			else if(c == '/' || c == '*')
+				return 2;
+			else if(c == '+' || c == '-')
+				return 1;
+			else 
+				return -1;
+		};
+
+		auto CheckFloat = [](std::string buffer) {
+			std::string buffer1 = "";
+			std::string buffer2 = "";
+			bool decimal = false;
+			bool IsFloat = true;
+
+			for(auto c = buffer.cbegin(); c != buffer.cend(); c++)
 			{
-				decimal = true;
-				nums.first = std::stod(buffer);
-				buffer = "";
-			}
-			else if(it != SpecialCharacters.end())
-			{
-				if(VarPreFactor && buffer == "")
+				if((*c) == '.' || (*c) == ',')
 				{
-					VarNum++;
-					variables.push_back("");
-					VarDepth.push_back(depth);
-					auto TempIt = it;
-
-					if((*it) == '-')
-					{
-						factors.push_back(-1.0);
-						it = it + 1;
-					}
-					else if((*it) == '+')
-					{
-						factors.push_back(1.0);
-						it = it + 2;
-					}
-					else
-					{
-						factors.push_back(1.0);
-					}
-
-					if(*(c-1) == ')')
-					{
-						VarNum--;
-						variables.pop_back();
-						VarDepth.pop_back();
-						factors.pop_back();	
-						it = TempIt;
-					}
+					decimal = true;
 				}
-				else if(VarPreFactor && buffer != "")
+				else if(std::isdigit((*c)) != 0)
 				{
-					VarNum++;
-					variables.push_back("");
-					VarDepth.push_back(depth);
-
-					double PreFactor = std::stod(buffer);
-					if(!decimal)
-					{
-						nums.first = PreFactor;
-					}
-					else
-					{
-						int DivideBy = buffer.length();
-						PreFactor = PreFactor * std::pow(10.0, -1.0 * (double)DivideBy);
-						nums.second = PreFactor;
-					}
-
-					factors.push_back(nums.first + nums.second);
-					buffer = "";
-					decimal = false;
-					nums = {0,0};
+					(!decimal) ? buffer1 += (*c) : buffer2 += (*c);
+				}
+				else if((*c) == 'i' || (*c) == 'j')
+				{
+					continue;
 				}
 				else
 				{
-					VarNum++;
-					variables.push_back(buffer);
-					VarDepth.push_back(depth);
-					buffer = "";
+					IsFloat = false;
+					break;
 				}
-
-				//if(VarNum == 1)
-				//{
-				//	if(operations.size() == 0)
-				//	{
-				//		operations.push_back(Function::InternalOperations::p);
-				//	}
-				//}
-				//else if(VarDepth[VarNum-1] == VarDepth[VarNum-2] + 1)
-				//{
-				//	auto d = *(c-1);
-				//	if(*(c-1) == '(')
-				//	{
-				//		VarDepth.pop_back();
-				//		variables.pop_back();
-				//		factors.pop_back();
-				//		VarNum = VarNum-1;
-				//		Initial = false;
-				//	}
-				//	else if(Initial)
-				//	{
-				//		operations.push_back(Function::InternalOperations::p);
-				//		Initial = false;
-				//	}
-				//}
-				//if(VarDepth[VarNum-1] == VarDepth[VarNum-2] - 1)
-				//{
-				//	VarDepth.pop_back();
-				//	variables.pop_back();
-				//	factors.pop_back();
-				//	VarNum = VarNum-1;
-				//}
-
-				if((*it) == '+')
-				{
-					operations.push_back(Function::InternalOperations::p);
-				}
-				else if((*it) == '-')
-				{
-					operations.push_back(Function::InternalOperations::mi);
-				}
-				else if((*it) == '*')
-				{
-					operations.push_back(Function::InternalOperations::mu);
-				}
-				else if((*it) == '/')
-				{
-					operations.push_back(Function::InternalOperations::d);
-				}
-				else if((*it) == '(')
-				{
-					depth = depth + 1;
-					if(operations[VarNum - 2] != Function::InternalOperations::mu && operations[VarNum - 2] != Function::InternalOperations::d)
-					{
-						operations.push_back(Function::InternalOperations::mu);
-					}
-					else
-					{
-						VarDepth.pop_back();
-						variables.pop_back();
-						factors.pop_back();
-						VarNum = VarNum-1;	
-					}			
-				}
-				else if((*it) == ')')
-				{
-					depth = depth - 1;
-				}
-
-				VarPreFactor = true;
 			}
-			else if(std::isdigit((*c)) == 0 && VarPreFactor)
+
+			if(!IsFloat)
 			{
-				if(buffer == "")
+				return false;
+			}
+
+			return true;
+		};
+
+		auto TextOnly = [](std::string buffer) {
+			if(buffer.length() == 1)
+			{
+				if(buffer == "i" || buffer == "j")
 				{
-					factors.push_back(1.0);
+					return false;
 				}
-				else
+			}
+			for(auto c = buffer.begin(); c != buffer.end(); c++)
+			{
+				if(std::isdigit((*c)) != 0)
 				{
-					double PreFactor = std::stod(buffer);
-					if(!decimal)
-					{
-						nums.first = PreFactor;
-					}
-					else
-					{
-						int DivideBy = buffer.length();
-						PreFactor = PreFactor * std::pow(10.0, -1.0 * (double)DivideBy);
-						nums.second = PreFactor;
-					}
-					factors.push_back(nums.first + nums.second);
+					return false;
 				}
+			}
+			return true;
+		};
+
+		std::vector<std::string> PostFixEquations;
+		buffer = (*FunctionString.begin());
+		bool IsFloat = CheckFloat(buffer);
+
+		//std::cout << FunctionString << std::endl;
+		buffer.clear();
+
+		//puts multiplication symbols where they should be
+		for(auto c = FunctionString.cbegin(); c != FunctionString.end(); c++)
+		{
+			buffer += (*c);
+			if(std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) != SpecialCharacters.end())
+			{
+				if((*c) != '(')
+				{
+					buffer.clear();
+					continue;
+				}
+				if(c != FunctionString.begin() && CheckFloat(std::string(1,*(c-1)))== false)
+				{
+					buffer.clear();
+					continue;
+				}
+			}
+			bool IsFloatNew = CheckFloat(buffer);
+			bool change = !(IsFloat == IsFloatNew);
+			if(!change)
+			{
+				continue;
+			}
+
+			if(IsFloat == true && buffer.length() != 1)
+			{
 				buffer = (*c);
-				decimal = false;
-				VarPreFactor = false;
-				nums = {0,0};
+				c = FunctionString.insert(c, '*');
+			}
 
+			IsFloat = !IsFloat;
+		}
+
+		//std::cout << FunctionString << std::endl;
+		buffer.clear();
+
+		//looks for internal functions i.e sin(2exp(x))
+		bool InternalFunction = false;
+		int BracketDepth = 0;
+		int FuncNum = FuncStartNum;
+		std::pair<std::string, std::string> funcstring;
+		std::vector<std::shared_ptr<Function>> FuncVec;
+		std::string FunctionString2 = "";
+		for(auto c = FunctionString.begin(); c != FunctionString.end(); c++)
+		{
+			buffer += (*c);
+			FunctionString2 += (*c);
+
+			if(std::find(MathematicalFunctionsList.begin(), MathematicalFunctionsList.end(), buffer) != MathematicalFunctionsList.end() && (*(c+1)) == '(')
+			{
+				InternalFunction = true;
+				funcstring.first = buffer;
+				buffer.clear();
+				continue;
+			}
+
+			if(std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) != SpecialCharacters.end())
+			{
+				if(InternalFunction == false)
+				{
+					buffer.clear();
+				}
+			}
+
+			if((*c) == '(')
+			{
+				BracketDepth++;
+			}
+			else if((*c) == ')')
+			{
+				BracketDepth--;
+			}
+
+			if(BracketDepth == 0 && InternalFunction)
+			{
+				buffer.erase(buffer.begin());
+				buffer.erase(buffer.end() - 1);
+				funcstring.second = buffer;
+				buffer.clear();
+				for(unsigned int i = 0; i < (funcstring.first.length() + funcstring.second.length()+2); i++)
+				{
+					FunctionString2.erase(FunctionString2.end()-1);
+				}
+				FunctionString2 += "f_" + std::to_string(FuncNum);
+				FuncNum++;
+				InternalFunction = false;
+				auto func = FunctionParser(funcstring.first, funcstring.second, FuncNum);
+				funcstring.first.clear();
+				funcstring.second.clear();
+				FuncVec.push_back(func);
+				//call the parser on FunctionString2
+			}
+
+		}
+
+		//std::cout << FunctionString2 << std::endl;
+
+		//complex number finding
+		bool StartReading = false;
+		bool Complete = false;
+		buffer.clear();
+		std::vector<std::pair<std::string,std::string>> ComplexNumbers = {};
+		std::vector<std::vector<std::string>> ComplexNumbersVaribles = {};
+		std::string::iterator start = FunctionString2.end();
+		std::string FunctionString3;
+
+		auto GetPostFixForm = [&SpecialCharacters, &buffer, &prec](std::string Infix) {
+			buffer.clear();
+			std::stack<char> st;
+			std::string PostFix2 = "";
+
+			for(auto c = Infix.begin(); c != Infix.end(); c++)
+			{
+				buffer += (*c);
+				auto it3 = std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c));
+				if(it3 == SpecialCharacters.end())
+				{
+					PostFix2 += (*c);
+				}
+				else if((*it3) == '(')
+				{
+					buffer.clear();
+					st.push((*c));
+				}
+				else if((*it3) == ')')
+				{
+					buffer.clear();
+					while (st.top() != '(')
+					{
+						PostFix2 += st.top();
+						st.pop();
+					}
+					st.pop();
+				}
+
+				else
+				{
+					buffer.clear();
+					while((!st.empty() && prec(*c) < prec(st.top())) || (!st.empty() && prec(*c) == prec(st.top())))
+					{
+						PostFix2 += st.top();
+						st.pop();
+					}
+					//std::cout << PostFix2 << std::endl;
+					st.push((*c));
+				}
+			}
+
+			while(!st.empty())
+			{
+				PostFix2 += st.top();
+				st.pop();
+			}
+			buffer.clear();
+
+			return PostFix2;
+		};
+
+		auto FindVarsInValueString = [&SpecialCharacters, &FunctionString3](std::string var)
+		{
+			std::string InternalBuffer = "";
+			std::vector<std::string> ValueVariables;
+			bool FoundVar = false;
+			for(auto c = var.begin(); c != var.end(); c++)
+			{
+				if(std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) != SpecialCharacters.end() && FoundVar == false)
+				{
+					continue;
+				}
+
+				if((std::isdigit((*c)) == 0 && FoundVar == false) && ((*c) != '.' && (*c) != ','))
+				{
+					FoundVar = true;
+					InternalBuffer = "";
+					InternalBuffer += (*c);
+				}
+				else if(FoundVar)
+				{
+					std::string temp = InternalBuffer + (*c);
+					auto it3 = FunctionString3.find(temp);
+					if(it3 == std::string::npos)
+					{
+						ValueVariables.push_back(InternalBuffer);
+						InternalBuffer.clear();
+						FoundVar = false;
+						c--;
+						continue;
+					}
+					InternalBuffer += (*c);
+				}
+			}
+
+			return ValueVariables;
+		};
+
+		for(auto c = FunctionString2.begin(); c != FunctionString2.end(); c++)
+		{
+			std::string temp = buffer + (*c);
+			if(temp.compare("Complex(") == 0 || temp.compare("complex(") == 0)
+			{
+				StartReading = true;
+				buffer.clear();
+				FunctionString3 += (*c);
+				Complete = false;
+				start = c-7;
+				continue;
+			}
+			else if(StartReading && (*c) == ')')
+			{
+				StartReading = false;
+				Complete = true;
+			}
+			else if(std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*(c))) != SpecialCharacters.end() && !StartReading)
+			{
+				buffer.clear();
+				FunctionString3 += (*c);
+				continue;
+			}
+			
+			if(Complete)
+			{
+				std::string SecondaryBuffer = "";
+				std::pair<std::string,std::string> Value; 
+				std::vector<char> chr = {'+', '-'};
+				for(auto a = buffer.begin(); a != buffer.end(); a++)
+				{
+					if(std::find(chr.begin(), chr.end(), (*a)) != chr.end())
+					{
+						auto it1 = std::find(SecondaryBuffer.begin(), SecondaryBuffer.end(), 'i');
+						auto it2 = std::find(SecondaryBuffer.begin(), SecondaryBuffer.end(), 'j');
+						bool IorJ = (it1 != SecondaryBuffer.end() || it2 != SecondaryBuffer.end());
+						if(IorJ)
+						{
+							if(std::isdigit(*(it1 - 1)) == 0)
+							{
+								(it1 == SecondaryBuffer.end()) ? SecondaryBuffer.replace(it2,it2+1,"1") : SecondaryBuffer.replace(it1,it1+1,"1");
+							}
+							else
+							{
+								(it1 == SecondaryBuffer.end()) ? SecondaryBuffer.replace(it2,it2+1,"") : SecondaryBuffer.replace(it1,it1+1,"");
+							}
+
+							Value.second += SecondaryBuffer + (*a);
+						}
+						else
+						{
+							Value.first += SecondaryBuffer + (*a);
+						}
+						SecondaryBuffer.clear();			
+					}
+					else
+					{
+						SecondaryBuffer += (*a);
+					}
+				}
+
+				if(SecondaryBuffer.size() != 0)
+				{
+					auto it1 = std::find(SecondaryBuffer.begin(), SecondaryBuffer.end(), 'i');
+					auto it2 = std::find(SecondaryBuffer.begin(), SecondaryBuffer.end(), 'j');
+					bool IorJ = (it1 != SecondaryBuffer.end() || it2 != SecondaryBuffer.end());
+					if(IorJ)
+					{
+						if(std::isdigit(*(it1 - 1)) == 0)
+						{
+							(it1 == SecondaryBuffer.end()) ? SecondaryBuffer.replace(it2,it2+1,"1") : SecondaryBuffer.replace(it1,it1+1,"1");
+						}
+						else
+						{
+							(it1 == SecondaryBuffer.end()) ? SecondaryBuffer.replace(it2,it2+1,"") : SecondaryBuffer.replace(it1,it1+1,"");
+						}
+
+						Value.second += SecondaryBuffer;
+					}
+					else
+					{
+						Value.first += SecondaryBuffer;
+					}
+					SecondaryBuffer.clear();
+				}
+
+				if(std::find(chr.begin(), chr.end(), (*(Value.first.end()-1))) != chr.end())
+				{
+					if(*(Value.first.end()-1) == '-')
+					{
+						Value.first.replace(Value.first.end()-1, Value.first.end(),"");
+						Value.second.insert(Value.second.begin(), '-');
+					}
+					else
+					{
+						Value.first.replace(Value.first.end()-1, Value.first.end(),"");
+					}
+				}
+
+				if(Value.first == "")
+					Value.first = "0";
+				if(Value.second == "")
+					Value.second = "0";
+
+				Value.first = GetPostFixForm(Value.first);
+				Value.second = GetPostFixForm(Value.second);
+
+				ComplexNumbers.push_back(Value);
+
+				ComplexNumbersVaribles.push_back(FindVarsInValueString(Value.first));
+				std::vector<std::string> temp = FindVarsInValueString(Value.second);
+				for(unsigned int i = 0; i < temp.size(); i++)
+					ComplexNumbersVaribles[ComplexNumbers.size()-1].push_back(temp[i]);
+
+				for(int i = 0; i < (c - start); i++)
+				{
+					FunctionString3.erase(FunctionString3.end() - 1);
+				}
+				FunctionString3 += "z_" + std::to_string(ComplexNumbers.size() - 1 + s_ComplexNum);
+				s_ComplexNum++;
+				Complete = false;
+				continue;
+
+			}
+			buffer += (*c);
+			FunctionString3 += (*c);
+		}
+
+		//std::cout << FunctionString3 << std::endl;
+
+		std::string PostFix = GetPostFixForm(FunctionString3);
+		//std::cout << PostFix << std::endl;
+		std::vector<std::string> variables;
+		bool variable = false;
+		buffer.clear();
+		for(auto c = PostFix.begin(); c != PostFix.end(); c++)
+		{
+			if((std::isdigit((*c)) || std::find(IgnoreCharacters.begin(), IgnoreCharacters.end(), (*c)) != IgnoreCharacters.end()) && variable == false)
+			{
+				continue;
+			}
+			if(std::isdigit((*c)) == 0 && variable == false && std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) == SpecialCharacters.end())
+			{
+				variable = true;
+				buffer += (*c);
+			}
+			else if(variable && std::find(SpecialCharacters.begin(), SpecialCharacters.end(), (*c)) == SpecialCharacters.end())
+			{
+				std::string temp = buffer + (*c);
+				auto it3 = FunctionString3.find(temp);
+				if(it3 == std::string::npos)
+				{
+					variables.push_back(buffer);
+					buffer.clear();
+					variable = false;
+					c--;
+					continue;
+				}
+				buffer += (*c);
+			}
+			else if(variable)
+			{
+				auto it3 = FunctionString3.find(buffer);
+				if(it3 != std::string::npos)
+				{
+					variables.push_back(buffer);
+					buffer.clear();
+					variable = false;
+					c--;
+					continue;
+				}
+				buffer += (*c);
+
+			}
+		}
+
+		auto ReturnType = [&s_MathmaticalFunctions](std::string MathematicalFunction) {
+			std::vector<std::string> vd;
+			std::vector<std::string> cdd;
+			for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.end(); a++)
+			{
+				if(a->second == 0)
+				{
+					vd.push_back(a->first);
+					continue;
+				}
+				cdd.push_back(a->first);
+			}
+			if(std::find(vd.begin(), vd.end(), MathematicalFunction) != vd.end())
+				return Function::VarType::d;
+			else if(std::find(cdd.begin(), cdd.end(), MathematicalFunction) != cdd.end())
+				return Function::VarType::z;
+		};
+
+		std::vector<Function::VariableDefinition> vardef;
+		for(auto v : variables)
+		{
+			if(v.find("f_") != std::string::npos)
+			{
+				auto v2 = v;
+				v2.erase(v2.begin());
+				v2.erase(v2.begin());
+
+				int FuncNum2 = std::stoi(v2) - FuncStartNum;
+
+				vardef.push_back({v,Function::VarType::f,FuncVec[FuncNum2]->GetFunctionString(), FuncVec[FuncNum2]->GetVariable(), FuncVec[FuncNum2]});
+			}
+			else if(v.find("z_") != std::string::npos)
+			{
+				auto v2 = v;
+				v2.erase(v2.begin());
+				v2.erase(v2.begin());
+
+				int zNum = std::stoi(v2) - (s_ComplexNum - ComplexNumbers.size());
+
+				vardef.push_back({v, Function::VarType::z, ComplexNumbers[zNum].first + "#" + ComplexNumbers[zNum].second, ComplexNumbersVaribles[zNum], nullptr});
 			}
 			else
 			{
-				buffer += (*c);
+				vardef.push_back({v,Function::VarType::d, "", {v}, nullptr});
 			}
 		}
 		
-		if(buffer != "")
-		{
-			if(!VarPreFactor)
-			{
-				variables.push_back(buffer);
-				VarDepth.push_back(depth);
-				buffer = "";
-			}
-			else
-			{
-				double PreFactor = std::stod(buffer);
-				if(!decimal)
-				{
-					nums.first = PreFactor;
-				}
-				else
-				{
-					int DivideBy = buffer.length();
-					PreFactor = PreFactor * std::pow(10.0, -1.0 * (double)DivideBy);
-					nums.second = PreFactor;
-				}
-				factors.push_back(nums.first + nums.second);
-
-				variables.push_back("");
-				VarDepth.push_back(depth);
-				buffer = "";
-			}
-
-		}
-
-		//for(auto c = var.cbegin(); c != var.cend(); c++)
-		//{
-		//	if((*c) == ' ')
-		//	{
-		//		continue;
-		//	}
-		//	else if((*c) == '.')
-		//	{
-		//		decimal = true;
-		//		nums.first = std::stod(buffer);
-		//		buffer = "";
-		//	}
-		//	else if(std::isdigit((*c)) == 0 && value)
-		//	{
-		//		value = false;
-		//		double val = std::stod(buffer);
-		//		if(!decimal)
-		//		{
-		//			nums.first = val;
-		//		}
-		//		else
-		//		{
-		//			int DivideBy = buffer.length();
-		//			val = val * std::pow(10.0, -1.0 * (double)DivideBy);
-		//			nums.second = val;
-		//		}
-		//		buffer = (*c);
-		//	}
-		//	else
-		//	{
-		//		buffer += (*c);
-		//	}
-		//}
-//
-		//std::string variable = buffer;
-		//double factor = nums.first + nums.second;
-
 		std::string FunctionName = "";
 		std::vector<int> removed = {};
 		for(auto c = func.cbegin(); c != func.cend(); c++)
@@ -673,20 +945,30 @@ namespace SpinAPI
 		std::shared_ptr<Function> _func = nullptr;
 		if(FunctionName.compare("sin") == 0)
 		{
-			 _func = std::make_shared<Function>(MathematicalFunctions::sin, Function::ReturnType::d, FunctionName, variables, factors);
+			 _func = std::make_shared<Function>(MathematicalFunctions::sin, Function::ReturnType::d, FunctionName, vardef);
 		}
-		if(FunctionName.compare("cos") == 0)
+		else if(FunctionName.compare("cos") == 0)
 		{
-			_func = std::make_shared<Function>(MathematicalFunctions::cos, Function::ReturnType::d, FunctionName, variables, factors);
+			_func = std::make_shared<Function>(MathematicalFunctions::cos, Function::ReturnType::d, FunctionName, vardef);
 		}
-		if(FunctionName.compare("scalar") == 0)
+		else if(FunctionName.compare("scalar") == 0)
 		{
-			_func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, FunctionName, variables, factors);
+			_func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, FunctionName, vardef);
 		}
-		
-		_func->SetOp(operations);
-		_func->SetVarDepth(VarDepth);
+		else if(FunctionName.compare("scalarcx") == 0)
+		{
+			_func = std::make_shared<Function>(MathematicalFunctions::scalarcx, Function::ReturnType::cd, FunctionName, vardef);
+		}
+		else if(FunctionName.compare("exp") == 0)
+		{
+			_func = std::make_shared<Function>(MathematicalFunctions::exp, Function::ReturnType::d, FunctionName, vardef);
+		}
+		else if(FunctionName.compare("expcx") == 0)
+		{
+			_func = std::make_shared<Function>(MathematicalFunctions::expcd, Function::ReturnType::cd, FunctionName, vardef);
+		}
 		_func->SetFunctionString(FunctionName + "(" + var + ")");
+		_func->SetPostFix(PostFix);
 
 		return _func;
 	}
@@ -695,7 +977,8 @@ namespace SpinAPI
 	{
 		void* sin(void* value) //double
 		{
-			double val = *(double*)value;
+			std::complex<double> val2= *(std::complex<double>*)value;
+			double val = val2.real();
 			double* _val = new double;
 			*_val = std::sin(val);
 			return (void*)_val;
@@ -704,7 +987,8 @@ namespace SpinAPI
 		void* cos(void* value) //double
 		{
 			double* _val = new double;
-			double val = *(double*)value;
+			std::complex<double> val2= *(std::complex<double>*)value;
+			double val = val2.real();
 			*_val = std::cos(val);
 			return (void*)_val;
 		}
@@ -712,7 +996,33 @@ namespace SpinAPI
 		void* scalar(void* value) //scalar not scaler
 		{
 			double* _val = new double;
-			*_val = *(double*)value;
+			std::complex<double> val2= *(std::complex<double>*)value;
+			*_val = val2.real();
+			return (void*)_val;
+		}
+
+        void *scalarcx(void* value)
+        {
+            std::complex<double>* _val = new std::complex<double>;
+			std::complex<double> val = *(std::complex<double>*)value;
+			*_val = val;
+			return (void*)_val;
+        }
+
+        void* exp(void* value)
+		{
+			double* _val = new double;
+			std::complex<double> val2 = *(std::complex<double>*)value;
+			double val = val2.real();
+			*_val = std::exp(val);
+			return (void*)_val;
+		}
+
+		void* expcd(void* value)
+		{
+			std::complex<double>* _val = new std::complex<double>;
+			std::complex<double> val = *(std::complex<double>*)value;
+			*_val = std::exp(val);
 			return (void*)_val;
 		}
 	}

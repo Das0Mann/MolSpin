@@ -136,6 +136,10 @@ namespace RunSection
 				continue;
 			} 
 			ActionState = this->systems[SpinSystem]->states_find(state);
+			if(ActionState == nullptr)
+			{
+				continue;
+			}
 			ActionState->Update();
 		}
 		

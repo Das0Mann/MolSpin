@@ -13,6 +13,7 @@
 #include "MSDParser.h"
 #include "RunSection.h"
 #include "FileReader.h"
+//#include "Action.h"
 #include <fstream>
 #include <unistd.h>
 
@@ -470,6 +471,24 @@ int main(int argc, char **argv)
 		{
 			rs.Step(i + 1);
 		}
+
+		//if(rs.GetSettings()->GetParallel() == true)
+		//{
+		//	//check that all actions have parallel turned on
+		//	for(unsigned int i = 0; i < rs.GetActions().size(); i++)
+		//	{
+		//		if(rs.GetActions()[i]->GetParallel() == true)
+		//		{
+		//			std::cout << rs.GetActions()[i]->Name() << " hasn't been enabled for parallelization" << std::endl;
+		//		}
+		//	}
+//
+		//	//#pragma omp for parallel schedule(static,1)
+		//	for(unsigned int i = firstStep; i <= steps; i++)
+		//	{
+		//		if(stepLimit > 0 && i - firstStep >= )
+		//	}
+		//}
 
 		for (unsigned int i = firstStep; i <= steps; i++)
 		{

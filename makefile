@@ -40,7 +40,7 @@ DEP_MSDPARSER = $(PATH_MSDPARSER)/MSDParser.h
 # --------------------------------------------------------------------------
 # RunSection module
 PATH_RUNSECTION = ./RunSection
-OBJS_RUNSECTION = $(PATH_RUNSECTION)/RunSection.o $(PATH_RUNSECTION)/BasicTask.o $(PATH_RUNSECTION)/Action.o $(PATH_RUNSECTION)/Settings.o $(PATH_RUNSECTION)/OutputHandler.o
+OBJS_RUNSECTION = $(PATH_RUNSECTION)/RunSection.o $(PATH_RUNSECTION)/BasicTask.o $(PATH_RUNSECTION)/Action.o $(PATH_RUNSECTION)/Settings.o $(PATH_RUNSECTION)/OutputHandler.o $(PATH_RUNSECTION)/Utility.o
 DEP_RUNSECTION = $(PATH_RUNSECTION)/RunSection.h
 # ---
 # RunSection custom tasks
@@ -63,20 +63,23 @@ PATH_TESTS = ./Tests
 OBJS_TESTS = $(PATH_TESTS)/testmain.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
 DEP_TESTS = 
 # --------------------------------------------------------------------------
+#LinearAlgebra Vendor code
+PATH_LINALG_VENDOR = ./Vendor/
+#---------------------------------------------------------------------------
 # General Compilation Options
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
 CC = g++ -std=c++17		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
-LFLAGS = -Wall -O3 -g -DARMA_DONT_PRINT_FAST_MATH_WARNING	# Linker Flags
-CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g -O3 -fopenmp -DARMA_DONT_PRINT_FAST_MATH_WARNING # Compile flags to .o
+LFLAGS = -Wall -g -DARMA_DONT_PRINT_FAST_MATH_WARNING -O3	# Linker Flags
+CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g -fopenmp -DARMA_DONT_PRINT_FAST_MATH_WARNING -O3 # Compile flags to .o
 # --------------------------------------------------------------------------
 # Compilation of the main program
 # --------------------------------------------------------------------------
-SEARCHDIR_MOLSPIN = -I$(PATH_SPINAPI) -I$(PATH_MSDPARSER) -I$(PATH_RUNSECTION) -I$(PATH_RUNSECTION_TASKS) -I$(PATH_RUNSECTION_CUSTOMTASKS) -I$(PATH_RUNSECTION_ACTIONS) $(ARMADILLO)
+SEARCHDIR_MOLSPIN = -I$(PATH_SPINAPI) -I$(PATH_MSDPARSER) -I$(PATH_RUNSECTION) -I$(PATH_RUNSECTION_TASKS) -I$(PATH_RUNSECTION_CUSTOMTASKS) -I$(PATH_RUNSECTION_ACTIONS) -I$(PATH_LINALG_VENDOR) $(ARMADILLO)
 molspin: $(OBJECTS)
 	$(CC) $(LFLAGS) $^ $(SEARCHDIR_MOLSPIN) -o $@
 
-SEARCHDIR_MAIN = -I$(PATH_SPINAPI) -I$(PATH_MSDPARSER) -I$(PATH_RUNSECTION) -I$(PATH_RUNSECTION_TASKS) -I$(PATH_RUNSECTION_CUSTOMTASKS) -I$(PATH_RUNSECTION_ACTIONS) $(ARMADILLO)
+SEARCHDIR_MAIN = -I$(PATH_SPINAPI) -I$(PATH_MSDPARSER) -I$(PATH_RUNSECTION) -I$(PATH_RUNSECTION_TASKS) -I$(PATH_RUNSECTION_CUSTOMTASKS) -I$(PATH_RUNSECTION_ACTIONS) -I$(PATH_LINALG_VENDOR) $(ARMADILLO)
 main.o: main.cpp $(DEP_MSDPARSER) $(DEP_SPINAPI)
 	$(CC) $(CFLAGS) $(SEARCHDIR_MAIN) main.cpp -o main.o
 # --------------------------------------------------------------------------
