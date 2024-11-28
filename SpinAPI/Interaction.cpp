@@ -147,6 +147,40 @@ namespace SpinAPI
 			if (this->HasFieldTimeDependence())
 				this->SetTime(0.0);
 		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////PIP ADDITIONS /////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// One-spin interactions can have a time-dependent field
+		if (this->type == InteractionType::DoubleSpin)
+		{
+
+			// Do we have a trajectory entry for field? Note that the trajectory may not have a time column, in which case there will be no time dependence
+			if (this->trjHasField)
+			{
+				this->fieldType = InteractionFieldType::Trajectory;
+			}
+
+			if (this->properties->Get("fieldtype", str) || this->properties->Get("timedependence", str))
+			{
+				if (this->trjHasField)
+				{
+					std::cout << "Warning: Ignored fieldtype for Interaction \"" << this->Name() << "\"! Using trajectory instead." << std::endl;
+				}
+				// Figure out what type of time-dependence should be used
+				else if (str.compare("SinMat") == 0)
+				{
+					this->fieldType = InteractionFieldType::LinearPolarization;
+					this->properties->Get("frequency", this->tdFrequency);
+					this->properties->Get("phase", this->tdPhase);
+				}
+
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////PIP ADDITIONS /////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
 
 	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
@@ -717,6 +751,16 @@ namespace SpinAPI
 		// Just apply the rotation matrix to the field without projecting onto perpendicular plane
 		return R * _v;
 	}
+
+	//make a matrix with sinusoidal modulation on each tensor component
+	arma::mat SinMat(const arma::mat &_m, double _time, double _frequency, double _phase){
+
+		return (_m * cos(_frequency * _time + _phase));
+
+	}
+
+
+
 	// -----------------------------------------------------
 	// Non-member non-friend ActionTarget Check functions
 	// -----------------------------------------------------
