@@ -192,7 +192,7 @@ namespace RunSection
 
             auto GetK = [&ButcherTable](int index, std::vector<VecType> kv) {
                 VecType temp(kv[0].n_rows);
-                for(int e = 0; e < ButcherTable[index].second.size(); e++)
+                for(int e = 0; e < int(ButcherTable[index].second.size()); e++)
                 {
                     temp = temp + (ButcherTable[index].second[e] * kv[e]);
                 }
@@ -211,7 +211,7 @@ namespace RunSection
             }
 
             VecType ReturnVecRK4 = rho01;
-            for(i = 0; i < ButcherTable[7].second.size(); i++)
+            for(i = 0; i < int(ButcherTable[7].second.size()); i++)
             {
                 //std::cout << i << std::endl;
                 ReturnVecRK4 += (ButcherTable[7].second[i] * kvec[i]);
@@ -219,7 +219,7 @@ namespace RunSection
 
 
             VecType ReturnVecRK5 = rho01;
-            for(i = 0; i < ButcherTable[6].second.size(); i++)
+            for(i = 0; i < int(ButcherTable[6].second.size()); i++)
             {
                 ReturnVecRK5 += (ButcherTable[6].second[i] * kvec[i]);
             }
@@ -235,7 +235,7 @@ namespace RunSection
             double sum = 0;
 
             #pragma omp parallel for reduction(+:sum)
-            for(int i = 0; i < diff.n_rows; i++)
+            for(int i = 0; i < int(diff.n_rows); i++)
             {
                 sum += std::pow(std::abs(diff[i]),2);
             }

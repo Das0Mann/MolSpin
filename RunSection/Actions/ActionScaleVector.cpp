@@ -72,7 +72,12 @@ namespace RunSection
 
 	bool ActionScaleVector::Reset()
 	{
-		this->actionVector->Reset();
+		if(this->actionVector->Reset();)
+		{
+			return true
+		}
+
+		return false
 	}
 	// -----------------------------------------------------
 }

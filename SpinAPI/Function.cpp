@@ -95,10 +95,14 @@ namespace SpinAPI
 			for(unsigned int e = 0; e < temp.size(); e++)
 			{
 				if(temp[e] == "")
+				{
 					VarValues.push_back(1.0); //if the variable is "" (i.e no variable exists) it just puts a 1 in its place otherwise it puts 0 in as a placeholder value
+				}
 				else
+				{
 					VarValues.push_back(0.0);
 					VarListTemp.insert({temp[e], 0.0});
+				}
 
 				if(AllocatedVariables.find(temp[e]) != AllocatedVariables.npos)
 					continue;
@@ -168,7 +172,7 @@ namespace SpinAPI
 					}
 					if(Float)
 					{
-						while(std::isdigit(c) || (c == '.' || c == ',') && std::find(chr.begin(), chr.end(), c) == chr.end())
+						while ((std::isdigit(c) || c == '.' || c == ',') && std::find(chr.begin(), chr.end(), c) == chr.end())
 						{
 							VarName += c;
 							i++;
@@ -270,7 +274,7 @@ namespace SpinAPI
 			{
 				std::vector<void*> val;
 				auto vdef = std::find_if(m_variables.begin(), m_variables.end(), findz);
-				for(int i = 0; i < vdef->InternalVariables.size(); i++)
+				for(int i = 0; i < int(vdef->InternalVariables.size()); i++)
 				{
 					val.push_back((void*)&VarValues[index2]);
 					index2++;
@@ -424,7 +428,7 @@ namespace SpinAPI
 		}
 
 		std::string buffer = "";
-		std::vector<char>::iterator it = SpecialCharacters.end();
+		//std::vector<char>::iterator it = SpecialCharacters.end();
 		//std::vector<std::string>::iterator it2 = MathematicalFunctionsList.end();
 
 		if(ResetComplexNum)
@@ -478,23 +482,23 @@ namespace SpinAPI
 			return true;
 		};
 
-		auto TextOnly = [](std::string buffer) {
-			if(buffer.length() == 1)
-			{
-				if(buffer == "i" || buffer == "j")
-				{
-					return false;
-				}
-			}
-			for(auto c = buffer.begin(); c != buffer.end(); c++)
-			{
-				if(std::isdigit((*c)) != 0)
-				{
-					return false;
-				}
-			}
-			return true;
-		};
+		// auto TextOnly = [](std::string buffer) {
+		// 	if(buffer.length() == 1)
+		// 	{
+		// 		if(buffer == "i" || buffer == "j")
+		// 		{
+		// 			return false;
+		// 		}
+		// 	}
+		// 	for(auto c = buffer.begin(); c != buffer.end(); c++)
+		// 	{
+		// 		if(std::isdigit((*c)) != 0)
+		// 		{
+		// 			return false;
+		// 		}
+		// 	}
+		// 	return true;
+		// };
 
 		std::vector<std::string> PostFixEquations;
 		buffer = (*FunctionString.begin());
@@ -874,23 +878,26 @@ namespace SpinAPI
 			}
 		}
 
-		auto ReturnType = [&s_MathmaticalFunctions](std::string MathematicalFunction) {
-			std::vector<std::string> vd;
-			std::vector<std::string> cdd;
-			for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.end(); a++)
-			{
-				if(a->second == 0)
-				{
-					vd.push_back(a->first);
-					continue;
-				}
-				cdd.push_back(a->first);
-			}
-			if(std::find(vd.begin(), vd.end(), MathematicalFunction) != vd.end())
-				return Function::VarType::d;
-			else if(std::find(cdd.begin(), cdd.end(), MathematicalFunction) != cdd.end())
-				return Function::VarType::z;
-		};
+		// auto ReturnType = [&s_MathmaticalFunctions](std::string MathematicalFunction) {
+		// 	std::vector<std::string> vd;
+		// 	std::vector<std::string> cdd;
+		// 	for(auto a = s_MathmaticalFunctions.cbegin(); a != s_MathmaticalFunctions.end(); a++)
+		// 	{
+		// 		if(a->second == 0)
+		// 		{
+		// 			vd.push_back(a->first);
+		// 			continue;
+		// 		}
+		// 		cdd.push_back(a->first);
+		// 	}
+
+		// 	if(std::find(vd.begin(), vd.end(), MathematicalFunction) != vd.end()) {
+		// 		return Function::VarType::d;}
+		// 	else if(std::find(cdd.begin(), cdd.end(), MathematicalFunction) != cdd.end()){
+		// 		return Function::VarType::z;}
+
+		// 	throw std::runtime_error("Unknown mathematical function: " + MathematicalFunction);
+		// };
 
 		std::vector<Function::VariableDefinition> vardef;
 		for(auto v : variables)
