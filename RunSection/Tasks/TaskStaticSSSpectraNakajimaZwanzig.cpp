@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// TaskStaticSSSpectraNakajimaZwanzig implementation (RunSection module)  developed by Irina Anisimova and Luca Gerhards.
+// TaskStaticSSSpectraNakajimaZwanzig implementation (RunSection module)  developed by Luca Gerhards.
 //
 // Molecular Spin Dynamics Software - developed by Luca Gerhards.
 // (c) 2022 Quantum Biology and Computational Physics Group.
@@ -1868,6 +1868,123 @@ namespace RunSection
 			arma::cx_vec rhovec = rho0vec;
 
 			// We have to implement the pulses here
+			///////////////////////////////////////////////////////
+
+			// Read a pulse sequence from the input
+			std::vector<std::tuple<std::string, double>> Pulsesequence;
+			if (this->Properties()->GetPulseSequence("pulsesequence", Pulsesequence))
+			{
+				this->Log() << "Pulsesequence" << std::endl;
+
+				// Loop through all pulse sequences
+				for (const auto &seq : Pulsesequence)
+				{
+					// Write which pulse in pulsesequence is calculating now
+					this->Log() << std::get<0>(seq) << ", " << std::get<1>(seq) << std::endl;
+
+					// Save the parameters from the input as variables
+					std::string pulse_name = std::get<0>(seq);
+					double timerelaxation = std::get<1>(seq);
+
+					for (auto pulse = (*i)->pulses_cbegin(); pulse < (*i)->pulses_cend(); pulse++)
+					{
+						if ((*pulse)->Name().compare(pulse_name) == 0)
+						{
+
+							// Apply a pulse to our density vector
+							if ((*pulse)->Type() == SpinAPI::PulseType::InstantPulse)
+							{
+								// Create a Pulse operator in SS
+								arma::cx_mat pulse_operator;
+								if (!space.PulseOperatorFrameChange((*pulse), eigen_vec, pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+								rhovec = pulse_operator * rhovec;
+							}
+							else if ((*pulse)->Type() == SpinAPI::PulseType::LongPulseStaticField)
+							{
+
+								// Create a Pulse operator in SS
+								arma::cx_mat pulse_operator;
+								if (!space.PulseOperatorFrameChange((*pulse), eigen_vec, pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+
+								// Create array containing a propagator and the current state of each system
+								std::pair<arma::cx_mat, arma::cx_vec> G;
+								// Get the propagator and put it into the array together with the initial state
+								arma::cx_mat A_sp = arma::expmat((A + (arma::cx_double(0.0, -1.0) * pulse_operator)) * (*pulse)->Timestep());
+								G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
+
+								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
+								for (unsigned int n = 1; n <= steps; n++)
+								{
+									// Take a step, "first" is propagator and "second" is current state
+									rhovec = G.first * G.second;
+
+									// Get the new current state density vector
+									G.second = rhovec;
+								}
+							}
+							else if ((*pulse)->Type() == SpinAPI::PulseType::LongPulse)
+							{
+								// Create a Pulse operator in SS
+								arma::cx_mat pulse_operator;
+								if (!space.PulseOperatorFrameChange((*pulse), eigen_vec, pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+
+								// Create array containing a propagator and the current state of each system
+								std::pair<arma::cx_mat, arma::cx_vec> G;
+
+								// Get the propagator and put it into the array together with the initial state
+								arma::cx_mat A_sp = arma::expmat((A + (arma::cx_double(0.0, -1.0) * pulse_operator * std::cos((*pulse)->Frequency() * (*pulse)->Timestep()))) * (*pulse)->Timestep());
+								G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
+
+								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
+								for (unsigned int n = 1; n <= steps; n++)
+								{
+									// Take a step, "first" is propagator and "second" is current state
+									rhovec = G.first * G.second;
+
+									// Get the new current state density vector
+									G.second = rhovec;
+								}
+							}
+							else
+							{
+								this->Log() << "Not implemented yet, sorry." << std::endl;
+							}
+
+							// Get the system relax during the time
+
+							// Create array containing a propagator and the current state of each system
+							std::pair<arma::cx_mat, arma::cx_vec> G;
+							arma::cx_mat A_sp = arma::expmat(A * (*pulse)->Timestep());
+							// Get the propagator and put it into the array together with the initial state
+							G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
+
+							unsigned int steps = static_cast<unsigned int>(std::abs(timerelaxation / (*pulse)->Timestep()));
+							for (unsigned int n = 1; n <= steps; n++)
+							{
+								// Take a step, "first" is propagator and "second" is current state
+								rhovec = G.first * G.second;
+
+								// Get the new current state density vector
+								G.second = rhovec;
+							}
+						}
+					}
+				}
+			}
+
+			//////////////////////////////////////////////////////
 
 			// Read the method from the input file
 			std::string Method;
