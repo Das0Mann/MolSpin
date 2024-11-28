@@ -22,16 +22,16 @@ namespace RunSection
 		this->properties->Get("last", this->last);
 		this->properties->Get("period", this->period);
 		
-		std::string Parallelize = "";
-		this->properties->Get("parallelize", Parallelize);
-		if(Parallelize.compare("true") == 0)
-		{
-			this->m_Parallelize = true;
-		}
-		else
-		{
-			this->m_Parallelize = false;
-		}
+		//std::string Parallelize = "";
+		//this->properties->Get("parallelize", Parallelize);
+		//if(Parallelize.compare("true") == 0)
+		//{
+		//	this->m_Parallelize = true;
+		//}
+		//else
+		//{
+		//	this->m_Parallelize = false;
+		//}
 		
 		std::string loop;
 		this->properties->Get("loop", loop);

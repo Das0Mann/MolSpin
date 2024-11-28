@@ -70,7 +70,7 @@ namespace RunSection
 
 		// Public get-object-by-name methods
 		std::shared_ptr<BasicTask> GetTask(const std::string &);
-		std::vector<std::shared_ptr<Action>> GetActions() const { return this->actions; };
+		//std::vector<std::shared_ptr<Action>> GetActions() const { return this->actions; };
 
 		// Methods to get ActionTargets
 		std::map<std::string, ActionScalar> GetActionScalars();

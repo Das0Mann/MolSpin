@@ -31,7 +31,7 @@ namespace RunSection
 		unsigned int last;
 		unsigned int period;
 		bool m_loop;
-		bool m_Parallelize; 
+		//bool m_Parallelize; 
 
 	protected:
 		// Protected methods
@@ -61,7 +61,7 @@ namespace RunSection
 		void Step(unsigned int);
 		bool IsValid() const;
 		std::string Name();
-		bool GetParallel() const { return this->m_Parallelize; };
+		//bool GetParallel() const { return this->m_Parallelize; };
 
 		const std::shared_ptr<MSDParser::ObjectParser> GetProperties() const { return this->properties; };
 
