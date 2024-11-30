@@ -1,0 +1,3 @@
+VariableName, MinValue, MaxValue, StepSize, NumSteps, sync,\n
+RPSystem.CISS_Initial.chi,0,1.570796327,0.1570796327,,,\n
+RPSystem.CISS_Recomb.chi,0,1.570796327,0.1570796327,,RPSystem.CISS_Initial.chi,\n
