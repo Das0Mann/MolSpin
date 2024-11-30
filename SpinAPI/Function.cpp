@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 #include <cctype>
-#include <math.h> 
+#include <cmath> 
 #include <memory>
 #include <armadillo>
 #include <stack>
@@ -39,16 +39,16 @@ namespace SpinAPI
 
 		if(m_funcType == ReturnType::d)
 		{
-			double val = *(double*)value; //
-			double* temp = (double*)m_func((void*)(double*)&val);
+			std::complex<double> val = EvaluateFuncValue({value}); //
+			double* temp = (double*)m_func((void*)(std::complex<double>*)&val);
 			double _val = *temp;
 			delete temp;
 			ReturnValue = arma::cx_double(_val, 0);
 		}
 		else if(m_funcType == ReturnType::cd)
 		{
-			double val = *(double*)value; 
-			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(arma::cx_double*)&val);
+			std::complex<double> val = EvaluateFuncValue({value}); 
+			arma::cx_double* temp = (arma::cx_double*)m_func((void*)(std::complex<double>*)&val);
 			arma::cx_double _val = *temp;
 			delete temp;
 			ReturnValue = _val;
