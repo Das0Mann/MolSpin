@@ -20,7 +20,7 @@ build
 Vendor/
 
 #ignore personal msd files
-#/msd-files
+/msd-files
 #*.py
 #*.csv
 rp*.msd

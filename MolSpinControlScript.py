@@ -227,7 +227,7 @@ def GetVariablesToModify(FilePathCSV : str):
     return Variables
 
 def Work(i,file):
-    r = subprocess.Popen(["./molspin","-p 2", file + "-" + str(i) + ".msd"])
+    r = subprocess.Popen(["./molspin", "-p", "2", file + "-" + str(i) + ".msd"])
     r.wait()
 
 def main():
@@ -253,8 +253,23 @@ def main():
     print(num)
     tp = ThreadPool(num)
     print("Done")
+    work = []
     for i in range(0,s_FileIndex):
-        tp.apply_async(Work,(i,"msd-files/" + file + "/" + file,))
+        r = tp.apply_async(Work,(i,"msd-files/" + file + "/" + file,))
+        work.append(r)
+    done = 0
+    doneThreads = []
+    while(done != len(work)):
+        index = 0
+        for t in work:
+            if(index in doneThreads):
+                index = index + 1
+                continue
+            t.wait(1)
+            if(t.ready()):
+                done = done + 1
+                doneThreads.append(index)
+            index = index + 1
     tp.close()
     tp.join()
 
