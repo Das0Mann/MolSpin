@@ -33,7 +33,7 @@ namespace RunSection
 		bool CalculatePoints(int n);
 		bool GetPoint(std::array<double,3>&);
 
-        protected:
+    protected:
 		// Overwritten protected methods
 		bool DoStep() override;
 		bool DoValidate() override;

@@ -23,6 +23,7 @@
 #include "ActionAddScalar.h"
 #include "ActionMultiplyScalar.h"
 #include "ActionFibonacciSphere.h"
+#include "ActionLogSpace.h"
 
 //object classes
 #include "State.h"
@@ -217,6 +218,10 @@ namespace RunSection
 			else if (type.compare("multiplyscalar") == 0 || type.compare("scalescalar") == 0)
 			{
 				action = std::make_shared<ActionMultiplyScalar>(_obj, actionScalars, actionVectors);
+			}
+			else if (type.compare("logspace") == 0)
+			{
+				action = std::make_shared<ActionLogSpace>(_obj, actionScalars, actionVectors);
 			}
 			else
 			{
