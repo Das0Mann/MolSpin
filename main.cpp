@@ -9,6 +9,7 @@
 #define MAX_THREADS 48
 //////////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <iomanip>
 #include "Settings.h"
 #include "MSDParser.h"
 #include "RunSection.h"
@@ -384,6 +385,8 @@ int main(int argc, char **argv)
 
 	arma::wall_clock timer;
 	timer.tic();
+
+	std::setprecision(9);
 
 	// Load input file to setup the RunSection object
 	{

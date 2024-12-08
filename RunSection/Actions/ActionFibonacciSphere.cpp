@@ -86,7 +86,7 @@ namespace RunSection
         // Retrieve the vector we want to change
         std::array<double,3> points = {0,0,0};
         GetPoint(points);
-		arma::vec vec = {m_Magnitude*points[0], m_Magnitude*points[1], m_Magnitude*points[2]};
+		arma::vec vec = {points[0], points[1], points[2]};
 
         return this->actionVector->Set(vec);
     }
@@ -137,7 +137,7 @@ namespace RunSection
         std::array<double,3> points = {0,0,0};
         GetPoint(points);
 
-		arma::vec vec = {m_Magnitude*points[0], m_Magnitude*points[1], m_Magnitude*points[2]};
+		arma::vec vec = {points[0], points[1], points[2]};
         if(!this->actionVector->Set(vec))
         {
             return false;
