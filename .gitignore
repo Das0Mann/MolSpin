@@ -25,6 +25,7 @@ Vendor/
 rp*.msd
 CISS*.msd
 *.zip
+msd-files/
 
 #ignore vscode workspase files
 MolSpin.code-workspace
