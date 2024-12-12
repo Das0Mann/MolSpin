@@ -28,21 +28,31 @@ namespace SpinAPI
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::shared_ptr<Tensor> couplingTensor;				 // Coupling tensor for two-spin interactions, i.e. "A" in "S1 * A * S2". Example: Hyperfine tensor. Could also be used for one-spin interactions.
+		
+		//Special data members for time-dependent interaction tensors
+		arma::mat tdInitialTensor;
+		arma::mat tdTensor;
+		
 		arma::vec field;									 // Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
 		double dvalue, evalue;								 // D and E value for zero-field splitting
 		std::vector<spin_ptr> group1;						 // Spins to use for one-spin interaction and left-hand-side of two-spin interaction
 		std::vector<spin_ptr> group2;						 // Spins to use on right-hand-side of coupling tensor in two-spin interaction
 		InteractionType type;								 // Interaction type (one-spin / two-spin)
 		InteractionFieldType fieldType;						 // Field type for one-spin interactions (static / time-dependence specification)
+		InteractionTensorType tensorType;					 // Field type for tensor interactions (static / time-dependence specification)
 		double prefactor;									 // An optional additional prefactor that can be specified in input file (default = 1.0)
 		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
 		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
 
+		
+	
+
 		// Trajectory parameters
 		Trajectory trajectory;
 		bool trjHasTime;
 		bool trjHasField;
+		bool trjHasTensor;
 		bool trjHasPrefactor;
 		unsigned int trjTime;
 		unsigned int trjFieldX;
@@ -50,12 +60,24 @@ namespace SpinAPI
 		unsigned int trjFieldZ;
 		unsigned int trjPrefactor;
 
+		unsigned int trjMatXX;
+		unsigned int trjMatXY;
+		unsigned int trjMatXZ;
+		unsigned int trjMatYX;
+		unsigned int trjMatYY;
+		unsigned int trjMatYZ;
+		unsigned int trjMatZX;
+		unsigned int trjMatZY;
+		unsigned int trjMatZZ;
+
 		// Special data members for time-dependent fields
 		double tdFrequency;
 		double tdPhase;
 		arma::vec tdAxis;
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
+
+		
 
 		// Private methods to create ActionTargets
 		std::vector<RunSection::NamedActionVector> CreateActionVectors(const std::string &);
@@ -136,6 +158,7 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
+	arma::mat TensorTimeDependenceSinMat(arma::mat, double, double, double);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

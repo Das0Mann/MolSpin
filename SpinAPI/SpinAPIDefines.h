@@ -46,9 +46,10 @@ namespace SpinAPI
 		Trajectory,			  // Time-dependence is given by a trajectory
 	};
 
-	enum class InteractionTensorType
+	enum class InteractionTensorType //PB added
 	{
-		SinMat,
+		SinMat, //example 
+		Trajectory,			   // Time-dependence is given by a trajectory
 	};
 
 	// Used by the Transition class
