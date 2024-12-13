@@ -20,8 +20,8 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the interaction parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr), tdTensor(3,3, arma::fill::zeros),
-																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
+	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(0), tdTensor(3,3, arma::fill::zeros),
+																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), tensorType(InteractionTensorType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjHasTensor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
 	{//trjMatXX(0),trjMatXY(0),trjMatXZ(0),trjMatYX(0),trjMatYY(0), trjMatYZ(0),trjMatZX(0),trjMatZY(0),trjMatZZ(0),
@@ -172,14 +172,14 @@ namespace SpinAPI
 				this->tensorType = InteractionTensorType::Trajectory;
 			}
 
-			if (this->properties->Get("fieldtype", str) || this->properties->Get("timedependence", str))
-			{
+			if (this->properties->Get("tensortype", str) || this->properties->Get("timedependence", str))
+			{	
 				if (this->trjHasTensor)
 				{
-					std::cout << "Warning: Ignored fieldtype for Interaction \"" << this->Name() << "\"! Using trajectory instead." << std::endl;
+					std::cout << "Warning: Ignored tensortype for Interaction \"" << this->Name() << "\"! Using trajectory instead." << std::endl;
 				}
 				// Figure out what type of time-dependence should be used
-				else if (str.compare("SinMat") == 0)
+				else if (str.compare("sinmat") == 0)
 				{
 					this->tensorType = InteractionTensorType::SinMat;
 					this->properties->Get("frequency", this->tdFrequency);
@@ -187,19 +187,22 @@ namespace SpinAPI
 				}
 				else
 				{
-					std::cout << "Warning: Unknown fieldtype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
+					std::cout << "Warning: Unknown tensortype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
 				}
 			
 			}
 
 			// Save the initial tensor - used only for time-dependent interactions where Actions cannot change the field
-			arma::mat zeros(3,3, arma::fill::zeros);
-			this->tdInitialTensor = zeros;//this->couplingTensor;
-
+			// arma::mat zeros(3,3, arma::fill::zeros);
+			// this->tdInitialTensor = zeros;//this->couplingTensor;
+			
 			//Set the time to 0 by default
-			if (this->HasFieldTimeDependence())
+			if (this->HasTensorTimeDependence())
+			{	
+				arma::mat zeros(3,3, arma::fill::zeros);
+				this->couplingTensor->SetTensor(zeros);
 				this->SetTime(0.0);
-
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -315,6 +318,15 @@ namespace SpinAPI
 
 		return false;
 	}
+
+	bool  Interaction::HasTensorTimeDependence() const
+	{
+		if (this->tensorType != InteractionTensorType::Static)
+			return true;
+
+		return false;
+	}
+
 
 	// Checks whether the interaction is time-dependent
 	bool Interaction::HasTimeDependence() const
@@ -433,9 +445,8 @@ namespace SpinAPI
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
 		else if (this->tensorType == InteractionTensorType::SinMat){
-			arma::mat td_tensor = TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
-			// Tensor cp_tensor = Tensor(td_tensor);
-			this->couplingTensor = std::make_shared<Tensor>(td_tensor);
+			TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
+
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		return true;
@@ -721,6 +732,22 @@ namespace SpinAPI
 		if (this->couplingTensor != nullptr)
 			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
 	}
+
+	//make a matrix with sinusoidal modulation on one tensor component
+	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase){
+		_m(0,0) = 1 * cos(_frequency * _time + _phase);
+		_m(0,1) = 3.0;
+		_m(0,2) = 0.0;
+		_m(1,0) = 3.0;
+		_m(1,1) = 2 * cos(_frequency * _time + _phase);
+		_m(1,2) = 0.0;
+		_m(2,0) = 0.0;
+		_m(2,1) = 0.0;
+		_m(2,2) = 3 * cos(_frequency * _time + _phase);
+
+		this->couplingTensor->SetTensor(_m);
+	}
+
 	// -----------------------------------------------------
 	// Non-member non-friend methods
 	// -----------------------------------------------------
@@ -789,19 +816,7 @@ namespace SpinAPI
 		return R * _v;
 	}
 
-	//make a matrix with sinusoidal modulation on one tensor component
-	arma::mat TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase){
-		
-		// std::cout << "RECOGNISED" << std::endl;
-		// _m.trjMatXX *= cos(_frequency * _time + _phase);
-		_m(0,0) = 1 * cos(_frequency * _time + _phase);
-		return _m;
-		//REDEFINE IN TERMS OF MOLSPIN TENSOR
-
-	}
-
-
-
+	
 	// -----------------------------------------------------
 	// Non-member non-friend ActionTarget Check functions
 	// -----------------------------------------------------

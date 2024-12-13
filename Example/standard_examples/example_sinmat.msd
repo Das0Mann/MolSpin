@@ -37,32 +37,15 @@ SpinSystem system1
 	
 	
 	// -------------------------
-	// Oscillating fields
+	// Zeeman interaction
 	// -------------------------
-	// You can add oscillating magnetic fields like this.
-	// Note that you would need to use a task class that supports time-dependent interactions such as DynamicHS-TimeEvolution.
-	// For now, these time-dependent interactions are commented out.
-	/*Interaction linearpolarized
+	Interaction zeeman1
 	{
+		prefactor = 0.001;	// Change field units from T to mT
 		type = Zeeman;
-		field = "0 0 5e-5";
+		field = "0 0 0.05";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
-		fieldtype = LinearPolarized;
-		frequency = 1e-1;
-		phase = 0;
 	}
-	
-	Interaction circularpolarized
-	{
-		type = Zeeman;
-		field = "1e-5 0 1e-5";
-		spins = electron1, electron2;
-		fieldtype = CircularPolarized;
-		frequency = 1e-3;
-		phase = 1;
-		axis = "0 0 1"
-		PerpendicularOscillations = false;
-	}*/
 	
 	// -------------------------
 	// Hyperfine interactions
@@ -70,8 +53,9 @@ SpinSystem system1
 	Interaction HF1
 	{
 		prefactor = 0.001;	// Change units from T to mT
-		tensortype = SinMat;
 		type = Hyperfine;
+
+		tensortype = sinmat;
 		frequency = 1e-3;
 		phase = 1;
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
@@ -84,7 +68,7 @@ SpinSystem system1
 		type = Hyperfine;
 		group1 = "electron2";
 		group2 = "nucleus2";
-		tensor = anisotropic(0, 0, 1);	// 1 mT along z-axis
+		tensor = matrix(1,2,3; 4,5,6; 7,8,9);//anisotropic(0, 0, 1);	// 1 mT along z-axis
 	}
 	
 	// -------------------------
@@ -186,13 +170,14 @@ Settings
 
 Run
 {
-	// Calculate quantum yields using Liouville-space formalism - general method
+	// Calculate quantum yields using Hilbert-space formalism - general method
 	Task Method1
 	{
 		type = DynamicHS-TimeEvolution;
 		logfile = "log_test.log";
 		datafile = "dat_test.dat";
 		totaltime=10;
+		timestep=0.5;
 	}
 
 }

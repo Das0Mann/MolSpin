@@ -39,12 +39,13 @@ namespace SpinAPI
 		std::vector<spin_ptr> group2;						 // Spins to use on right-hand-side of coupling tensor in two-spin interaction
 		InteractionType type;								 // Interaction type (one-spin / two-spin)
 		InteractionFieldType fieldType;						 // Field type for one-spin interactions (static / time-dependence specification)
-		InteractionTensorType tensorType;					 // Field type for tensor interactions (static / time-dependence specification)
+		InteractionTensorType tensorType;					 // Tensor type for tensor interactions (static / time-dependence specification)
 		double prefactor;									 // An optional additional prefactor that can be specified in input file (default = 1.0)
 		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
 		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
 
+		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
 		
 	
 
@@ -122,6 +123,7 @@ namespace SpinAPI
 		const double Dvalue() const;
 		const double Evalue() const;
 		bool HasFieldTimeDependence() const;
+		bool HasTensorTimeDependence() const;
 		bool HasTimeDependence() const;
 
 		// Get time-dependency parameters
@@ -158,7 +160,6 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::mat TensorTimeDependenceSinMat(arma::mat, double, double, double);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

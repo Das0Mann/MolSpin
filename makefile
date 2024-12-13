@@ -22,7 +22,7 @@
 # Compile using Armadillo, here assuming OpenBLAS and Lapack is used
 #ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
 # For an installation in a non-standard location, use:
-ARMADILLO = -I ~/armadillo-12.8.4/include -DARMA_DONT_USE_WRAPPER -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
+ARMADILLO = -I ~/armadillo-12.8.4/include -DARMA_DONT_USE_WRAPPER -lopenblas -llapack -fopenmp 
 # --------------------------------------------------------------------------
 # If you have different versions of gcc or the C++ stdlib installed,
 # adding the following to LFLAGS may help:

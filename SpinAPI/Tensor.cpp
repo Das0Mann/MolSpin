@@ -15,13 +15,18 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Spin Constructors and Destructor
 	// -----------------------------------------------------
-	Tensor::Tensor(double _isotropic) : isotropic(_isotropic), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
+	Tensor::Tensor(double _isotropic) : isotropic(_isotropic), anisotropic({3, arma::fill::zeros}), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
 										trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
 										trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 										trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
 										trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
 										trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
+		// std::cout << "HELLO" << std::endl;
+		// std::cout << this->anisotropic(0) << std::endl;
+		// this->anisotropic(0) = 1;
+		// this->anisotropic(1) = 2;
+		// this->anisotropic(2) = 3;
 	}
 
 	Tensor::Tensor(double _isotropic, double _aniso1, double _aniso2, double _aniso3) : isotropic(_isotropic), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
@@ -148,12 +153,15 @@ namespace SpinAPI
 
 		return (*this);
 	}
+
+
 	// -----------------------------------------------------
 	// Private methods
 	// -----------------------------------------------------
 	// Diagonalizes the matrix to obtain the principal axes and values
 	void Tensor::DiagonalizeMatrix(const arma::mat &_matrix)
 	{
+
 		// Make sure that the matrix has the right dimensions
 		if (_matrix.n_rows != 3 || _matrix.n_cols != 3)
 		{
@@ -169,11 +177,14 @@ namespace SpinAPI
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
 
 		// Do the diagonalization
+		std::cout << "HELLO" << std::endl;
 		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
+		std::cout << "HELLO" << arma::size(this->anisotropic) << std::endl;
 		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
 		this->axis1 = principalAxes.col(0);
 		this->axis2 = principalAxes.col(1);
 		this->axis3 = principalAxes.col(2);
+
 	}
 
 	void Tensor::SeparateIsotropy()
@@ -654,6 +665,13 @@ namespace SpinAPI
 		}
 
 		return true;
+	}
+
+	void Tensor::SetTensor(arma::mat m)
+	{	
+		std::cout << m << std::endl;
+		// this->anisotropic.print(std::cout);
+		this->DiagonalizeMatrix(m); 
 	}
 
 	// Loads a trajectory and checks for headers used by the Tensor class
