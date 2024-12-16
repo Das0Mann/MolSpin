@@ -22,11 +22,11 @@ namespace RunSection
         ActionScalar* actionScaler;
         
         std::shared_ptr<arma::rowvec> m_Points;
-        int m_Num;
-        std::pair<double,double> m_Bounds;
+        int m_Num; //number of points 
+        std::pair<double,double> m_Bounds; //upper and lower bounds for the log space 
     private:
-        bool CalculatePoints(int, double, double);
-        bool GetPoint(double&);
+        bool CalculatePoints(int, double, double); //generates a list of numbers between log base 10 num1 and log base 10 num2
+        bool GetPoint(double&); //gets the current value and assignes it to the double& variable
     protected:
         //overwritten protected methods
         bool DoStep() override;
