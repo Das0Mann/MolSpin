@@ -107,7 +107,6 @@ namespace RunSection
 			// Check transitions, rates and projection operators
 			auto transitions = (*i)->Transitions();
 			arma::sp_cx_mat P;
-			arma::sp_cx_mat Sum(4 * Z, 4 * Z);
 			int num_transitions = 0;
 
 			arma::vec rates(1, 1);

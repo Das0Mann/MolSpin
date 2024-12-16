@@ -534,7 +534,7 @@ namespace RunSection
 
 									for (int l = 0; l < num_element; l++)
 									{
-										ptr_SpecDens[l] = new arma::cx_mat(H);
+										ptr_SpecDens[l] = new arma::cx_mat(lambda);
 										*ptr_SpecDens[l] *= 0.0;
 									}
 
@@ -864,7 +864,7 @@ namespace RunSection
 
 										for (int l = 0; l < num_element; l++)
 										{
-											ptr_SpecDens[l] = new arma::cx_mat(H);
+											ptr_SpecDens[l] = new arma::cx_mat(lambda);
 											*ptr_SpecDens[l] *= 0.0;
 										}
 
