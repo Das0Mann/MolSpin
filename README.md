@@ -15,7 +15,7 @@ PLEASE CITE THE FOLLOWING PAPER WHEN USING MOLSPIN.
 				<a href="https://doi.org/10.1021/acs.jctc.4c00361" target="_blank">
 					<b>Spin Dynamics of Radical Pairs Using the Stochastic Schrödinger Equation in MolSpin</b>
 				</a><br />
-				Gediminas Jurgis Pazera, Thomas P. Fay, Ilia A. Solov’yov, P. J. Hore, Luca Gerhards, <i>Journal of Chemical Theory and Computation </i> <b>X</b>, (2024)
+				Gediminas Jurgis Pazera, Thomas P. Fay, Ilia A. Solov’yov, P. J. Hore, Luca Gerhards, <i>Journal of Chemical Theory and Computation </i> <b>20</b>, 19, 8412–8421, (2024)
 			</p>
 		</td>
 	</tr>
