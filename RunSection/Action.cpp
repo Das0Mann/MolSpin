@@ -138,9 +138,9 @@ namespace RunSection
 			{
 				this->Reset();
 				//std::cout << "resetting" << std::endl;
-				int gap = this->last - this->first;
-				this->first = _currentStep -1 ;
-				this->last = this->first + gap;
+				int gap = this->last + 1 - this->first;
+				this->first = _currentStep;
+				this->last = this->first + gap - 1;
 				return;
 			}
 

@@ -55,7 +55,7 @@ DEP_RUNSECTION_TASKS = $(DEP_RUNSECTION_CUSTOMTASKS)
 # ---
 # RunSection actions
 PATH_RUNSECTION_ACTIONS = ./RunSection/Actions
-OBJS_RUNSECTION_ACTIONS = $(PATH_RUNSECTION_ACTIONS)/ActionRotateVector.o $(PATH_RUNSECTION_ACTIONS)/ActionScaleVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionMultiplyScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionFibonacciSphere.o
+OBJS_RUNSECTION_ACTIONS = $(PATH_RUNSECTION_ACTIONS)/ActionRotateVector.o $(PATH_RUNSECTION_ACTIONS)/ActionScaleVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddVector.o $(PATH_RUNSECTION_ACTIONS)/ActionAddScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionMultiplyScalar.o $(PATH_RUNSECTION_ACTIONS)/ActionFibonacciSphere.o $(PATH_RUNSECTION_ACTIONS)/ActionLogSpace.o
 DEP_RUNSECTION_ACTIONS = 
 # --------------------------------------------------------------------------
 # Unit testing module
