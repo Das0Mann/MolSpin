@@ -6,16 +6,18 @@
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #include "ActionLogSpace.h"
+#include "ObjectParser.h"
 
 bool RunSection::ActionLogSpace::CalculatePoints(int n, double start, double stop)
 {
-    m_Points = std::make_shared<arma::rowvec>(arma::logspace<arma::rowvec>(start,stop,n));
+    m_Points = arma::logspace<arma::rowvec>(start,stop,n);
     return true;
 }
 
 bool RunSection::ActionLogSpace::DoStep()
 {
     // Make sure we have an ActionScaler to act on
+
 	if (actionScaler == nullptr || !this->IsValid())
 	{
 		return false;
@@ -34,9 +36,9 @@ bool RunSection::ActionLogSpace::DoStep()
 bool RunSection::ActionLogSpace::DoValidate()
 {
     std::string str;
-	if (!this->Properties()->Get("actionscaler", str) && !this->Properties()->Get("scaler", str))
+	if (!this->Properties()->Get("actionscalar", str) && !this->Properties()->Get("scalar", str))
 	{
-		std::cout << "ERROR: No ActionScaler specified for the LogSpace action \"" << this->Name() << "\"!" << std::endl;
+		std::cout << "ERROR: No ActionScalar specified for the LogSpace action \"" << this->Name() << "\"!" << std::endl;
 		return false;
 	}
     int NumPoints = 0;
@@ -74,15 +76,20 @@ bool RunSection::ActionLogSpace::DoValidate()
 		return false;
 	}
 
-    if(!this->actionScaler->IsReadonly())
+    if(this->actionScaler->IsReadonly())
     {
 		std::cout << "ERROR: Read only ActionScaler \"" << str << "\" specified for the LogSpace action \"" << this->Name() << "\"! Cannot act on this scaler!" << std::endl;
 		return false;
 	}
 
+    CalculatePoints(m_Num, m_Bounds.first, m_Bounds.second);
 
-    if(!this->DoStep())
+    double val = 0;
+    GetPoint(val);
+    std::cout << val << std::endl;
+    if(!this->actionScaler->Set(val))
     {
+
         return false;
     }
     return true;
@@ -91,7 +98,7 @@ bool RunSection::ActionLogSpace::DoValidate()
 
 bool RunSection::ActionLogSpace::Reset()
 {
-    m_Step = 0
+    m_Step = 0;
     double val = 0;
     GetPoint(val);
     this->actionScaler->Set(val);
@@ -99,8 +106,9 @@ bool RunSection::ActionLogSpace::Reset()
 }
 
 RunSection::ActionLogSpace::ActionLogSpace(const MSDParser::ObjectParser &_parser, const std::map<std::string, ActionScalar> &_scaler, const std::map<std::string, ActionVector> &_vector)
-    :Action(_parser, _scaler, _vector), actionScaler(nullptr)
+    :Action(_parser, _scaler, _vector)
 {
+    m_Step = 0;
     m_Num = 0;
     m_Bounds = {0.0,0.0};
     m_Points = arma::rowvec(arma::zeros(m_Num));
@@ -109,7 +117,7 @@ RunSection::ActionLogSpace::ActionLogSpace(const MSDParser::ObjectParser &_parse
 
 bool RunSection::ActionLogSpace::GetPoint(double& val)
 {
-    val = m_Points->[m_Step];    
+    val = m_Points[m_Step];    
     m_Step++;
     return true;
 }

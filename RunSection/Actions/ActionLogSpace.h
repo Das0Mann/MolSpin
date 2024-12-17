@@ -12,17 +12,16 @@
 #include "Action.h"
 #include <armadillo>
 #include <memory>
-
 namespace RunSection
 {
     class ActionLogSpace : public Action
     {
     private:
         //Data members
-        ActionScalar* actionScaler;
-        
-        std::shared_ptr<arma::rowvec> m_Points;
-        int m_Num; //number of points 
+        ActionScalar *actionScaler;
+        arma::rowvec m_Points;
+        int m_Num; //number of points
+        int m_Step; 
         std::pair<double,double> m_Bounds; //upper and lower bounds for the log space 
     private:
         bool CalculatePoints(int, double, double); //generates a list of numbers between log base 10 num1 and log base 10 num2
@@ -36,3 +35,5 @@ namespace RunSection
         ActionLogSpace(const MSDParser::ObjectParser &, const std::map<std::string, ActionScalar> &, const std::map<std::string, ActionVector> &); // Normal constructor
     };
 }
+
+#endif
