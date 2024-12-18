@@ -52,12 +52,12 @@ SpinSystem system1
 	// -------------------------
 	Interaction HF1
 	{
-		prefactor = 0.001;	// Change units from T to mT
-		type = Hyperfine;
+	    prefactor = 0.001;	// Change units from T to mT
+		type = DoubleSpin;
 
 		tensortype = sinmat;
-		frequency = 1e-3;
-		phase = 1;
+		frequency = 0.01;
+		phase = 0;
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
 		group2 = "nucleus1";
 	}
@@ -68,7 +68,7 @@ SpinSystem system1
 		type = Hyperfine;
 		group1 = "electron2";
 		group2 = "nucleus2";
-		tensor = matrix(1,2,3; 4,5,6; 7,8,9);//anisotropic(0, 0, 1);	// 1 mT along z-axis
+		tensor = anisotropic(0, 0, 1);	// 1 mT along z-axis
 	}
 	
 	// -------------------------
@@ -108,32 +108,8 @@ SpinSystem system1
 	// -------------------------
 	// Transitions
 	// -------------------------
-	// Spin-dependent decays are commented out for now - note that not all task classes can handle spin-dependent decay
-	/*Transition singlet_decay
-	{
-		rate = 1e-3;	// 0.001 /ns, i.e. a lifetime of a microsecond
-		source = Singlet;
-	}
 	
-	// Decay from the triplet states must be applied to each triplet state individually
-	Transition t0_decay
-	{
-		rate = 1e-4;
-		source = T0;
-	}
-	
-	Transition tp_decay
-	{
-		rate = 1e-4;
-		source = Tp;
-	}
-	
-	Transition tm_decay
-	{
-		rate = 1e-4;
-		source = Tm;
-	}*/
-	
+
 	// Spin-independent decay can be added using the Identity state defined above
 	Transition spinindependent_decay
 	{
@@ -155,6 +131,7 @@ Settings
 	Settings general
 	{
 		steps = 1;	// Make 90 calculation steps (i.e. obtain 90 data points)
+		notifications = details;
 	}
 	
 	// Actions are triggered after each calculation step (unless the 'first', 'last' or 'period' parameters are set)
@@ -165,6 +142,7 @@ Settings
 		axis = "0 1 0";
 		value = 1;	// Rotate 1 degree about the axis
 	}
+
 	
 }
 
@@ -173,11 +151,11 @@ Run
 	// Calculate quantum yields using Hilbert-space formalism - general method
 	Task Method1
 	{
-		type = DynamicHS-TimeEvolution;
+		type = DynamicHS-Direct-TimeEvo;
 		logfile = "log_test.log";
 		datafile = "dat_test.dat";
-		totaltime=10;
-		timestep=0.5;
+		totaltime=5000;
+		Timestep=0.1;
 	}
 
 }

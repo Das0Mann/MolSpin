@@ -15,7 +15,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// Spin Constructors and Destructor
 	// -----------------------------------------------------
-	Tensor::Tensor(double _isotropic) : isotropic(_isotropic), anisotropic({3, arma::fill::zeros}), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
+	Tensor::Tensor(double _isotropic) : isotropic(_isotropic), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
 										trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
 										trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 										trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
@@ -177,13 +177,13 @@ namespace SpinAPI
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
 
 		// Do the diagonalization
-		std::cout << "HELLO" << std::endl;
 		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
-		std::cout << "HELLO" << arma::size(this->anisotropic) << std::endl;
 		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
 		this->axis1 = principalAxes.col(0);
 		this->axis2 = principalAxes.col(1);
 		this->axis3 = principalAxes.col(2);
+
+		// std::cout << this->axis1 << std::endl;
 
 	}
 
@@ -667,10 +667,8 @@ namespace SpinAPI
 		return true;
 	}
 
-	void Tensor::SetTensor(arma::mat m)
+	void Tensor::SetTensor(arma::mat &m)
 	{	
-		std::cout << m << std::endl;
-		// this->anisotropic.print(std::cout);
 		this->DiagonalizeMatrix(m); 
 	}
 
