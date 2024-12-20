@@ -106,6 +106,24 @@ int main(int argc, char **argv)
 	std::cout << "#       &&&            &&&,      &&&            &&&&     &&&&&&&&&&     &&&#    &&&&&&&&&&&&    &&& &&&&&&&&&     &&&    &&&      &&&" << std::endl;
 	std::cout << "#      &&/               &&&                                                                    &&&                                  " << std::endl;
 	std::cout << "#        &&&&&&&&&&&&&&&&                                                                       &&&      							   " << std::endl;
+	//std::cout << "#          v4GDDDDDDDDDDDSg                                                                                                                                  "<< std::endl;  
+	// std::cout << "#     8DDDDGY0ovxxxth6PDDDDJx                                                                                                                                "<< std::endl;
+	// std::cout << "#    eDDn                 TDD                                                                                                                                "<< std::endl;
+	// std::cout << "#     gDDDDDJZ9jqqne5QFDDDDLz                PDDDEz         wHDDDN                      pDDDi     iEDDDDDDDDDS                         JDDR                  "<< std::endl;
+	// std::cout << "#       cDDDDDDDDDDDDDDDDHx                  PDDDDDy       lDDDDDN                      pDDDi    LDDDG0lhZEDDDHx                       IDDQ                  "<< std::endl;
+	// std::cout << "#         bDDHv     8DDDt                    PDDDDDDh     cDDDDDDN                      pDDDi   YDDDo        i                                               "<< std::endl;
+	// std::cout << "#           6DDI  aDDHv                      PDDUdDDDW   WDDEtPDDN      eEDDDDDDDN      pDDDi   ZDDD0              6DDDybDDDDDDD9      ODDU   pDDDihDDDDDDGs "<< std::endl;
+	// std::cout << "#  vWDDDDDDk  4DDDDHy  KDDDDDKg              PDDU sDDDJxDDDI  PDDN    dDDDDSho7GDDDG    pDDDi    JDDDDDKcy         6DDDDDJbqcJDDDDj    ODDU   pDDDDDJ44JDDDDd"<< std::endl;
+	// std::cout << "#XDDDK0v        2Hz       ygRDDDFt           PDDU   PDDDDDQ   PDDN   7DDEo       RDDFv  pDDDi     qHDDDDDDDDDY     6DDDS       MDDDk   ODDU   pDDDG     yFDDJ"<< std::endl;
+	// std::cout << "#4DDDGVhx                 q7MDDDFv           PDDU    8DDDe    PDDN   FDD3        vDDD6  pDDDi          w7HDDDDD8   6DDD         JDDS   ODDU   pDDDi      XDDD"<< std::endl;
+	// std::cout << "#   7IDDDDDDDDDDDDDDDDDDDDDDDUq              PDDU     nH      PDDN   DDD4        yDDD3  pDDDi               HDDDt  6DDD         LDDQ   ODDU   pDDDi      YDDD"<< std::endl;
+	// std::cout << "#         0DDGs     4DDDu                    PDDU             PDDN   2DDFt       5DDFt  pDDDi    QY         VDDDs  6DDDZ       2DDDd   ODDU   pDDDi      YDDD"<< std::endl;
+	// std::cout << "#       0DDDq         4DDHx                  PDDU             PDDN    SDDDGj   3DDDDu   pDDDi  fDDDDDF5mshUDDDD8   6DDDDD2  y2DDDD8    ODDU   pDDDi      YDDD"<< std::endl;
+	// std::cout << "#     cDDDn             4DDLz                PDDU             PDDN      PDDDDDDDDFn     pDDDi    yRDDDDDDDDDDM     6DDDtKDDDDDDDO      ODDU   pDDDi      YDDD"<< std::endl;
+	// std::cout << "#    cDDl                 TDD                                                                                      6DDDy                                     "<< std::endl;
+	// std::cout << "#     6DDDDIZgsy   vn8RDDDDIx                                                                                      6DDDy                                     "<< std::endl;
+	// std::cout << "#        sZFDDDDDDDDDDDSd                                                                                          7DDDy     								   "<< std::endl;
+	
 	std::cout << hline << std::endl;
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;

@@ -55,6 +55,8 @@ SpinSystem system1
 	    prefactor = 0.001;	// Change units from T to mT
 		type = DoubleSpin;
 
+		tensor = matrix("0, 0, 4; 0,0,0;4, 0, 0");
+		//prefactor = 0.001;
 		tensortype = sinmat;
 		frequency = 0.01;
 		phase = 0;
@@ -62,14 +64,14 @@ SpinSystem system1
 		group2 = "nucleus1";
 	}
 	
-	Interaction HF2
-	{
-		prefactor = 0.001;	// Change units from T to mT
-		type = Hyperfine;
-		group1 = "electron2";
-		group2 = "nucleus2";
-		tensor = anisotropic(0, 0, 1);	// 1 mT along z-axis
-	}
+//	Interaction HF2
+//	{
+//		prefactor = 0.001;	// Change units from T to mT
+//		type = Hyperfine;
+//		group1 = "electron2";
+//		group2 = "nucleus2";
+//		tensor = anisotropic(0, 0, 1);	// 1 mT along z-axis
+//	}
 	
 	// -------------------------
 	// Spin States

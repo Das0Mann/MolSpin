@@ -26,6 +26,7 @@ namespace SpinAPI
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
 	{//trjMatXX(0),trjMatXY(0),trjMatXZ(0),trjMatYX(0),trjMatYY(0), trjMatYZ(0),trjMatZX(0),trjMatZY(0),trjMatZZ(0),
 		// Is a trajectory specified?
+
 		std::string str;
 		if (this->properties->Get("trajectory", str))
 		{
@@ -102,11 +103,14 @@ namespace SpinAPI
 
 		// If we have a valid interaction type, read the other parameters
 		if (this->type != InteractionType::Undefined)
-		{
+		{	
+
 			Tensor inTensor(0);
 			if (this->properties->Get("tensor", inTensor))
 			{
 				this->couplingTensor = std::make_shared<Tensor>(inTensor);
+				// std::cout << couplingTensor->anisotropic << std::endl;
+
 			}
 
 			this->properties->Get("prefactor", this->prefactor);
@@ -169,8 +173,10 @@ namespace SpinAPI
 			if (this->properties->Get("tensortype", str))
 			{	
 
-				Tensor inTensor(0);
-				this->couplingTensor = std::make_shared<Tensor>(inTensor);
+				// Tensor inTensor(0);
+				// this->couplingTensor = std::make_shared<Tensor>(inTensor);
+				// this->properties->Get("tensor", inTensor);
+
 				// Do we have a trajectory entry for tensor? Note that the trajectory may not have a time column, in which case there will be no time dependence
 				if (this->trjHasTensor)
 				{	
@@ -183,6 +189,8 @@ namespace SpinAPI
 					this->tensorType = InteractionTensorType::SinMat;
 					this->properties->Get("frequency", this->tdFrequency);
 					this->properties->Get("phase", this->tdPhase);
+
+					// std::cout << this->prefactor << std::endl;
 				}
 
 				//fill in all the other options
@@ -193,10 +201,11 @@ namespace SpinAPI
 				}
 			
 			}
-			
+
 			//Set the time to 0 by default
 			if (this->HasTensorTimeDependence())
 			{	
+				this->tdInitialTensor = couplingTensor->LabFrame();
 				this->SetTime(0.0);
 			}
 		}
@@ -224,6 +233,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	const Interaction &Interaction::operator=(const Interaction &_interaction)
 	{
+		
 		this->properties = std::make_shared<MSDParser::ObjectParser>(*(_interaction.properties));
 		this->couplingTensor = _interaction.couplingTensor;
 		this->field = _interaction.field;
@@ -730,18 +740,20 @@ namespace SpinAPI
 
 	//make a matrix with sinusoidal modulation on one tensor component
 	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase){
-		_m(0,0) = 0.001 * cos(_frequency * _time + _phase);
-		_m(0,1) = 0.003;
-		_m(0,2) = 0.0;
-		_m(1,0) = 0.003;
-		_m(1,1) = 0.002 * cos(_frequency * _time + _phase);
-		_m(1,2) = 0.0;
-		_m(2,0) = 0.0;
-		_m(2,1) = 0.0;
-		_m(2,2) = 0.003 * cos(_frequency * _time + _phase);
+		_m(0,0) = _m(0,0) * cos(_frequency * _time + _phase);
+		_m(0,1) = _m(0,1);
+		_m(0,2) = _m(0,2);
+		_m(1,0) = _m(1,0);
+		_m(1,1) = _m(1,1) * cos(_frequency * _time + _phase);
+		_m(1,2) = _m(1,2);
+		_m(2,0) = _m(2,0);
+		_m(2,1) = _m(2,1);
+		_m(2,2) = _m(2,2) * cos(_frequency * _time + _phase);
 
 		this->couplingTensor->SetTensor(_m);
 	}
+
+	// void Interaction::TensorTimeDependence
 
 	// -----------------------------------------------------
 	// Non-member non-friend methods

@@ -22,7 +22,6 @@ namespace SpinAPI
 										trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
 										trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
-		// std::cout << "HELLO" << std::endl;
 		// std::cout << this->anisotropic(0) << std::endl;
 		// this->anisotropic(0) = 1;
 		// this->anisotropic(1) = 2;
@@ -41,7 +40,7 @@ namespace SpinAPI
 		this->anisotropic(2) = _aniso3;
 	}
 
-	Tensor::Tensor(double _isotropic, const arma::vec &_anisotropic) : isotropic(_isotropic), anisotropic(_anisotropic), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
+	Tensor::Tensor(double _isotropic, const arma::vec &_anisotropic) : isotropic(_isotropic), anisotropic(_anisotropic), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}),  trajectory(),
 																	   trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
 																	   trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																	   trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
@@ -50,7 +49,7 @@ namespace SpinAPI
 	{
 	}
 
-	Tensor::Tensor(double _isotropic, const arma::vec &_anisotropic, const arma::mat &_axes) : isotropic(_isotropic), anisotropic(_anisotropic), axis1(_axes.col(0)), axis2(_axes.col(1)), axis3(_axes.col(2)), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
+	Tensor::Tensor(double _isotropic, const arma::vec &_anisotropic, const arma::mat &_axes) : isotropic(_isotropic), anisotropic(_anisotropic), axis1(_axes.col(0)), axis2(_axes.col(1)), axis3(_axes.col(2)), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}),  trajectory(),
 																							   trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
 																							   trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																							   trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
@@ -75,7 +74,7 @@ namespace SpinAPI
 		this->SeparateIsotropy();
 	}
 
-	Tensor::Tensor(const std::string &_tensor, const std::string &_path) : isotropic(0.0), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),
+	Tensor::Tensor(const std::string &_tensor, const std::string &_path) : isotropic(0.0), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}),  trajectory(),
 																		   trjHasTime(false), trjHasIsotropic(false), trjHasAnisotropic(false), trjHasAxis1(false), trjHasAxis2(false), trjHasAxis3(false),
 																		   trjHasMatXX(false), trjHasMatXY(false), trjHasMatXZ(false), trjHasMatYX(false), trjHasMatYY(false), trjHasMatYZ(false), trjHasMatZX(false), trjHasMatZY(false), trjHasMatZZ(false),
 																		   trjTime(0), trjIsotropic(0), trjAnisotropicX(0), trjAnisotropicY(0), trjAnisotropicZ(0),
@@ -140,7 +139,7 @@ namespace SpinAPI
 		this->trjAxis3X = _tensor.trjAxis3X;
 		this->trjAxis3Y = _tensor.trjAxis3Y;
 		this->trjAxis3Z = _tensor.trjAxis3Z;
-
+////
 		this->trjMatXX = _tensor.trjMatXX;
 		this->trjMatXY = _tensor.trjMatXY;
 		this->trjMatXZ = _tensor.trjMatXZ;
@@ -150,6 +149,7 @@ namespace SpinAPI
 		this->trjMatZX = _tensor.trjMatZX;
 		this->trjMatZY = _tensor.trjMatZY;
 		this->trjMatZZ = _tensor.trjMatZZ;
+
 
 		return (*this);
 	}
@@ -177,6 +177,7 @@ namespace SpinAPI
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
 
 		// Do the diagonalization
+		std::cout << _matrix << std::endl;
 		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
 		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
 		this->axis1 = principalAxes.col(0);
@@ -296,7 +297,9 @@ namespace SpinAPI
 				}
 				else if (keyword.compare("matrix") == 0)
 				{
+					// std::cout << value << std::endl;
 					arma::mat tmp(value);
+					//this->initialMatr = tmp;
 					arma::vec aniso(this->anisotropic); // Save the current value for the anisotropic part (can also contain isotropic contributions at this point)
 					this->DiagonalizeMatrix(tmp);		// Sets anisotropic part and axes
 					this->anisotropic += aniso;			// Add whatever anisotropies that were specified previously
@@ -671,7 +674,7 @@ namespace SpinAPI
 	{	
 		this->DiagonalizeMatrix(m); 
 	}
-
+	
 	// Loads a trajectory and checks for headers used by the Tensor class
 	bool Tensor::LoadTrajectory(const std::string &_filename, const std::string &_path, bool _overwrite)
 	{
