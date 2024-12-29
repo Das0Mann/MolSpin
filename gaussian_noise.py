@@ -68,7 +68,7 @@ generate_reconstructed_hyperfine_fluctuations(
     initial_tensor=initial_tensor,
     total_time=10,       # Total time in nanoseconds
     time_step=0.01,       # Time step in nanoseconds
-    damping=0.00000001,          # Langevin damping coefficient
+    damping=1e-8,          # Langevin damping coefficient
     temperature=300,      # Temperature in Kelvin
     restoring_coeff=0.05,  # Restoring force coefficient
     output_file="reconstructed_hyperfine.mst"

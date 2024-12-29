@@ -65,13 +65,13 @@ SpinSystem system1
 	
 	Interaction HF1
 	{
-	    prefactor = 0.001;	// Change units from T to mT
+	    prefactor = 1;	// Change units from T to mT
 		type = DoubleSpin;
 
-		tensor = matrix("-0.3, -0.04, -0.1; -0.04,-0.55,0.04; -0.1, 0.04, -0.38");
+		tensor = matrix("-0.0003, -0.00004, -0.0001; -0.00004, -0.00055, 0.00004; -0.0001, 0.00004, -0.00038");
 		tensortype = gaussian;
 		temperature = 300;
-		damping =1e-10;
+		damping =1e-8;
 		restoring = 0.05;
 		seed=12;
 		timestep=0.01;

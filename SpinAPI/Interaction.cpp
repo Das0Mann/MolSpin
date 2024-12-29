@@ -772,9 +772,14 @@ namespace SpinAPI
 	}
 
 	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
-	{
+	{	
+		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
 		double D = (k_B * _temperature) / _damping;
+
+		if(_time > 0.0){
+			_m = this->couplingTensor->LabFrame();
+		}
 
 
 		// Random Number Generator Preparation
@@ -782,7 +787,7 @@ namespace SpinAPI
 		std::mt19937 generator(rand_dev()); // random number generator
 		std::cout << "Seed number is " << _seed  << std::endl;
 		// generator.seed(_seed);
-		std::uniform_real_distribution<double> dist(0.0,std::sqrt(2.0 * D * _timestep));
+		std::normal_distribution<double> dist(0.0, std::sqrt(2.0 * D * _timestep));
 
 		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
 		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
@@ -794,12 +799,12 @@ namespace SpinAPI
 		double noise_xz = dist(generator);
 		double noise_yz = dist(generator);
 
-		A_xx = A_xx -_restoring * (A_xx - _m(0,0)) * _timestep + noise_xx;
-		A_yy = A_yy -_restoring * (A_yy - _m(1,1)) * _timestep + noise_yy;
-		A_zz = A_zz -_restoring * (A_zz - _m(2,2)) * _timestep + noise_zz;
-		A_xy = A_xy -_restoring * (A_xy - _m(0,1)) * _timestep + noise_xy;
-		A_xz = A_xz -_restoring * (A_xz - _m(0,2)) * _timestep + noise_xz;
-		A_yz = A_yz -_restoring * (A_yz - _m(1,2)) * _timestep + noise_yz;
+		A_xx = A_xx - (_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
+		A_yy = A_yy - (_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
+		A_zz = A_zz - (_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
+		A_xy = A_xy - (_restoring * (A_xy - _m(0,1))) * _timestep + noise_xy;
+		A_xz = A_xz - (_restoring * (A_xz - _m(0,2))) * _timestep + noise_xz;
+		A_yz = A_yz - (_restoring * (A_yz - _m(1,2))) * _timestep + noise_yz;
 
 
 		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
