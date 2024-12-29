@@ -20,11 +20,11 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the interaction parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr), tdTensor(3,3, arma::fill::zeros),
+	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), tensorType(InteractionTensorType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjHasTensor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
-																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
-	{//trjMatXX(0),trjMatXY(0),trjMatXZ(0),trjMatYX(0),trjMatYY(0), trjMatYZ(0),trjMatZX(0),trjMatZY(0),trjMatZZ(0),
+																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0), tdSeed(0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
+	{
 		// Is a trajectory specified?
 
 		std::string str;
@@ -50,15 +50,15 @@ namespace SpinAPI
 					this->trjHasField &= this->trajectory.HasColumn("field.y", trjFieldY);
 					this->trjHasField &= this->trajectory.HasColumn("field.z", trjFieldZ);
 
-					this->trjHasTensor = this->trajectory.HasColumn("mat.xx", trjMatXX);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.xy", trjMatXY);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.xz", trjMatXZ);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.yx", trjMatYX);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.yy", trjMatYY);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.yz", trjMatYZ);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.zx", trjMatZX);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.zy", trjMatZY);
-					this->trjHasTensor &= this->trajectory.HasColumn("mat.zz", trjMatZZ);
+					// this->trjHasTensor = this->trajectory.HasColumn("mat.xx", trjMatXX);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.xy", trjMatXY);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.xz", trjMatXZ);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yx", trjMatYX);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yy", trjMatYY);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yz", trjMatYZ);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zx", trjMatZX);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zy", trjMatZY);
+					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zz", trjMatZZ);
 				}
 			}
 			else
@@ -192,6 +192,16 @@ namespace SpinAPI
 
 					// std::cout << this->prefactor << std::endl;
 				}
+				else if (str.compare("gaussian") == 0)
+				{
+					this->tensorType = InteractionTensorType::Gaussian;
+					this->properties->Get("temperature", this->tdTemperature);
+					this->properties->Get("damping", this->tdDamping);
+					this->properties->Get("restoring", this->tdRestoring);
+					this->properties->Get("seed", this->tdSeed);
+					this->properties->Get("timestep", this->tdTimestep);
+
+				}
 
 				//fill in all the other options
 
@@ -220,8 +230,8 @@ namespace SpinAPI
 																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors), isValid(_interaction.isValid),
 																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor), trjHasTensor(_interaction.trjHasTensor),
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
-																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdAxis(_interaction.tdAxis),
-																tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor)
+																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdTemperature(_interaction.tdTemperature), 
+																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed), tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor)
 	{
 	}
 
@@ -262,7 +272,11 @@ namespace SpinAPI
 		this->tdPerpendicularOscillation = _interaction.tdPerpendicularOscillation;
 		this->tdInitialField = _interaction.tdInitialField;
 		this->tdInitialTensor = _interaction.tdInitialTensor;
-		this->tdTensor = _interaction.tdTensor;
+		this->tdTemperature = _interaction.tdTemperature;
+		this->tdDamping = _interaction.tdDamping;
+		this->tdRestoring = _interaction.tdRestoring;
+		this->tdTimestep = _interaction.tdTimestep;
+		this->tdSeed = _interaction.tdSeed;
 
 		return (*this);
 	}
@@ -452,6 +466,9 @@ namespace SpinAPI
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
 		if (this->tensorType == InteractionTensorType::SinMat){
 			TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
+		}
+		else if (this->tensorType == InteractionTensorType::Gaussian){
+			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		return true;
@@ -739,21 +756,59 @@ namespace SpinAPI
 	}
 
 	//make a matrix with sinusoidal modulation on one tensor component
-	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase){
-		_m(0,0) = _m(0,0) * cos(_frequency * _time + _phase);
+	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase)
+	{
+		_m(0,0) = _m(0,0);
 		_m(0,1) = _m(0,1);
-		_m(0,2) = _m(0,2);
+		_m(0,2) = _m(0,2) * cos(_frequency * _time + _phase);
 		_m(1,0) = _m(1,0);
-		_m(1,1) = _m(1,1) * cos(_frequency * _time + _phase);
+		_m(1,1) = _m(1,1);
 		_m(1,2) = _m(1,2);
-		_m(2,0) = _m(2,0);
+		_m(2,0) = _m(2,0)  * cos(_frequency * _time + _phase);
 		_m(2,1) = _m(2,1);
-		_m(2,2) = _m(2,2) * cos(_frequency * _time + _phase);
+		_m(2,2) = _m(2,2);
 
 		this->couplingTensor->SetTensor(_m);
 	}
 
-	// void Interaction::TensorTimeDependence
+	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
+	{
+		double k_B = 1.380649e-23;
+		double D = (k_B * _temperature) / _damping;
+
+
+		// Random Number Generator Preparation
+		std::random_device rand_dev;		// random number generator
+		std::mt19937 generator(rand_dev()); // random number generator
+		std::cout << "Seed number is " << _seed  << std::endl;
+		// generator.seed(_seed);
+		std::uniform_real_distribution<double> dist(0.0,std::sqrt(2.0 * D * _timestep));
+
+		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
+		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
+
+		double noise_xx = dist(generator);
+		double noise_yy = dist(generator);
+		double noise_zz = dist(generator);
+		double noise_xy = dist(generator);
+		double noise_xz = dist(generator);
+		double noise_yz = dist(generator);
+
+		A_xx = A_xx -_restoring * (A_xx - _m(0,0)) * _timestep + noise_xx;
+		A_yy = A_yy -_restoring * (A_yy - _m(1,1)) * _timestep + noise_yy;
+		A_zz = A_zz -_restoring * (A_zz - _m(2,2)) * _timestep + noise_zz;
+		A_xy = A_xy -_restoring * (A_xy - _m(0,1)) * _timestep + noise_xy;
+		A_xz = A_xz -_restoring * (A_xz - _m(0,2)) * _timestep + noise_xz;
+		A_yz = A_yz -_restoring * (A_yz - _m(1,2)) * _timestep + noise_yz;
+
+
+		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+							{A_xy, A_yy, A_yz},
+							{A_xz, A_yz, A_zz}};
+
+		this->couplingTensor->SetTensor(tdTensor);
+
+	}
 
 	// -----------------------------------------------------
 	// Non-member non-friend methods

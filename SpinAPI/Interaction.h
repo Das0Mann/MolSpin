@@ -46,6 +46,7 @@ namespace SpinAPI
 		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
 
 		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
+		void TensorTimeDependenceGaussianNoise(arma::mat, double, double, double, double, double, int);
 		
 	
 
@@ -71,9 +72,14 @@ namespace SpinAPI
 		unsigned int trjMatZY;
 		unsigned int trjMatZZ;
 
-		// Special data members for time-dependent fields
+		// Special data members for time-dependent fields & tensors
 		double tdFrequency;
 		double tdPhase;
+		double tdTemperature;
+		double tdDamping;
+		double tdRestoring;
+		double tdTimestep;
+		int tdSeed;
 		arma::vec tdAxis;
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state

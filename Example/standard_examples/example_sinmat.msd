@@ -50,16 +50,32 @@ SpinSystem system1
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
+//	Interaction HFI_sinat
+//	{
+//	    prefactor = 0.001;	// Change units from T to mT
+//		type = DoubleSpin;
+//		tensor = matrix("-0.3, -0.04, -0.1; -0.04,-0.55,0.04; -0.1, 0.04, -0.38");
+//		tensortype = sinmat;
+//		frequency = 1;
+//		phase = 0;
+//		group1 = "electron1";	// Spins in group1 interact with spins in group2
+//		group2 = "nucleus1";
+//		
+//	}
+	
 	Interaction HF1
 	{
 	    prefactor = 0.001;	// Change units from T to mT
 		type = DoubleSpin;
 
-		tensor = matrix("0, 0, 4; 0,0,0;4, 0, 0");
-		//prefactor = 0.001;
-		tensortype = sinmat;
-		frequency = 0.01;
-		phase = 0;
+		tensor = matrix("-0.3, -0.04, -0.1; -0.04,-0.55,0.04; -0.1, 0.04, -0.38");
+		tensortype = gaussian;
+		temperature = 300;
+		damping =1e-10;
+		restoring = 0.05;
+		seed=12;
+		timestep=0.01;
+
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
 		group2 = "nucleus1";
 	}
@@ -156,8 +172,8 @@ Run
 		type = DynamicHS-Direct-TimeEvo;
 		logfile = "log_test.log";
 		datafile = "dat_test.dat";
-		totaltime=5000;
-		Timestep=0.1;
+		totaltime=10;
+		Timestep=0.01;
 	}
 
 }

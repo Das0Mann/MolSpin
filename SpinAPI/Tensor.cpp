@@ -22,10 +22,6 @@ namespace SpinAPI
 										trjAxis1X(0), trjAxis1Y(0), trjAxis1Z(0), trjAxis2X(0), trjAxis2Y(0), trjAxis2Z(0), trjAxis3X(0), trjAxis3Y(0), trjAxis3Z(0),
 										trjMatXX(0), trjMatXY(0), trjMatXZ(0), trjMatYX(0), trjMatYY(0), trjMatYZ(0), trjMatZX(0), trjMatZY(0), trjMatZZ(0)
 	{
-		// std::cout << this->anisotropic(0) << std::endl;
-		// this->anisotropic(0) = 1;
-		// this->anisotropic(1) = 2;
-		// this->anisotropic(2) = 3;
 	}
 
 	Tensor::Tensor(double _isotropic, double _aniso1, double _aniso2, double _aniso3) : isotropic(_isotropic), anisotropic(3, arma::fill::zeros), axis1({1, 0, 0}), axis2({0, 1, 0}), axis3({0, 0, 1}), mat1({0, 0, 0}), mat2({0, 0, 0}), mat3({0, 0, 0}), trajectory(),

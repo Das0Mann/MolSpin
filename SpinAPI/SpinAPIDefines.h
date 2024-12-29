@@ -50,6 +50,7 @@ namespace SpinAPI
 	{
 		Static,
 		SinMat, //example 
+		Gaussian,
 		Trajectory,			   // Time-dependence is given by a trajectory
 	};
 
