@@ -32,10 +32,6 @@ namespace SpinAPI
 		//Special data members for time-dependent interaction tensors
 		arma::mat tdInitialTensor;
 		arma::mat tdTensor;
-
-		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
-		void TensorTimeDependenceGaussianNoise(arma::mat, double, double, double, double, double);
-		
 		
 		arma::vec field;									 // Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
 		double dvalue, evalue;								 // D and E value for zero-field splitting
@@ -48,6 +44,11 @@ namespace SpinAPI
 		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
 		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
+
+		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
+		void TensorTimeDependenceGaussianNoise(arma::mat, double, double, double, double, double, int);
+		
+	
 
 		// Trajectory parameters
 		Trajectory trajectory;
@@ -78,20 +79,7 @@ namespace SpinAPI
 		double tdDamping;
 		double tdRestoring;
 		double tdTimestep;
-
-		// parameters for broadband noise generation
-		double tdStdev;
-		double tdMinFreq;
-		double tdMaxFreq;
-		int tdComponents;
-		std::vector<double> tdFreqs;
-		std::vector<double> tdAmps;
-		std::vector<double> tdPhases;
-
-		arma::mat tdBBFreqs;
-		arma::mat tdBBAmps;
-		arma::mat tdBBPhases;
-
+		int tdSeed;
 		arma::vec tdAxis;
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
@@ -178,8 +166,6 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>, int);
-
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

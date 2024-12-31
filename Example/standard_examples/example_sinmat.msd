@@ -41,30 +41,16 @@ SpinSystem system1
 	// -------------------------
 	Interaction zeeman1
 	{
-		prefactor = 0.001;	
-		type = zeeman;
-		field = "0 0 0.05";	
+		prefactor = 0.001;	// Change field units from T to mT
+		type = Zeeman;
+		field = "0 0 0.05";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
 	}
-
-//	Interaction zeeman_BB
-//	{
-//		prefactor = 0.001;
-//		type = Zeeman;
-//		field = "0 0 0.05";
-//		spins = electron1, electron2;
-//
-//		fieldtype="broadband";
-//		minfreq=1000;
-//		maxfreq=10000;
-//		stdev=0.001;
-//		components=100;
-//	}
 	
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
-//	Interaction HFI_sinmat
+//	Interaction HFI_sinat
 //	{
 //	    prefactor = 0.001;	// Change units from T to mT
 //		type = DoubleSpin;
@@ -77,24 +63,24 @@ SpinSystem system1
 //		
 //	}
 	
-//	Interaction HF_gaussian
-//	{
-//	    prefactor = 1;	// Change units from T to mT
-//		type = DoubleSpin;
-//
-//		tensor = matrix("-0.0003, -0.00004, -0.0001; -0.00004, -0.00055, 0.00004; -0.0001, 0.00004, -0.00038");
-//		tensortype = gaussian;
-//		temperature = 300;
-//		damping =1e-8;
-//		restoring = 0.05;
-//		autoseed = true;
-//		timestep = 0.01;
-//
-//		group1 = "electron1";	// Spins in group1 interact with spins in group2
-//		group2 = "nucleus1";
-//	}
+	Interaction HF1
+	{
+	    prefactor = 1;	// Change units from T to mT
+		type = DoubleSpin;
+
+		tensor = matrix("-0.0003, -0.00004, -0.0001; -0.00004, -0.00055, 0.00004; -0.0001, 0.00004, -0.00038");
+		tensortype = gaussian;
+		temperature = 300;
+		damping =1e-8;
+		restoring = 0.05;
+		seed=12;
+		timestep=0.01;
+
+		group1 = "electron1";	// Spins in group1 interact with spins in group2
+		group2 = "nucleus1";
+	}
 	
-//		Interaction HF2
+//	Interaction HF2
 //	{
 //		prefactor = 0.001;	// Change units from T to mT
 //		type = Hyperfine;

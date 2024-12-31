@@ -43,7 +43,6 @@ namespace SpinAPI
 		Static,
 		LinearPolarization,	  // Monochromatic linearly polarized radiation, parameters: "frequency", "phase"
 		CircularPolarization, // Monochromatic circularly polarized radiation, parameters: "frequency", "phase", "axis"
-		BroadbandNoise,
 		Trajectory,			  // Time-dependence is given by a trajectory
 	};
 
@@ -51,8 +50,7 @@ namespace SpinAPI
 	{
 		Static,
 		SinMat, //example 
-		GaussianNoise,
-		BroadbandNoise,
+		Gaussian,
 		Trajectory,			   // Time-dependence is given by a trajectory
 	};
 
