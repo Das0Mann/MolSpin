@@ -23,10 +23,11 @@ namespace SpinAPI
 	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), tensorType(InteractionTensorType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjHasTensor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
-																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0), tdSeed(0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
-	{
+																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0), tdAxis("0 0 1"), 
+																		 tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
+																		// tdComponents(0), tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0)
+	{	
 		// Is a trajectory specified?
-
 		std::string str;
 		if (this->properties->Get("trajectory", str))
 		{
@@ -70,15 +71,26 @@ namespace SpinAPI
 		// Get the type of the interaction
 		if (this->properties->Get("type", str))
 		{
+
 			if (str.compare("onespin") == 0 || str.compare("singlespin") == 0 || str.compare("zeeman") == 0)
 			{
+
 				// A onespin interaction should have a field attached, either directly or through a trajectory
 				arma::vec inField = arma::zeros<arma::vec>(3);
+				
+				// std::map<std::string, std::string> fields = this->properties->GetFields();
+				// for (const auto& pair : fields) {
+        		// 	std::cout << pair.first << ": " << pair.second << std::endl;
+    			// }
+
+				this->properties->Get("field", inField);
+
 				if (this->properties->Get("field", inField) || this->trjHasField)
 				{
 					this->field = inField;
 					this->type = InteractionType::SingleSpin;
 				}
+
 			}
 			else if (str.compare("twospin") == 0 || str.compare("doublespin") == 0 || str.compare("hyperfine") == 0 || str.compare("dipole") == 0)
 			{
@@ -148,6 +160,42 @@ namespace SpinAPI
 					this->properties->Get("axis", this->tdAxis);
 					this->properties->Get("perpendicularoscillations", this->tdPerpendicularOscillation);
 				}
+				// else if (str.compare("broadband") == 0)
+				// {
+				// 	std::cout << "BROADBAND" << std::endl;
+				// 	this->tensorType = InteractionTensorType::BroadbandNoise;
+				// 	this->properties->Get("minfreq", this->tdMinFreq);
+				// 	this->properties->Get("maxfreq", this->tdMaxFreq);
+				// 	this->properties->Get("stdev", this->tdStdev);
+				// 	this->properties->Get("components", this->tdComponents);
+
+				// 	std::random_device rand_dev;		// random number generator
+				// 	std::mt19937 generator(rand_dev());
+
+				// 	//distributions for broadband noise
+				// 	std::normal_distribution<double> amp_dist(0.0, this->tdStdev);
+				// 	std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
+				// 	std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
+
+				// 	std::vector<double> amps;
+				// 	std::vector<double> freqs;
+				// 	std::vector<double> phases;
+
+				// 	for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+				// 		double phase = phase_dist(generator);
+				// 		double freq = freq_dist(generator);
+				// 		double amp = amp_dist(generator);
+
+				// 		phases.push_back(phase);
+				// 		freqs.push_back(freq);
+				// 		amps.push_back(amp);
+				// 	}
+
+				// 	this->tdPhases = phases;
+				// 	this->tdFreqs = freqs;
+				// 	this->tdAmps = amps;
+				// 	//TODO: should have the option to sample random orientations
+				// }
 				else
 				{
 					std::cout << "Warning: Unknown fieldtype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
@@ -189,20 +237,25 @@ namespace SpinAPI
 					this->tensorType = InteractionTensorType::SinMat;
 					this->properties->Get("frequency", this->tdFrequency);
 					this->properties->Get("phase", this->tdPhase);
-
-					// std::cout << this->prefactor << std::endl;
 				}
 				else if (str.compare("gaussian") == 0)
 				{
-					this->tensorType = InteractionTensorType::Gaussian;
+					this->tensorType = InteractionTensorType::GaussianNoise;
 					this->properties->Get("temperature", this->tdTemperature);
 					this->properties->Get("damping", this->tdDamping);
 					this->properties->Get("restoring", this->tdRestoring);
-					this->properties->Get("seed", this->tdSeed);
 					this->properties->Get("timestep", this->tdTimestep);
-
+				}
+				else if (str.compare("broadband_tensor") == 0)
+				{
+					this->tensorType = InteractionTensorType::BroadbandNoise;
+					this->properties->Get("minfreq", this->tdFrequency);
+					this->properties->Get("maxfreq", this->tdPhase);
+					this->properties->Get("stdev", this->tdStdev);
+					this->properties->Get("components", this->tdComponents);
 				}
 
+				
 				//fill in all the other options
 
 				else
@@ -231,7 +284,8 @@ namespace SpinAPI
 																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor), trjHasTensor(_interaction.trjHasTensor),
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
 																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdTemperature(_interaction.tdTemperature), 
-																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed), tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor)
+																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
+																tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
 	{
 	}
 
@@ -268,6 +322,11 @@ namespace SpinAPI
 
 		this->tdFrequency = _interaction.tdFrequency;
 		this->tdPhase = _interaction.tdPhase;
+		// this->tdStdev = _interaction.tdStdev;
+		// this->tdMinFreq = _interaction.tdMinFreq;
+		// this->tdMaxFreq = _interaction.tdMaxFreq;
+		// this->tdComponents = _interaction.tdComponents;
+
 		this->tdAxis = _interaction.tdAxis;
 		this->tdPerpendicularOscillation = _interaction.tdPerpendicularOscillation;
 		this->tdInitialField = _interaction.tdInitialField;
@@ -276,7 +335,6 @@ namespace SpinAPI
 		this->tdDamping = _interaction.tdDamping;
 		this->tdRestoring = _interaction.tdRestoring;
 		this->tdTimestep = _interaction.tdTimestep;
-		this->tdSeed = _interaction.tdSeed;
 
 		return (*this);
 	}
@@ -462,14 +520,22 @@ namespace SpinAPI
 			this->field = FieldTimeDependenceLinearPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase);
 		else if (this->fieldType == InteractionFieldType::CircularPolarization)
 			this->field = FieldTimeDependenceCircularPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase, this->tdAxis, this->tdPerpendicularOscillation);
+		else if (this->fieldType == InteractionFieldType::BroadbandNoise)
+			this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdAmps, this->tdFreqs, this->tdPhases, this->tdComponents);
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
 		if (this->tensorType == InteractionTensorType::SinMat){
 			TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
 		}
-		else if (this->tensorType == InteractionTensorType::Gaussian){
-			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
+		//TODO: COULD DEFINE RANDOM SEED HERE
+		
+		else if (this->tensorType == InteractionTensorType::GaussianNoise){
+			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring);
 		}
+		// else if(this->tensorType == InteractionTensorType::Broadband){
+		// 	TensorTimeDependenceBroadbandNoise(this->tdInitialTensor);
+		// }
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		return true;
 	}
@@ -755,6 +821,10 @@ namespace SpinAPI
 			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
 	}
 
+	// -----------------------------------------------------
+	// Non-member non-friend time-dependent tensor functions
+	// -----------------------------------------------------
+	//TODO: THESE PROBABLY NEED TO BE NON MEMBER FUNCTIONS
 	//make a matrix with sinusoidal modulation on one tensor component
 	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase)
 	{
@@ -770,23 +840,45 @@ namespace SpinAPI
 
 		this->couplingTensor->SetTensor(_m);
 	}
-
-	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
+	//Applies Gaussian noise to each tensor component
+	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring)
 	{	
 		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
 		double D = (k_B * _temperature) / _damping;
 
-		if(_time > 0.0){
-			_m = this->couplingTensor->LabFrame();
-		}
+		_m = this->couplingTensor->LabFrame();
 
-
-		// Random Number Generator Preparation
+		// Random Number Generator Preparation - TODO: could move this to the constructor
 		std::random_device rand_dev;		// random number generator
 		std::mt19937 generator(rand_dev()); // random number generator
-		std::cout << "Seed number is " << _seed  << std::endl;
-		// generator.seed(_seed);
+
+		//TODO: sort out random seed
+		bool autoseed;
+		this->Properties()->Get("autoseed", autoseed) ;
+		std::cout << autoseed << std::endl;
+
+		if (!autoseed)
+		{
+			std::cout << "Autoseed is off." << std::endl;
+			double seednumber;
+			this->Properties()->Get("seed", seednumber);
+			if (seednumber != 0)
+			{
+				generator.seed(seednumber);
+				std::cout << "Seed number is " << seednumber << "." << std::endl;
+			}
+			else
+			{
+				std::cout << "Undefined seed number! Setting to default of 1." << std::endl;
+				std::cout << "# ERROR: undefined seed number! Setting to default of 1." << std::endl;
+				seednumber = 1;
+			}
+		}
+		else
+		{
+			std::cout << "Autoseed is on." << std::endl;
+		}
 		std::normal_distribution<double> dist(0.0, std::sqrt(2.0 * D * _timestep));
 
 		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
@@ -799,6 +891,7 @@ namespace SpinAPI
 		double noise_xz = dist(generator);
 		double noise_yz = dist(generator);
 
+		//apply noise
 		A_xx = A_xx - (_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
 		A_yy = A_yy - (_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
 		A_zz = A_zz - (_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
@@ -815,6 +908,8 @@ namespace SpinAPI
 
 	}
 
+
+	
 	// -----------------------------------------------------
 	// Non-member non-friend methods
 	// -----------------------------------------------------
@@ -883,6 +978,23 @@ namespace SpinAPI
 		return R * _v;
 	}
 
+	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> amps, std::vector<double> freqs, std::vector<double> phases, int comps)
+	{
+		
+		double Asinwdt = 0;
+
+		for(int comp=0; comp<comps; comp++){ 
+			double phase = phases.at(comp);
+			double freq = freqs.at(comp);
+			double amp = amps.at(comp);
+
+			Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+
+		}
+			//FILL THIS OUT
+		std::cout << Asinwdt * _v << std::endl;
+		return Asinwdt * _v;
+	}
 	
 	// -----------------------------------------------------
 	// Non-member non-friend ActionTarget Check functions
