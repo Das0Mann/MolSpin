@@ -51,9 +51,10 @@ namespace MSDParser
 				if ((*i) == ';' && parantheses < 1)
 				{
 					// Make sure that neither the key nor the value is empty before using them
-					if (key.size() > 0 && value.size() > 0)
+					if (key.size() > 0 && value.size() > 0){
 						this->fields[key] = value;
-
+					}
+						
 					// Clear buffers and reset
 					key.clear();
 					value.clear();
@@ -64,11 +65,13 @@ namespace MSDParser
 					value += (*i);
 				}
 			}
-
 			i++;
 		}
 	}
 
+	std::map<std::string, std::string> ObjectParser::GetFields(){
+		return this->fields;
+	}
 	// Copy-constructor
 	// Copies the values through the initializer list
 	ObjectParser::ObjectParser(const ObjectParser &_objParser) : fields(_objParser.fields), name(_objParser.name)
@@ -83,15 +86,21 @@ namespace MSDParser
 	// -----------------------------------------------------
 	// ObjectParser public Get method overloads
 	// -----------------------------------------------------
-	// Attemp to find a keyword matching the given name
+	// Attempt to find a keyword matching the given name
 	bool ObjectParser::Get(const std::string &_str, std::string &_out) const
-	{
+	{		
+		for (const auto& pair : fields) {
+        	std::cout << pair.first << ": " << pair.second << std::endl;
+    	}
+
+
 		auto i = this->fields.find(_str);
 
-		if (i != this->fields.end())
+		if (i != this->fields.end()){
 			_out = i->second;
+		}
 		else
-			return false;
+			return false;		
 
 		return true;
 	}
@@ -166,7 +175,7 @@ namespace MSDParser
 
 	// Attemp to find a bool with the given name
 	bool ObjectParser::Get(const std::string &_str, bool &_out) const
-	{
+	{	
 		std::string str("");
 		if (!this->Get(_str, str))
 			return false;
@@ -198,12 +207,19 @@ namespace MSDParser
 	// Attemp to find a vector with the given name
 	bool ObjectParser::Get(const std::string &_str, arma::vec &_out) const
 	{
+
 		std::string str("");
-		if (!this->Get(_str, str))
+		// std::cout << _str << std::endl;
+		if (!this->Get(_str, str)){
+			// std::cout << _str <<" " << "false" << std::endl;
 			return false;
+		}
+		std::cout << _str << std::endl;
+
 
 		// Parse string and make sure that we have a 3D vector
 		arma::vec tmpVec = arma::vec(str);
+
 		if (tmpVec.n_elem != 3)
 			return false;
 

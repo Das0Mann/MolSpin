@@ -47,11 +47,6 @@ namespace SpinAPI
 		bool ignoreTensors;
 		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
 
-		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
-		void TensorTimeDependenceGaussianNoise(arma::mat, double, double, double, double, double, int);
-		
-	
-
 		// Trajectory parameters
 		Trajectory trajectory;
 		bool trjHasTime;
@@ -88,7 +83,20 @@ namespace SpinAPI
 		double tdDamping;
 		double tdRestoring;
 		double tdTimestep;
-		int tdSeed;
+
+		// parameters for broadband noise generation
+		double tdStdev;
+		double tdMinFreq;
+		double tdMaxFreq;
+		int tdComponents;
+		std::vector<double> tdFreqs;
+		std::vector<double> tdAmps;
+		std::vector<double> tdPhases;
+
+		arma::mat tdBBFreqs;
+		arma::mat tdBBAmps;
+		arma::mat tdBBPhases;
+
 		arma::vec tdAxis;
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state

@@ -61,15 +61,25 @@ namespace SpinAPI
 		// Get the type of the interaction
 		if (this->properties->Get("type", str))
 		{
+
 			if (str.compare("onespin") == 0 || str.compare("singlespin") == 0 || str.compare("zeeman") == 0)
 			{
+
 				// A onespin interaction should have a field attached, either directly or through a trajectory
 				arma::vec inField = arma::zeros<arma::vec>(3);
+				// std::map<std::string, std::string> fields = this->properties->GetFields();
+				// for (const auto& pair : fields) {
+        		// 	std::cout << pair.first << ": " << pair.second << std::endl;
+    			// }
+
+				this->properties->Get("field", inField);
+
 				if (this->properties->Get("field", inField) || this->trjHasField)
 				{
 					this->field = inField;
 					this->type = InteractionType::SingleSpin;
 				}
+
 			}
 			else if (str.compare("twospin") == 0 || str.compare("doublespin") == 0 || str.compare("hyperfine") == 0 || str.compare("dipole") == 0)
 			{
@@ -216,20 +226,25 @@ namespace SpinAPI
 					this->tensorType = InteractionTensorType::SinMat;
 					this->properties->Get("frequency", this->tdFrequency);
 					this->properties->Get("phase", this->tdPhase);
-
-					// std::cout << this->prefactor << std::endl;
 				}
 				else if (str.compare("gaussian") == 0)
 				{
-					this->tensorType = InteractionTensorType::Gaussian;
+					this->tensorType = InteractionTensorType::GaussianNoise;
 					this->properties->Get("temperature", this->tdTemperature);
 					this->properties->Get("damping", this->tdDamping);
 					this->properties->Get("restoring", this->tdRestoring);
-					this->properties->Get("seed", this->tdSeed);
 					this->properties->Get("timestep", this->tdTimestep);
-
+				}
+				else if (str.compare("broadband") == 0)
+				{
+					this->tensorType = InteractionTensorType::BroadbandNoise;
+					this->properties->Get("minfreq", this->tdFrequency);
+					this->properties->Get("maxfreq", this->tdPhase);
+					this->properties->Get("stdev", this->tdStdev);
+					this->properties->Get("components", this->tdComponents);
 				}
 
+				
 				//fill in all the other options
 
 				else
@@ -506,9 +521,14 @@ namespace SpinAPI
 		if (this->tensorType == InteractionTensorType::SinMat){
 			TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
 		}
-		else if (this->tensorType == InteractionTensorType::Gaussian){
-			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
+		//TODO: COULD DEFINE RANDOM SEED HERE
+		
+		else if (this->tensorType == InteractionTensorType::GaussianNoise){
+			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring);
 		}
+		// else if(this->tensorType == InteractionTensorType::Broadband){
+		// 	TensorTimeDependenceBroadbandNoise(this->tdInitialTensor);
+		// }
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		return true;
 	}
@@ -794,6 +814,10 @@ namespace SpinAPI
 			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
 	}
 
+	// -----------------------------------------------------
+	// Non-member non-friend time-dependent tensor functions
+	// -----------------------------------------------------
+	//TODO: THESE PROBABLY NEED TO BE NON MEMBER FUNCTIONS
 	//make a matrix with sinusoidal modulation on one tensor component
 	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase)
 	{
@@ -809,8 +833,8 @@ namespace SpinAPI
 
 		this->couplingTensor->SetTensor(_m);
 	}
-
-	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
+	//Applies Gaussian noise to each tensor component
+	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring)
 	{	
 		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
@@ -857,6 +881,8 @@ namespace SpinAPI
 
 	}
 
+
+	
 	// -----------------------------------------------------
 	// Non-member non-friend methods
 	// -----------------------------------------------------
