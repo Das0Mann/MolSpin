@@ -89,9 +89,9 @@ namespace MSDParser
 	// Attempt to find a keyword matching the given name
 	bool ObjectParser::Get(const std::string &_str, std::string &_out) const
 	{		
-		for (const auto& pair : fields) {
-        	std::cout << pair.first << ": " << pair.second << std::endl;
-    	}
+		// for (const auto& pair : fields) {
+        // 	std::cout << pair.first << ": " << pair.second << std::endl;
+    	// }
 
 
 		auto i = this->fields.find(_str);
@@ -214,7 +214,7 @@ namespace MSDParser
 			// std::cout << _str <<" " << "false" << std::endl;
 			return false;
 		}
-		std::cout << _str << std::endl;
+		// std::cout << _str << std::endl;
 
 
 		// Parse string and make sure that we have a 3D vector

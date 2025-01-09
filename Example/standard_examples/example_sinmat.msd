@@ -47,11 +47,7 @@ SpinSystem system1
 		spins = electron1, electron2;
 	}
 
-<<<<<<< HEAD
 //		Interaction zeeman_BB
-=======
-//	Interaction zeeman_BB
->>>>>>> c9a95c3f712483d207c58ac63c5974883dc29b6e
 //	{
 //		prefactor = 0.001;
 //		type = Zeeman;
@@ -68,11 +64,7 @@ SpinSystem system1
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
-<<<<<<< HEAD
 //		Interaction HFI_sinat
-=======
-//	Interaction HFI_sinmat
->>>>>>> c9a95c3f712483d207c58ac63c5974883dc29b6e
 //	{
 //	    prefactor = 0.001;	// Change units from T to mT
 //		type = DoubleSpin;

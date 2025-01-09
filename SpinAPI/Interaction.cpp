@@ -315,7 +315,7 @@ namespace SpinAPI
 		// this->tdMinFreq = _interaction.tdMinFreq;
 		// this->tdMaxFreq = _interaction.tdMaxFreq;
 		// this->tdAmps = _interaction.tdAmps;
-		//this->tdFreqs = _interaction.tdFreqs;
+		// this->tdFreqs = _interaction.tdFreqs;
 		// this->tdPhases = _interaction.tdPhases;
 		// this->tdComponents = _interaction.tdComponents;
 		this->tdAxis = _interaction.tdAxis;
