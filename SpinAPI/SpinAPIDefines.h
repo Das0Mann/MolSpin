@@ -44,6 +44,7 @@ namespace SpinAPI
 		LinearPolarization,	  // Monochromatic linearly polarized radiation, parameters: "frequency", "phase"
 		CircularPolarization, // Monochromatic circularly polarized radiation, parameters: "frequency", "phase", "axis"
 		Trajectory,			  // Time-dependence is given by a trajectory
+		//BroadbandNoise,
 	};
 
 	enum class InteractionTensorType //PB added

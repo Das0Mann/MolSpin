@@ -173,7 +173,7 @@ namespace SpinAPI
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
 
 		// Do the diagonalization
-		std::cout << _matrix << std::endl;
+		// std::cout << _matrix << std::endl;
 		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
 		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
 		this->axis1 = principalAxes.col(0);

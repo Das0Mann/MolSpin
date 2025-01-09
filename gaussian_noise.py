@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def generate_reconstructed_hyperfine_fluctuations(initial_tensor, total_time, time_step, damping=0.1, temperature=300,
                                                    restoring_coeff=0.5, output_file="output.mst"):
@@ -17,6 +18,7 @@ def generate_reconstructed_hyperfine_fluctuations(initial_tensor, total_time, ti
     k_B = 1.380649e-23  # Boltzmann constant (J/K)
     D = k_B * temperature / damping  # Diffusion constant
 
+    print("D = ", D) 
     # Extract the six independent components
     A_xx, A_yy, A_zz = initial_tensor[0, 0], initial_tensor[1, 1], initial_tensor[2, 2]
     A_xy, A_xz, A_yz = initial_tensor[0, 1], initial_tensor[0, 2], initial_tensor[1, 2]
@@ -73,3 +75,50 @@ generate_reconstructed_hyperfine_fluctuations(
     restoring_coeff=0.05,  # Restoring force coefficient
     output_file="reconstructed_hyperfine.mst"
 )
+
+def plot_trj(file, T, N, ax, pref=1, color="black"):
+
+    dt = T/N
+    print(dt)
+    time = np.linspace(0, T, N)
+    labels = ["mat.xx", "mat.xy", "mat.xz", "mat.yx", "mat.yy", "mat.yz", "mat.zx", "mat.zy", "mat.zz"]
+
+    stdevs= []
+
+    for i in range(9):
+        
+        d_file = open(file, 'r')
+        next(d_file)
+        sig = []
+        for line in d_file:
+            data = line.split()
+            sig.append(np.double(data[i+1]))
+        d_file.close() 
+        sig=np.array(sig)*pref
+
+        stdev = np.std(sig)
+        stdevs.append(stdev)
+
+        # fig, ax = plt.subplots(num = fig_no, figsize=(8,6))
+        # plt.ylim(1.3, 2.2)
+        # plt.xlim(0, 500)
+        fontsize = 14
+        linewidth = 2
+        ax.tick_params(labelsize=fontsize * 1.1, length=10, width=linewidth)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_linewidth(linewidth)
+        ax.spines['bottom'].set_linewidth(linewidth)
+
+        ax.plot(time*1e9, sig, alpha =0.8)
+
+        ax.set_xlabel("Simulation Time / ns", fontsize=20)
+        ax.set_ylabel("$T_{zz}(t)$ / mT", fontsize=20)
+
+fig, ax = plt.subplots(num=1)
+plot_trj("GaussianTensor.txt", 10, 1002, ax)
+fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
+  
+fig, ax = plt.subplots(num=2)
+plot_trj("reconstructed_hyperfine.mst", 10, 999, ax)
+fig.savefig("reconstructed_hyperfine.png", dpi=300, bbox_inches="tight")

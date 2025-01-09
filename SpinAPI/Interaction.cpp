@@ -23,10 +23,10 @@ namespace SpinAPI
 	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), tensorType(InteractionTensorType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjHasTensor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
-																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0), tdSeed(0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
+																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0),  tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
+																		,tdSeed(0)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0}), tdComponents(0), tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdAmps{}, tdPhases{}
 	{
 		// Is a trajectory specified?
-
 		std::string str;
 		if (this->properties->Get("trajectory", str))
 		{
@@ -50,15 +50,6 @@ namespace SpinAPI
 					this->trjHasField &= this->trajectory.HasColumn("field.y", trjFieldY);
 					this->trjHasField &= this->trajectory.HasColumn("field.z", trjFieldZ);
 
-					// this->trjHasTensor = this->trajectory.HasColumn("mat.xx", trjMatXX);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.xy", trjMatXY);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.xz", trjMatXZ);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yx", trjMatYX);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yy", trjMatYY);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.yz", trjMatYZ);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zx", trjMatZX);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zy", trjMatZY);
-					// this->trjHasTensor &= this->trajectory.HasColumn("mat.zz", trjMatZZ);
 				}
 			}
 			else
@@ -148,6 +139,42 @@ namespace SpinAPI
 					this->properties->Get("axis", this->tdAxis);
 					this->properties->Get("perpendicularoscillations", this->tdPerpendicularOscillation);
 				}
+				// else if (str.compare("broadband") == 0)
+				// {
+				// 	std::cout << "BROADBAND" << std::endl;
+				// 	this->fieldType = InteractionFieldType::BroadbandNoise;
+				// 	this->properties->Get("minfreq", this->tdMinFreq);
+				// 	this->properties->Get("maxfreq", this->tdMaxFreq);
+				// 	this->properties->Get("stdev", this->tdStdev);
+				// 	this->properties->Get("components", this->tdComponents);
+
+				// 	std::random_device rand_dev;		// random number generator
+				// 	std::mt19937 generator(rand_dev());
+
+				// 	//distributions for broadband noise
+				// 	std::normal_distribution<double> amp_dist(0.0, this->tdStdev);
+				// 	std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
+				// 	std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
+
+				// 	std::vector<double> amps;
+				// 	std::vector<double> freqs;
+				// 	std::vector<double> phases;
+
+				// 	for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+				// 		double phase = phase_dist(generator);
+				// 		double freq = freq_dist(generator);
+				// 		double amp = amp_dist(generator);
+
+				// 		phases.push_back(phase);
+				// 		freqs.push_back(freq);
+				// 		amps.push_back(amp);
+				// 	}
+
+				// 	this->tdPhases = phases;
+				// 	this->tdFreqs = freqs;
+				// 	this->tdAmps = amps;
+				// 	//TODO: should have the option to sample random orientations
+				// }
 				else
 				{
 					std::cout << "Warning: Unknown fieldtype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
@@ -231,7 +258,9 @@ namespace SpinAPI
 																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor), trjHasTensor(_interaction.trjHasTensor),
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
 																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdTemperature(_interaction.tdTemperature), 
-																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed), tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor)
+																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
+																tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor),//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
+																tdSeed(_interaction.tdSeed)//, tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
 	{
 	}
 
@@ -242,8 +271,7 @@ namespace SpinAPI
 	// Operators
 	// -----------------------------------------------------
 	const Interaction &Interaction::operator=(const Interaction &_interaction)
-	{
-		
+	{	
 		this->properties = std::make_shared<MSDParser::ObjectParser>(*(_interaction.properties));
 		this->couplingTensor = _interaction.couplingTensor;
 		this->field = _interaction.field;
@@ -268,6 +296,13 @@ namespace SpinAPI
 
 		this->tdFrequency = _interaction.tdFrequency;
 		this->tdPhase = _interaction.tdPhase;
+		// this->tdStdev = _interaction.tdStdev;
+		// this->tdMinFreq = _interaction.tdMinFreq;
+		// this->tdMaxFreq = _interaction.tdMaxFreq;
+		// this->tdAmps = _interaction.tdAmps;
+		//this->tdFreqs = _interaction.tdFreqs;
+		// this->tdPhases = _interaction.tdPhases;
+		// this->tdComponents = _interaction.tdComponents;
 		this->tdAxis = _interaction.tdAxis;
 		this->tdPerpendicularOscillation = _interaction.tdPerpendicularOscillation;
 		this->tdInitialField = _interaction.tdInitialField;
@@ -277,6 +312,7 @@ namespace SpinAPI
 		this->tdRestoring = _interaction.tdRestoring;
 		this->tdTimestep = _interaction.tdTimestep;
 		this->tdSeed = _interaction.tdSeed;
+		// this->tdFreqs = _interaction.tdFreqs;
 
 		return (*this);
 	}
@@ -462,6 +498,9 @@ namespace SpinAPI
 			this->field = FieldTimeDependenceLinearPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase);
 		else if (this->fieldType == InteractionFieldType::CircularPolarization)
 			this->field = FieldTimeDependenceCircularPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase, this->tdAxis, this->tdPerpendicularOscillation);
+		// else if (this->fieldType == InteractionFieldType::BroadbandNoise)
+		// 	this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdAmps, this->tdFreqs, this->tdPhases, this->tdComponents);
+		
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
 		if (this->tensorType == InteractionTensorType::SinMat){
@@ -776,21 +815,19 @@ namespace SpinAPI
 		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
 		double D = (k_B * _temperature) / _damping;
-
-		if(_time > 0.0){
-			_m = this->couplingTensor->LabFrame();
-		}
-
-
+		
+		//get the tensor from the previous time point
+		arma::mat labTensor = this->couplingTensor->LabFrame();
+	
 		// Random Number Generator Preparation
 		std::random_device rand_dev;		// random number generator
 		std::mt19937 generator(rand_dev()); // random number generator
-		std::cout << "Seed number is " << _seed  << std::endl;
+		// std::cout << "Seed number is " << _seed  << std::endl; //TODO: should we allow random seed to be parsed to interaction?
 		// generator.seed(_seed);
 		std::normal_distribution<double> dist(0.0, std::sqrt(2.0 * D * _timestep));
 
-		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
-		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
+		double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
+		double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
 
 		double noise_xx = dist(generator);
 		double noise_yy = dist(generator);
@@ -799,17 +836,22 @@ namespace SpinAPI
 		double noise_xz = dist(generator);
 		double noise_yz = dist(generator);
 
-		A_xx = A_xx - (_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
-		A_yy = A_yy - (_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
-		A_zz = A_zz - (_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
-		A_xy = A_xy - (_restoring * (A_xy - _m(0,1))) * _timestep + noise_xy;
-		A_xz = A_xz - (_restoring * (A_xz - _m(0,2))) * _timestep + noise_xz;
-		A_yz = A_yz - (_restoring * (A_yz - _m(1,2))) * _timestep + noise_yz;
+		// A_xx = A_xx + (-_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
+		// A_yy = A_yy + (-_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
+		// A_zz = A_zz + (-_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
+		// A_xy = A_xy + (-_restoring * (A_xy - _m(0,1))) * _timestep + noise_xy;
+		// A_xz = A_xz + (-_restoring * (A_xz - _m(0,2))) * _timestep + noise_xz;
+		// A_yz = A_yz + (-_restoring * (A_yz - _m(1,2))) * _timestep + noise_yz;
 
 
 		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
 							{A_xy, A_yy, A_yz},
 							{A_xz, A_yz, A_zz}};
+
+		std::ofstream file;
+		file.open("GaussianTensor.txt", std::ofstream::app);
+		file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+		file.close();
 
 		this->couplingTensor->SetTensor(tdTensor);
 
@@ -882,6 +924,24 @@ namespace SpinAPI
 		// Just apply the rotation matrix to the field without projecting onto perpendicular plane
 		return R * _v;
 	}
+
+	// arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> amps, std::vector<double> freqs, std::vector<double> phases, int comps)
+	// {
+		
+	// 	double Asinwdt = 0;
+
+	// 	for(int comp=0; comp<comps; comp++){ 
+	// 		double phase = phases.at(comp);
+	// 		double freq = freqs.at(comp);
+	// 		double amp = amps.at(comp);
+
+	// 		Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+
+	// 	}
+	// 		//FILL THIS OUT
+	// 	std::cout << Asinwdt * _v << std::endl;
+	// 	return Asinwdt * _v;
+	// }
 
 	
 	// -----------------------------------------------------

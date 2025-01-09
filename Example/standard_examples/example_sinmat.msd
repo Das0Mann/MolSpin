@@ -41,16 +41,30 @@ SpinSystem system1
 	// -------------------------
 	Interaction zeeman1
 	{
-		prefactor = 0.001;	// Change field units from T to mT
+		prefactor = 0.001;	// Change field units from T to mT/
 		type = Zeeman;
 		field = "0 0 0.05";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
 	}
+
+//		Interaction zeeman_BB
+//	{
+//		prefactor = 0.001;
+//		type = Zeeman;
+//		field = "0 0 0.05";
+//		spins = electron1, electron2;
+//
+//		fieldtype="broadband";
+//		minfreq=1000;
+//		maxfreq=10000;
+//		stdev=0.001;
+//		components=100;
+//	}
 	
 	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
-//	Interaction HFI_sinat
+//		Interaction HFI_sinat
 //	{
 //	    prefactor = 0.001;	// Change units from T to mT
 //		type = DoubleSpin;
@@ -62,7 +76,8 @@ SpinSystem system1
 //		group2 = "nucleus1";
 //		
 //	}
-	
+
+
 	Interaction HF1
 	{
 	    prefactor = 1;	// Change units from T to mT

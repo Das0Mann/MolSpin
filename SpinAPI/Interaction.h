@@ -32,6 +32,8 @@ namespace SpinAPI
 		//Special data members for time-dependent interaction tensors
 		arma::mat tdInitialTensor;
 		arma::mat tdTensor;
+		//arma::mat tdFreqs;
+
 		
 		arma::vec field;									 // Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
 		double dvalue, evalue;								 // D and E value for zero-field splitting
@@ -75,6 +77,13 @@ namespace SpinAPI
 		// Special data members for time-dependent fields & tensors
 		double tdFrequency;
 		double tdPhase;
+
+		// double tdStdev;
+		// double tdMinFreq;
+		// double tdMaxFreq;
+		// int tdComponents;
+		// arma::vec tdAmps;
+		// arma::vec tdPhases;
 		double tdTemperature;
 		double tdDamping;
 		double tdRestoring;
@@ -166,6 +175,8 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
+	// arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>, int);
+
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);
