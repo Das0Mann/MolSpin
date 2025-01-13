@@ -85,6 +85,12 @@ State Identity // Identity projection
 {
 }
 
+	Transition spinindependent_decay
+	{
+		rate = 0;
+		source = Identity;
+	}
+
 // ---------------------------------------------------------
 // SpinSystem Properties
 // ---------------------------------------------------------
@@ -118,7 +124,9 @@ Run
 
         Task Method2
         {
-                type = "staticss-timeevolution";
+               type = "staticss-timeevolution";
+		//type = "StaticHS-Direct-TimeEvo";
+
                 logfile = "example_timeevolution.log";
                 datafile = "example_timeevolution.dat";
                 Timestep = 0.1;

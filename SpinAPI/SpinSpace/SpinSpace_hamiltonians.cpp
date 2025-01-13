@@ -114,7 +114,6 @@ namespace SpinAPI
 						tmp += S1x * S2x * A(0, 0) + S1x * S2y * A(0, 1) + S1x * S2z * A(0, 2);
 						tmp += S1y * S2x * A(1, 0) + S1y * S2y * A(1, 1) + S1y * S2z * A(1, 2);
 						tmp += S1z * S2x * A(2, 0) + S1z * S2y * A(2, 1) + S1z * S2z * A(2, 2);
-
 					}
 					else
 					{
@@ -365,6 +364,7 @@ namespace SpinAPI
 						tmp += S1x * S2x * A(0, 0) + S1x * S2y * A(0, 1) + S1x * S2z * A(0, 2);
 						tmp += S1y * S2x * A(1, 0) + S1y * S2y * A(1, 1) + S1y * S2z * A(1, 2);
 						tmp += S1z * S2x * A(2, 0) + S1z * S2y * A(2, 1) + S1z * S2z * A(2, 2);
+
 					}
 					else
 					{
@@ -529,6 +529,7 @@ namespace SpinAPI
 			return true;
 		}
 
+		// std::cout << "HERE" << std::endl;
 		// Get the first interaction contribution
 		auto i = this->interactions.cbegin();
 		arma::cx_mat tmp;

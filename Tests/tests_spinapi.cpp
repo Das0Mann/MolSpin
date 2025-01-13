@@ -776,7 +776,7 @@ bool test_spinapi_spinspace_sparsevsdense_hamiltonian()
 
 	bool isCorrect = true;
 
-	// Perform the test
+	////Perform the test
 	isCorrect &= space.Hamiltonian(denseM);
 	isCorrect &= space.Hamiltonian(sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);

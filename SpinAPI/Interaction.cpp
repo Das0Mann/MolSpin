@@ -21,10 +21,10 @@ namespace SpinAPI
 	// The constructor sets up the interaction parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
 	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
-																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), tensorType(InteractionTensorType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
-																		 trjHasTime(false), trjHasField(false), trjHasPrefactor(false), trjHasTensor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
-																		 tdFrequency(1.0), tdPhase(0.0), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0),  tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tdInitialTensor(3,3, arma::fill::zeros)
-																		,tdSeed(0)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0}), tdComponents(0), tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdAmps{}, tdPhases{}
+																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
+																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
+																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0) ,tdSeed(0),
+																		 tdInitialTensor(3,3, arma::fill::zeros)//, tdComponents(0), tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdAmps{}, tdPhases{} //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -195,8 +195,11 @@ namespace SpinAPI
 			this->tdInitialField = this->field;
 
 			// Set the time to 0 by default
-			if (this->HasFieldTimeDependence())
+			if (this->HasFieldTimeDependence()){
+				std::cout << "HELLO" << std::endl;
 				this->SetTime(0.0);
+			}
+				
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,14 +238,14 @@ namespace SpinAPI
 					this->properties->Get("restoring", this->tdRestoring);
 					this->properties->Get("timestep", this->tdTimestep);
 				}
-				else if (str.compare("broadband") == 0)
-				{
-					this->tensorType = InteractionTensorType::BroadbandNoise;
-					this->properties->Get("minfreq", this->tdFrequency);
-					this->properties->Get("maxfreq", this->tdPhase);
-					this->properties->Get("stdev", this->tdStdev);
-					this->properties->Get("components", this->tdComponents);
-				}
+				// else if (str.compare("broadband") == 0)
+				// {
+				// 	this->tensorType = InteractionTensorType::BroadbandNoise;
+				// 	this->properties->Get("minfreq", this->tdFrequency);
+				// 	this->properties->Get("maxfreq", this->tdPhase);
+				// 	this->properties->Get("stdev", this->tdStdev);
+				// 	this->properties->Get("components", this->tdComponents);
+				// }
 
 				
 				//fill in all the other options
@@ -270,12 +273,12 @@ namespace SpinAPI
 	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
 																group1(_interaction.group1), group2(_interaction.group2), type(_interaction.type), fieldType(_interaction.fieldType),
 																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors), isValid(_interaction.isValid),
-																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasPrefactor(_interaction.trjHasPrefactor), trjHasTensor(_interaction.trjHasTensor),
+																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasTensor(_interaction.trjHasTensor), trjHasPrefactor(_interaction.trjHasPrefactor), 
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
-																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdTemperature(_interaction.tdTemperature), 
-																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
-																tdInitialField(_interaction.tdInitialField), tdInitialTensor(_interaction.tdInitialTensor),//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
-																tdSeed(_interaction.tdSeed)//, tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
+																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
+																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), tdTemperature(_interaction.tdTemperature), 
+																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
+																//,tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
 	{
 	}
 
@@ -311,6 +314,18 @@ namespace SpinAPI
 
 		this->tdFrequency = _interaction.tdFrequency;
 		this->tdPhase = _interaction.tdPhase;
+		this->tdAxis = _interaction.tdAxis;
+		this->tdPerpendicularOscillation = _interaction.tdPerpendicularOscillation;
+		this->tdInitialField = _interaction.tdInitialField;
+		
+		this->tensorType = _interaction.tensorType;
+		this->tdTemperature = _interaction.tdTemperature;
+		this->tdDamping = _interaction.tdDamping;
+		this->tdRestoring = _interaction.tdRestoring;
+		this->tdTimestep = _interaction.tdTimestep;
+		this->tdSeed = _interaction.tdSeed;
+		this->tdInitialTensor = _interaction.tdInitialTensor;
+
 		// this->tdStdev = _interaction.tdStdev;
 		// this->tdMinFreq = _interaction.tdMinFreq;
 		// this->tdMaxFreq = _interaction.tdMaxFreq;
@@ -318,15 +333,8 @@ namespace SpinAPI
 		// this->tdFreqs = _interaction.tdFreqs;
 		// this->tdPhases = _interaction.tdPhases;
 		// this->tdComponents = _interaction.tdComponents;
-		this->tdAxis = _interaction.tdAxis;
-		this->tdPerpendicularOscillation = _interaction.tdPerpendicularOscillation;
-		this->tdInitialField = _interaction.tdInitialField;
-		this->tdInitialTensor = _interaction.tdInitialTensor;
-		this->tdTemperature = _interaction.tdTemperature;
-		this->tdDamping = _interaction.tdDamping;
-		this->tdRestoring = _interaction.tdRestoring;
-		this->tdTimestep = _interaction.tdTimestep;
-		this->tdSeed = _interaction.tdSeed;
+		
+
 		// this->tdFreqs = _interaction.tdFreqs;
 
 		return (*this);
@@ -524,7 +532,7 @@ namespace SpinAPI
 		//TODO: COULD DEFINE RANDOM SEED HERE
 		
 		else if (this->tensorType == InteractionTensorType::GaussianNoise){
-			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring);
+			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
 		}
 		// else if(this->tensorType == InteractionTensorType::Broadband){
 		// 	TensorTimeDependenceBroadbandNoise(this->tdInitialTensor);
@@ -798,25 +806,6 @@ namespace SpinAPI
 		return scalars;
 	}
 
-	// Method that calls the methods to generate ActionVectors and ActionScalars and inserts them into the given collections
-	void Interaction::GetActionTargets(std::vector<RunSection::NamedActionScalar> &_scalars, std::vector<RunSection::NamedActionVector> &_vectors, const std::string &_system)
-	{
-		// Get ActionTargets from private methods
-		auto scalars = this->CreateActionScalars(_system);
-		auto vectors = this->CreateActionVectors(_system);
-
-		// Insert them
-		_scalars.insert(_scalars.end(), scalars.begin(), scalars.end());
-		_vectors.insert(_vectors.end(), vectors.begin(), vectors.end());
-
-		// If we have a tensor assigned, also add the ActionTargets of the Tensor
-		if (this->couplingTensor != nullptr)
-			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
-	}
-
-	// -----------------------------------------------------
-	// Non-member non-friend time-dependent tensor functions
-	// -----------------------------------------------------
 	//TODO: THESE PROBABLY NEED TO BE NON MEMBER FUNCTIONS
 	//make a matrix with sinusoidal modulation on one tensor component
 	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase)
@@ -834,18 +823,18 @@ namespace SpinAPI
 		this->couplingTensor->SetTensor(_m);
 	}
 	//Applies Gaussian noise to each tensor component
-	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring)
+	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
 	{	
 		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
 		double D = (k_B * _temperature) / _damping;
 		
 		//get the tensor from the previous time point
-		arma::mat labTensor = this->couplingTensor->LabFrame();
+		arma::mat labTensor = this->couplingTensor->GetTensor();
 	
 		// Random Number Generator Preparation
 		std::random_device rand_dev;		// random number generator
-		std::mt19937 generator(rand_dev()); // random number generator
+		std::mt19937 generator(rand_dev()); // random number generator - TODO: probably define this elsewhere?
 		// std::cout << "Seed number is " << _seed  << std::endl; //TODO: should we allow random seed to be parsed to interaction?
 		// generator.seed(_seed);
 		std::normal_distribution<double> dist(0.0, std::sqrt(2.0 * D * _timestep));
@@ -860,29 +849,68 @@ namespace SpinAPI
 		double noise_xz = dist(generator);
 		double noise_yz = dist(generator);
 
-		// A_xx = A_xx + (-_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
-		// A_yy = A_yy + (-_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
-		// A_zz = A_zz + (-_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
-		// A_xy = A_xy + (-_restoring * (A_xy - _m(0,1))) * _timestep + noise_xy;
-		// A_xz = A_xz + (-_restoring * (A_xz - _m(0,2))) * _timestep + noise_xz;
-		// A_yz = A_yz + (-_restoring * (A_yz - _m(1,2))) * _timestep + noise_yz;
+		bool print_tensor = true;
 
+		//this makes sure the matrix at time=0 is that input in the msd file 
+		if(_time == 0){
+			
+			//for development purposes
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/GaussianNoise.mst");
+				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
+				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file.close();
+			}
 
-		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-							{A_xy, A_yy, A_yz},
-							{A_xz, A_yz, A_zz}};
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+								{A_xy, A_yy, A_yz},
+								{A_xz, A_yz, A_zz}};
 
-		std::ofstream file;
-		file.open("GaussianTensor.txt", std::ofstream::app);
-		file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
-		file.close();
+			this->couplingTensor->SetTensor(tdTensor);
+		}
+		else{ //actually generate the noise for times greater than zero
 
-		this->couplingTensor->SetTensor(tdTensor);
+			A_xx = A_xx + (-_restoring * (A_xx - _m(0,0))) * _timestep + noise_xx;
+			A_yy = A_yy + (-_restoring * (A_yy - _m(1,1))) * _timestep + noise_yy;
+			A_zz = A_zz + (-_restoring * (A_zz - _m(2,2))) * _timestep + noise_zz;
+			A_xy = A_xy + (-_restoring * (A_xy - _m(0,1))) * _timestep + noise_xy;
+			A_xz = A_xz + (-_restoring * (A_xz - _m(0,2))) * _timestep + noise_xz;
+			A_yz = A_yz + (-_restoring * (A_yz - _m(1,2))) * _timestep + noise_yz;
 
+		
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+								{A_xy, A_yy, A_yz},
+								{A_xz, A_yz, A_zz}};
+
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/GaussianNoise.mst", std::ofstream::app);
+				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file.close();
+			}
+
+			this->couplingTensor->SetTensor(tdTensor);
+		}
+	}
+
+	// Method that calls the methods to generate ActionVectors and ActionScalars and inserts them into the given collections
+	void Interaction::GetActionTargets(std::vector<RunSection::NamedActionScalar> &_scalars, std::vector<RunSection::NamedActionVector> &_vectors, const std::string &_system)
+	{
+		// Get ActionTargets from private methods
+		auto scalars = this->CreateActionScalars(_system);
+		auto vectors = this->CreateActionVectors(_system);
+
+		// Insert them
+		_scalars.insert(_scalars.end(), scalars.begin(), scalars.end());
+		_vectors.insert(_vectors.end(), vectors.begin(), vectors.end());
+
+		// If we have a tensor assigned, also add the ActionTargets of the Tensor
+		if (this->couplingTensor != nullptr)
+			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
 	}
 
 
-	
 	// -----------------------------------------------------
 	// Non-member non-friend methods
 	// -----------------------------------------------------

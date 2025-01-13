@@ -127,7 +127,7 @@ namespace SpinAPI
 
 		//Methods for time-dependent interactions
 		void SetTensor(arma::mat &);		   // Set value from matrix
-		//arma::mat GetTensor();
+		arma::mat GetTensor();
 
 		// Public method for creating ActionTargets
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);

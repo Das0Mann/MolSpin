@@ -116,9 +116,28 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
         ax.set_ylabel("$T_{zz}(t)$ / mT", fontsize=20)
 
 fig, ax = plt.subplots(num=1)
-plot_trj("GaussianTensor.txt", 10, 1002, ax)
+plot_trj("Example/standard_examples/GaussianNoise.mst", 10, 5000, ax)
 fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
   
-fig, ax = plt.subplots(num=2)
-plot_trj("reconstructed_hyperfine.mst", 10, 999, ax)
-fig.savefig("reconstructed_hyperfine.png", dpi=300, bbox_inches="tight")
+# fig, ax = plt.subplots(num=2)
+# plot_trj("reconstructed_hyperfine.mst", 10, 999, ax)
+# fig.savefig("reconstructed_hyperfine.png", dpi=300, bbox_inches="tight")
+def plot_result(file, ax, label=""):
+
+    d_file = open(file, 'r')
+    next(d_file)
+    time = []
+    sig = []
+    for line in d_file:
+        data = line.split()
+        time.append(np.double(data[1]))
+        sig.append(np.double(data[2]))
+
+    ax.plot(np.array(time), np.array(sig), label=label)
+    plt.legend()
+
+fig, ax = plt.subplots(num=13)
+plot_result("dat_gaussian_test_mst.dat", ax, label="mst")
+plot_result("dat_gaussian_test.dat", ax, label="built-in")
+# plot_result("example_timeevolution.dat", ax)
+fig.savefig("gaussian_Pst.png", dpi=300)

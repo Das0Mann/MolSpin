@@ -173,7 +173,6 @@ namespace SpinAPI
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
 
 		// Do the diagonalization
-		// std::cout << _matrix << std::endl;
 		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
 		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
 		this->axis1 = principalAxes.col(0);
@@ -186,6 +185,7 @@ namespace SpinAPI
 
 	void Tensor::SeparateIsotropy()
 	{
+
 		// Put everything into the anisotropy vector
 		this->anisotropic += this->isotropic;
 
@@ -194,6 +194,7 @@ namespace SpinAPI
 
 		// And separate the isotropic value from the anisotropy
 		this->anisotropic -= this->isotropic;
+
 	}
 
 	void Tensor::OrthonormalizeAxes()
@@ -436,6 +437,10 @@ namespace SpinAPI
 		axes.col(1) = this->axis2;
 		axes.col(2) = this->axis3;
 
+		// arma::mat anis  = axes * arma::diagmat(this->anisotropic) * axes.t() + arma::eye(size(axes)) * this->isotropic;
+		// std::cout << anis << std::endl;
+
+		// std::cout << this->isotropic << std::endl;
 		// TODO: Consider whether arma::inv(axes) should be used instead of axes.t() if "axes" are not orthogonal
 		return (axes * arma::diagmat(this->anisotropic) * axes.t()) + arma::eye(size(axes)) * this->isotropic;
 	}
@@ -668,7 +673,14 @@ namespace SpinAPI
 
 	void Tensor::SetTensor(arma::mat &m)
 	{	
-		this->DiagonalizeMatrix(m); 
+		this->DiagonalizeMatrix(m); //diagonalise the matrix m - resets the anisotropic part
+		this->isotropic = arma::sum(this->anisotropic) / 3.0; //separate the anisotropic and isotropic parts
+		this->anisotropic -= this->isotropic;				 
+	}
+
+	arma::mat Tensor::GetTensor(){
+		arma::mat tensor = this->LabFrame();// - arma::eye(3,3) * this->isotropic;
+		return tensor;
 	}
 	
 	// Loads a trajectory and checks for headers used by the Tensor class
