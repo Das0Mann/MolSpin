@@ -137,7 +137,9 @@ def plot_result(file, ax, label=""):
     plt.legend()
 
 fig, ax = plt.subplots(num=13)
-plot_result("dat_gaussian_test_mst.dat", ax, label="mst")
-plot_result("dat_gaussian_test.dat", ax, label="built-in")
+# plot_result("dat_gaussian_test_mst.dat", ax, label="mst")
+# plot_result("dat_gaussian_test.dat", ax, label="built-in")
 # plot_result("example_timeevolution.dat", ax)
+plot_result("dat_BBfield_test.dat", ax, label="BB")
+plot_result("dat_no_BBfield_test.dat", ax, label="BB")
 fig.savefig("gaussian_Pst.png", dpi=300)

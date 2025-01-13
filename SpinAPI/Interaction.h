@@ -71,26 +71,20 @@ namespace SpinAPI
 		int tdSeed;
 		arma::mat tdInitialTensor;
 
-
-
+		double tdStdev;
+		double tdMinFreq;
+		double tdMaxFreq;
+		std::vector<double> tdFreqs;
+		std::vector<double> tdAmps;
+		std::vector<double> tdPhases;
+		int tdComponents;
 		
 
-		// double tdStdev;
-		// double tdMinFreq;
-		// double tdMaxFreq;
-		// arma::vec tdAmps;
-		// arma::vec tdPhases;
-		
-
-		// arma::mat tdFreqs;
 
 
 
 		// parameters for broadband noise generation
-		// double tdStdev;
-		// double tdMinFreq;
-		// double tdMaxFreq;
-		// int tdComponents;
+		
 		// std::vector<double> tdFreqs;
 		// std::vector<double> tdAmps;
 		// std::vector<double> tdPhases;
@@ -184,7 +178,7 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	// arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>, int);
+	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>, int);
 
 
 	// Non-member non-friend functions for ActionTarget validation

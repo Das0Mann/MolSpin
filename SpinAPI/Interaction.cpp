@@ -24,7 +24,7 @@ namespace SpinAPI
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0) ,tdSeed(0),
-																		 tdInitialTensor(3,3, arma::fill::zeros)//, tdComponents(0), tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdAmps{}, tdPhases{} //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
+																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0) //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -149,42 +149,42 @@ namespace SpinAPI
 					this->properties->Get("axis", this->tdAxis);
 					this->properties->Get("perpendicularoscillations", this->tdPerpendicularOscillation);
 				}
-				// else if (str.compare("broadband") == 0)
-				// {
-				// 	std::cout << "BROADBAND" << std::endl;
-				// 	this->fieldType = InteractionFieldType::BroadbandNoise;
-				// 	this->properties->Get("minfreq", this->tdMinFreq);
-				// 	this->properties->Get("maxfreq", this->tdMaxFreq);
-				// 	this->properties->Get("stdev", this->tdStdev);
-				// 	this->properties->Get("components", this->tdComponents);
+				else if (str.compare("broadband") == 0)
+				{
+					std::cout << "BROADBAND" << std::endl;
+					this->fieldType = InteractionFieldType::BroadbandNoise;
+					this->properties->Get("minfreq", this->tdMinFreq);
+					this->properties->Get("maxfreq", this->tdMaxFreq);
+					this->properties->Get("stdev", this->tdStdev);
+					this->properties->Get("components", this->tdComponents);
 
-				// 	std::random_device rand_dev;		// random number generator
-				// 	std::mt19937 generator(rand_dev());
+					std::random_device rand_dev;		// random number generator
+					std::mt19937 generator(rand_dev());
 
-				// 	//distributions for broadband noise
-				// 	std::normal_distribution<double> amp_dist(0.0, this->tdStdev);
-				// 	std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
-				// 	std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
+					//define all the distributions for broadband noise and fill out vectors 
+					std::normal_distribution<double> amp_dist(0.0, this->tdStdev);
+					std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
+					std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
 
-				// 	std::vector<double> amps;
-				// 	std::vector<double> freqs;
-				// 	std::vector<double> phases;
+					std::vector<double> amps;
+					std::vector<double> freqs;
+					std::vector<double> phases;
 
-				// 	for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
-				// 		double phase = phase_dist(generator);
-				// 		double freq = freq_dist(generator);
-				// 		double amp = amp_dist(generator);
+					for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+						double phase = phase_dist(generator);
+						double freq = freq_dist(generator);
+						double amp = amp_dist(generator);
 
-				// 		phases.push_back(phase);
-				// 		freqs.push_back(freq);
-				// 		amps.push_back(amp);
-				// 	}
+						phases.push_back(phase);
+						freqs.push_back(freq);
+						amps.push_back(amp);
+					}
 
-				// 	this->tdPhases = phases;
-				// 	this->tdFreqs = freqs;
-				// 	this->tdAmps = amps;
-				// 	//TODO: should have the option to sample random orientations
-				// }
+					this->tdPhases = phases;
+					this->tdFreqs = freqs;
+					this->tdAmps = amps;
+					//TODO: should have the option to sample random orientations
+				}
 				else
 				{
 					std::cout << "Warning: Unknown fieldtype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
@@ -241,8 +241,8 @@ namespace SpinAPI
 				// else if (str.compare("broadband") == 0)
 				// {
 				// 	this->tensorType = InteractionTensorType::BroadbandNoise;
-				// 	this->properties->Get("minfreq", this->tdFrequency);
-				// 	this->properties->Get("maxfreq", this->tdPhase);
+				// 	this->properties->Get("minfreq", this->tdMinFreq);
+				// 	this->properties->Get("maxfreq", this->tdMaxFreq);
 				// 	this->properties->Get("stdev", this->tdStdev);
 				// 	this->properties->Get("components", this->tdComponents);
 				// }
@@ -277,7 +277,8 @@ namespace SpinAPI
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
 																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
 																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), tdTemperature(_interaction.tdTemperature), 
-																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
+																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor),
+																tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), tdComponents(_interaction.tdComponents)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
 																//,tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
 	{
 	}
@@ -326,13 +327,13 @@ namespace SpinAPI
 		this->tdSeed = _interaction.tdSeed;
 		this->tdInitialTensor = _interaction.tdInitialTensor;
 
-		// this->tdStdev = _interaction.tdStdev;
-		// this->tdMinFreq = _interaction.tdMinFreq;
-		// this->tdMaxFreq = _interaction.tdMaxFreq;
-		// this->tdAmps = _interaction.tdAmps;
-		// this->tdFreqs = _interaction.tdFreqs;
-		// this->tdPhases = _interaction.tdPhases;
-		// this->tdComponents = _interaction.tdComponents;
+		this->tdStdev = _interaction.tdStdev;
+		this->tdMinFreq = _interaction.tdMinFreq;
+		this->tdMaxFreq = _interaction.tdMaxFreq;
+		this->tdFreqs = _interaction.tdFreqs;
+		this->tdAmps = _interaction.tdAmps;
+		this->tdPhases = _interaction.tdPhases;
+		this->tdComponents = _interaction.tdComponents;
 		
 
 		// this->tdFreqs = _interaction.tdFreqs;
@@ -521,8 +522,8 @@ namespace SpinAPI
 			this->field = FieldTimeDependenceLinearPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase);
 		else if (this->fieldType == InteractionFieldType::CircularPolarization)
 			this->field = FieldTimeDependenceCircularPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase, this->tdAxis, this->tdPerpendicularOscillation);
-		// else if (this->fieldType == InteractionFieldType::BroadbandNoise)
-		// 	this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdAmps, this->tdFreqs, this->tdPhases, this->tdComponents);
+		else if (this->fieldType == InteractionFieldType::BroadbandNoise)
+			this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdFreqs, this->tdAmps,  this->tdPhases, this->tdComponents);
 		
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
@@ -979,23 +980,23 @@ namespace SpinAPI
 		return R * _v;
 	}
 
-	// arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> amps, std::vector<double> freqs, std::vector<double> phases, int comps)
-	// {
+	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> freqs, std::vector<double> amps,  std::vector<double> phases, int comps)
+	{
 		
-	// 	double Asinwdt = 0;
+		double Asinwdt = 0;
 
-	// 	for(int comp=0; comp<comps; comp++){ 
-	// 		double phase = phases.at(comp);
-	// 		double freq = freqs.at(comp);
-	// 		double amp = amps.at(comp);
+		for(int comp=0; comp<comps; comp++){ 
+			double phase = phases.at(comp);
+			double freq = freqs.at(comp);
+			double amp = amps.at(comp);
 
-	// 		Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+			Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
 
-	// 	}
-	// 		//FILL THIS OUT
-	// 	std::cout << Asinwdt * _v << std::endl;
-	// 	return Asinwdt * _v;
-	// }
+		}
+			//FILL THIS OUT
+		std::cout << Asinwdt * _v << std::endl;
+		return Asinwdt * _v;
+	}
 
 	
 	// -----------------------------------------------------
