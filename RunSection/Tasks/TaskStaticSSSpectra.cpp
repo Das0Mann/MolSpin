@@ -6,6 +6,7 @@
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <iomanip> 
 #include "TaskStaticSSSpectra.h"
 #include "Transition.h"
 #include "Settings.h"
@@ -456,29 +457,31 @@ namespace RunSection
 				G = std::pair<arma::sp_cx_mat, arma::cx_vec>(A_sp, rhovec);
 
 				unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
-				for (unsigned int n = 1; n <= steps; n++)
+				for (unsigned int n = 0; n <= steps; n++)
 				{
-
-					// Take a step, "first" is propagator and "second" is current state
-					rhovec = G.first * G.second;
-
-					// Integrate the density vector over the current time interval
-					if (integration)
+					if(!n == 0)
 					{
-						rhoavg += this->timestep * (G.second + rhovec) / 2;
-					}
+						// Take a step, "first" is propagator and "second" is current state
+						rhovec = G.first * G.second;
 
-					// Get the new current state density vector
-					G.second = rhovec;
+						// Integrate the density vector over the current time interval
+						if (integration)
+						{
+							rhoavg += this->timestep * (G.second + rhovec) / 2;
+						}
 
-					// Save the result if there were some changes (made so we can include TotalTime=0)
-					if (!rhoavg.is_zero(0))
-					{
-						rhovec = rhoavg;
+						// Get the new current state density vector
+						G.second = rhovec;
+
+						// Save the result if there were some changes 
+						if (!rhoavg.is_zero(0))
+						{
+							rhovec = rhoavg;
+						}
 					}
 
 					// Convert the resulting density operator back to its Hilbert space representation
-					if ((!space.OperatorFromSuperspace(rhovec, rho0)) && (n == 1))
+					if ((!space.OperatorFromSuperspace(rhovec, rho0)) && (n == 0))
 					{
 						this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
 						continue;
@@ -492,13 +495,13 @@ namespace RunSection
 					std::vector<std::string> spinList;
 					int m;
 
-					if (n == 1)
+					if (n == 0)
 						this->Log() << "CIDSP = " << CIDSP << std::endl;
 
 					// Save the current step
 					this->Data() << this->RunSettings()->CurrentStep() << " ";
 					// Save the current time
-					this->Data() << n * this->timestep << " ";
+					this->Data() << std::setprecision(12)<< n * this->timestep << " ";
 					this->WriteStandardOutput(this->Data());
 
 					if (this->Properties()->GetList("spinlist", spinList, ','))
@@ -539,7 +542,7 @@ namespace RunSection
 											if ((*j)->SourceState() == nullptr)
 												continue;
 
-											if ((!space.GetState((*j)->SourceState(), P)) && (n == 1))
+											if ((!space.GetState((*j)->SourceState(), P)) && (n == 0))
 											{
 												this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 												continue;
@@ -564,7 +567,7 @@ namespace RunSection
 					}
 					else
 					{
-						if (n == 1)
+						if (n == 0)
 							this->Log() << "No nucleus was specified for projection" << std::endl;
 						continue;
 					}
