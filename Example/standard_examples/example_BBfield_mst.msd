@@ -40,14 +40,10 @@ SpinSystem system1
 	{
 		prefactor = 0.01;
 		type = Zeeman;
-		field = "0.0 0.0 0.0";
 		spins = electron1, electron2;
 
-		fieldtype="broadband";
-		minfreq=1000;
-		maxfreq=10000;
-		stdev=1;
-		components=1000;
+		
+        trajectory = "FieldBBNoise.mst";
 	}
 	
 	// -------------------------
@@ -125,8 +121,8 @@ Run
 	Task Method1
 	{
 		type = "DynamicHS-Direct-TimeEvo";
-		logfile = "log_BBfield_test.log";
-		datafile = "dat_BBfield_test.dat";
+		logfile = "log_BBfield_mst_test.log";
+		datafile = "dat_BBfield_mst_test.dat";
 		totaltime=500;
 		Timestep=1;
 		transitionyields = "false";

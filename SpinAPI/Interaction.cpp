@@ -196,15 +196,10 @@ namespace SpinAPI
 
 			// Set the time to 0 by default
 			if (this->HasFieldTimeDependence()){
-				std::cout << "HELLO" << std::endl;
 				this->SetTime(0.0);
 			}
 				
 		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////PIP ADDITIONS /////////////////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// Double-spin interactions can have a time-dependent tensor
 		if (this->type == InteractionType::DoubleSpin)
@@ -264,10 +259,6 @@ namespace SpinAPI
 				this->SetTime(0.0);
 			}
 		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////PIP ADDITIONS /////////////////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
 
 	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
@@ -983,19 +974,52 @@ namespace SpinAPI
 	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> freqs, std::vector<double> amps,  std::vector<double> phases, int comps)
 	{
 		
-		double Asinwdt = 0;
+		bool print_tensor = true; 
+		
+		arma::vec new_field = _v;
 
-		for(int comp=0; comp<comps; comp++){ 
-			double phase = phases.at(comp);
-			double freq = freqs.at(comp);
-			double amp = amps.at(comp);
+		if(time == 0){
 
-			Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/FieldBBNoise.mst");
+				file << "time "  << "field.x " << "field.y " << "field.z " <<  std::endl;
+				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
+				file.close();
+			}
 
 		}
-			//FILL THIS OUT
-		std::cout << Asinwdt * _v << std::endl;
-		return Asinwdt * _v;
+
+		else{
+			
+			double Asinwdt = 0.0;
+
+			if(comps > 0){
+				for(int comp=0; comp<comps; comp++){ 
+					double phase = phases.at(comp);
+					double freq = freqs.at(comp);
+					double amp = amps.at(comp);
+
+					Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+				}
+			}
+			else{
+				Asinwdt = 1.0;
+			}
+			
+			new_field = Asinwdt * _v;
+
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/FieldBBNoise.mst", std::ofstream::app);
+				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
+				file.close();
+			}
+
+		}
+
+		std::cout << new_field << std::endl;
+		return new_field;
 	}
 
 	
