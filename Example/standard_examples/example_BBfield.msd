@@ -40,14 +40,15 @@ SpinSystem system1
 	{
 		prefactor = 0.01;
 		type = Zeeman;
-		field = "0.0 0.0 0.0";
+		field = "0.1 0.0 0.8";
 		spins = electron1, electron2;
 
 		fieldtype="broadband";
-		minfreq=1000;
-		maxfreq=10000;
-		stdev=1;
-		components=1000;
+		minfreq=0.1;
+		maxfreq=0.001;
+		stdev=0.5;
+		components=100;
+		randomorientations = "true";
 	}
 	
 	// -------------------------
@@ -127,7 +128,7 @@ Run
 		type = "DynamicHS-Direct-TimeEvo";
 		logfile = "log_BBfield_test.log";
 		datafile = "dat_BBfield_test.dat";
-		totaltime=500;
+		totaltime=50;
 		Timestep=1;
 		transitionyields = "false";
 		initialstate= "singlet";

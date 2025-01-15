@@ -24,7 +24,7 @@ namespace SpinAPI
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0) ,tdSeed(0),
-																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0) //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
+																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0), tdRandOrients(false), tdThetas{}, tdPhis{} //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -155,8 +155,9 @@ namespace SpinAPI
 					this->fieldType = InteractionFieldType::BroadbandNoise;
 					this->properties->Get("minfreq", this->tdMinFreq);
 					this->properties->Get("maxfreq", this->tdMaxFreq);
-					this->properties->Get("stdev", this->tdStdev);
+					this->properties->Get("stdev", this->tdStdev); //TODO: decide if this stdev should be a scaling ampltiude or actual noise ampltiude
 					this->properties->Get("components", this->tdComponents);
+					this->properties->Get("randomorientations", this->tdRandOrients);
 
 					std::random_device rand_dev;		// random number generator
 					std::mt19937 generator(rand_dev());
@@ -183,6 +184,26 @@ namespace SpinAPI
 					this->tdPhases = phases;
 					this->tdFreqs = freqs;
 					this->tdAmps = amps;
+
+					if (this->tdRandOrients == true){
+
+						std::vector<double> thetas; 
+						std::vector<double> phis;
+
+						std::uniform_real_distribution<double> cos_theta_dist(-1.0, 1.0);
+    					std::uniform_real_distribution<double> phi_dist(0.0, 2 * M_PI);
+
+						for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+							double theta_BB = std::acos(cos_theta_dist(generator));
+							double phi_BB = phi_dist(generator);
+
+							thetas.push_back(theta_BB);
+							phis.push_back(phi_BB);
+						}
+
+						this->tdThetas = thetas;
+						this->tdPhis = phis;
+					}
 					//TODO: should have the option to sample random orientations
 				}
 				else
@@ -269,7 +290,8 @@ namespace SpinAPI
 																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
 																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), tdTemperature(_interaction.tdTemperature), 
 																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor),
-																tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), tdComponents(_interaction.tdComponents)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
+																tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), 
+																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
 																//,tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
 	{
 	}
@@ -325,8 +347,10 @@ namespace SpinAPI
 		this->tdAmps = _interaction.tdAmps;
 		this->tdPhases = _interaction.tdPhases;
 		this->tdComponents = _interaction.tdComponents;
+		this->tdRandOrients = _interaction.tdRandOrients;
+		this->tdThetas = _interaction.tdThetas;
+		this->tdPhis = _interaction.tdPhis;
 		
-
 		// this->tdFreqs = _interaction.tdFreqs;
 
 		return (*this);
@@ -514,7 +538,7 @@ namespace SpinAPI
 		else if (this->fieldType == InteractionFieldType::CircularPolarization)
 			this->field = FieldTimeDependenceCircularPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase, this->tdAxis, this->tdPerpendicularOscillation);
 		else if (this->fieldType == InteractionFieldType::BroadbandNoise)
-			this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdFreqs, this->tdAmps,  this->tdPhases, this->tdComponents);
+			this->field = FieldTimeDependenceBroadbandNoise(this->tdInitialField, _time, this->tdFreqs, this->tdAmps,  this->tdPhases, this->tdThetas, this->tdPhis, this->tdRandOrients, this->tdComponents);
 		
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////// TENSOR TIMEDEP FUNCTIONS IN HERE //////////////////////////////////////
@@ -881,7 +905,7 @@ namespace SpinAPI
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
 				file.close();
 			}
-
+			//set the new diagonalised matrix within the Tensor object
 			this->couplingTensor->SetTensor(tdTensor);
 		}
 	}
@@ -971,15 +995,13 @@ namespace SpinAPI
 		return R * _v;
 	}
 
-	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> freqs, std::vector<double> amps,  std::vector<double> phases, int comps)
+	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &_v, double time, std::vector<double> freqs, std::vector<double> amps,  std::vector<double> phases, std::vector<double> thetas, std::vector<double> phis, bool randorients,  int comps)
 	{
 		
 		bool print_tensor = true; 
-		
 		arma::vec new_field = _v;
 
 		if(time == 0){
-
 			if(print_tensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/FieldBBNoise.mst");
@@ -987,38 +1009,51 @@ namespace SpinAPI
 				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
 				file.close();
 			}
-
 		}
-
 		else{
-			
-			double Asinwdt = 0.0;
+			//if we include random orientations - each component of the time-dependent field has independent broadband noise. If not,
+			//a scalar function applies noise to the field terms defined in the interaction
+			if(randorients == true){
 
-			if(comps > 0){
+				new_field.s
+
 				for(int comp=0; comp<comps; comp++){ 
 					double phase = phases.at(comp);
 					double freq = freqs.at(comp);
 					double amp = amps.at(comp);
+					double theta = thetas.at(comp);
+					double phi = phis.at(comp);
 
-					Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
-				}
+					arma::vec orient = {std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)};
+
+					new_field += orient * amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+				}	
 			}
 			else{
-				Asinwdt = 1.0;
-			}
-			
-			new_field = Asinwdt * _v;
+				double Asinwdt = 0.0;
+				//IF RANDORIENTS
+				if(comps > 0){
+					for(int comp=0; comp<comps; comp++){ 
+						double phase = phases.at(comp);
+						double freq = freqs.at(comp);
+						double amp = amps.at(comp);
 
+						Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
+					}
+				}
+				else{
+					Asinwdt = 1.0;
+				}	
+				new_field += Asinwdt * _v;
+			}
 			if(print_tensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/FieldBBNoise.mst", std::ofstream::app);
 				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
 				file.close();
 			}
-
 		}
 
-		std::cout << new_field << std::endl;
 		return new_field;
 	}
 

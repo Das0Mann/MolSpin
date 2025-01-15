@@ -78,6 +78,9 @@ namespace SpinAPI
 		std::vector<double> tdAmps;
 		std::vector<double> tdPhases;
 		int tdComponents;
+		bool tdRandOrients;
+		std::vector<double> tdThetas;
+		std::vector<double> tdPhis;
 		
 
 
@@ -178,7 +181,7 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>, int);
+	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>,std::vector<double>,std::vector<double>,bool, int);
 
 
 	// Non-member non-friend functions for ActionTarget validation

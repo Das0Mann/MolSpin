@@ -123,7 +123,7 @@ Run
 		type = "DynamicHS-Direct-TimeEvo";
 		logfile = "log_BBfield_mst_test.log";
 		datafile = "dat_BBfield_mst_test.dat";
-		totaltime=500;
+		totaltime=50;
 		Timestep=1;
 		transitionyields = "false";
 		initialstate= "singlet";

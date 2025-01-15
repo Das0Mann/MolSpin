@@ -85,8 +85,9 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
 
     stdevs= []
 
-    for i in range(9):
+    for i in range(3):
         
+        # i=2
         d_file = open(file, 'r')
         next(d_file)
         sig = []
@@ -116,7 +117,8 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
         ax.set_ylabel("$T_{zz}(t)$ / mT", fontsize=20)
 
 fig, ax = plt.subplots(num=1)
-plot_trj("Example/standard_examples/GaussianNoise.mst", 10, 5000, ax)
+# plot_trj("Example/standard_examples/GaussianNoise.mst", 10, 5000, ax)
+plot_trj("Example/standard_examples/FieldBBNoise.mst", 10, 50, ax)
 fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
   
 # fig, ax = plt.subplots(num=2)
@@ -140,6 +142,7 @@ fig, ax = plt.subplots(num=13)
 # plot_result("dat_gaussian_test_mst.dat", ax, label="mst")
 # plot_result("dat_gaussian_test.dat", ax, label="built-in")
 # plot_result("example_timeevolution.dat", ax)
-plot_result("dat_BBfield_test.dat", ax, label="BB")
+# plot_result("dat_BBfield_test.dat", ax, label="BB")
 plot_result("dat_BBfield_mst_test.dat", ax, label="BB mst")
 fig.savefig("gaussian_Pst.png", dpi=300)
+
