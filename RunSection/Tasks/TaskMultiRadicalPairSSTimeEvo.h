@@ -59,7 +59,7 @@ namespace RunSection
 		//static Matrix ComputeRhoDot(Matrix& L, Matrix& K, Matrix RhoNaugt);  //k in this case isn't refering to the reaction operator K but k_i, i E {1,2,3,4} for the RK4 method
 		static arma::cx_vec ComputeRhoDot(double t, arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaught);
 		
-		void CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec); //L matrix, RhoNaught and a vector to return the data
+		bool CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec); //L matrix, RhoNaught and a vector to return the data
 
 	protected:
 		bool RunLocal() override;

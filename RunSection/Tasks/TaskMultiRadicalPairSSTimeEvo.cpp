@@ -289,7 +289,7 @@ namespace RunSection
 		bool YieldOnly = false;
 		if (this->Properties()->Get("YieldOnly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
 			YieldOnly = true;
-		this->WriteStandardOutput(this->Data(), YieldOnly);
+		this->WriteHeader(this->Data(), YieldOnly);
 		nextDimension = 0;
 
 		//modify this so it's the same that I've got in my code, using the vectors and superspace rather than matracies;
@@ -353,7 +353,11 @@ namespace RunSection
 		if(YieldOnly)
 		{
 			CalcYieldOnly(L, rho0, rho0);
-			std::vector<double> yeilds;
+			std::vector<double> yields;
+			for (auto state : SpinSpace->first->States())
+			{
+				yields.push_back(0);
+			}
 			for(int i = 0; i < SubSystems; i++)
 			{
 				for(auto e = SubSystemsTransitions.begin(); e != SubSystemsTransitions.end(); e++)
@@ -377,22 +381,23 @@ namespace RunSection
 							continue;
 						}
 						TransitionState = state;
-						yeilds.push_back(0);
 						break;
 					}
 					double rate = e->transition->Rate();
 					arma::cx_mat P; 
-					*(SpinSpace->second)->GetState(TransitionState,P);
+					//*(SpinSpace->second))->GetState(TransitionState,P);
+					SpinSpace->second->GetState(TransitionState,P);
 					StateYield(rate,yields[index],i,SubSystems,P,rho0);
 				}
 			}
 
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			this->WriteStandardOutput(this->Data());
-			for(unsigned int i = 0; i < yeilds.size(); i++)
+			for(unsigned int i = 0; i < yields.size(); i++)
 			{
-				this->Data() << yeilds[i] << " ";
+				this->Data() << yields[i] << " ";
 			}
+			return true;
 		}
 
 
@@ -554,7 +559,8 @@ namespace RunSection
     void TaskMultiRadicalPairSSTimeEvo::StateYield(double rate, double& yield, int spinsystem, int spinsystems, arma::cx_mat& projection_operator, arma::cx_vec& StateDensityVec) 
     {
 		arma::cx_vec p = projection_operator.as_row();
-		arma::cx_vec vec = arma::cx_vec::zeros(StateDensityVec.size());
+		arma::cx_vec vec;
+		vec.zeros(StateDensityVec.size());
 		int TotalSize = vec.size();
 		int SpinSystemSize = TotalSize /spinsystems;
 		int index = 0;
@@ -572,11 +578,13 @@ namespace RunSection
 			}
 
 		}
-
-		for(int i = 0; i < TotalSize)
+		
+		std::complex<double> TempYield = 0;
+		for(int i = 0; i < TotalSize; i++)
 		{
-			yield += (rate * vec[i] * StateDensityVec[i]);
+			TempYield += (rate * vec[i] * StateDensityVec[i]);
 		}
+		yield = TempYield.real();
     }
 
     double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
@@ -798,7 +806,7 @@ namespace RunSection
 		return ReturnVec;
     }
 
-    bool RunSection::TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
+    bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
     {
 		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
 		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught, arma::solve_opts::refine);
