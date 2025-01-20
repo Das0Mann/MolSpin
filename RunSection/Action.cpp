@@ -137,14 +137,14 @@ namespace RunSection
 			if(_currentStep == this->last + 1 && this->last != 0)
 			{
 				this->Reset();
-				//std::cout << "resetting" << std::endl;
-				int gap = this->last + 1 - this->first;
-				this->first = _currentStep;
-				this->last = this->first + gap - 1;
+				//std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
+				int gap = this->last - this->first; //this-last - this-first
+				this->first = _currentStep - 1; //_currentStep
+				this->last = this->first + gap; //this->first + gap 
 				return;
 			}
 
-			if(((_currentStep - this->first) % this->period) != 0)
+			if(((_currentStep - this->first -1) % this->period) != 0)
 			{
 				return;
 			}
