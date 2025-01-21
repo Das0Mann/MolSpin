@@ -139,7 +139,7 @@ namespace RunSection
 				this->Reset();
 				//std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
 				int gap = this->last - this->first; //this-last - this-first
-				this->first = _currentStep - 1; //_currentStep
+				this->first = _currentStep; //_currentStep
 				this->last = this->first + gap; //this->first + gap 
 				return;
 			}
