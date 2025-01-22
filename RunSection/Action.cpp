@@ -137,7 +137,7 @@ namespace RunSection
 			if(_currentStep == this->last + 1 && this->last != 0)
 			{
 				this->Reset();
-				//std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
+				//std::cout << "resetting" << std::endl; //current code assumes starting from 1
 				int gap = this->last - this->first; //this-last - this-first
 				this->first = _currentStep; //_currentStep
 				this->last = this->first + gap; //this->first + gap 
@@ -166,6 +166,10 @@ namespace RunSection
 		// No need to create an action object if it is never used
 		if (this->first > this->last && this->last != 0)
 			return false;
+
+		//sets this->first to 1 if set to 0
+		if(this->first == 0)
+			this->first = 1;
 
 		// Let derived classes validate their input
 		this->isValid = this->DoValidate();
