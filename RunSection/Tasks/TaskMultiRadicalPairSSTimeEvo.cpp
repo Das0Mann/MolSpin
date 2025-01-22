@@ -9,6 +9,8 @@
 /////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <omp.h>
+#include <iomanip>
+
 #include "TaskMultiRadicalPairSSTimeEvo.h"
 #include "Transition.h"
 #include "Interaction.h"
@@ -42,6 +44,9 @@ namespace RunSection
 		this->Log() << "Running method StaticSS-MultiRadicalPairSystem." << std::endl;
 
 		// If this is the first step, write first part of header to the data file
+		bool YieldOnly = false;
+		if (this->Properties()->Get("yieldonly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
+			YieldOnly = true;
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
 			this->WriteHeader(this->Data());
@@ -284,9 +289,7 @@ namespace RunSection
 			spinsystem++;
 			nextDimension += dimensions;
 		}
-		// Write results for initial state as well (i.e. at time 0)
-		this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
-		this->WriteStandardOutput(this->Data());
+		//this->WriteHeader(this->Data(), YieldOnly);
 		nextDimension = 0;
 
 		//modify this so it's the same that I've got in my code, using the vectors and superspace rather than matracies;
@@ -304,28 +307,33 @@ namespace RunSection
 		};
 
 		std::vector<std::pair<double, std::vector<TrajectoryData>>> trajectory;
-		trajectory.push_back({0.0, {}});
-		for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
+		if(!YieldOnly)
 		{
-			trajectory[0].second.push_back(TrajectoryData(i->first));
-			// Get the superspace result vector and convert it back to the native Hilbert space
-			arma::cx_mat rho_result;
-			arma::cx_vec rho_result_vec;
-			rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
-			//std::cout << rho_result_vec << std::endl;
-			if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+			// Write results for initial state as well (i.e. at time 0)
+			this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
+			trajectory.push_back({0.0, {}});
+			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
 			{
-				//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
-				return false;
+				trajectory[0].second.push_back(TrajectoryData(i->first));
+				// Get the superspace result vector and convert it back to the native Hilbert space
+				arma::cx_mat rho_result;
+				arma::cx_vec rho_result_vec;
+				rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
+				//std::cout << rho_result_vec << std::endl;
+				if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+				{
+					//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				// Get the results
+				this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[0].second[i - SubSystemSpins.begin()].StateTrace);
+
+				// Move on to next spin space
+				nextDimension += SpinSpace->second->SpaceDimensions();
 			}
-
-			// Get the results
-			this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[0].second[i - SubSystemSpins.begin()].StateTrace);
-
-			// Move on to next spin space
-			nextDimension += SpinSpace->second->SpaceDimensions();
+			this->Data() << std::endl;
 		}
-		this->Data() << std::endl;
 
 		//arma::umat locations = { {0,0,1,1},{0,1,0,1}};
 		//arma::cx_vec values = {1,2,3,4};
@@ -345,6 +353,60 @@ namespace RunSection
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
 		double InitialTimestep = this->timestep;
 		unsigned int n = 1;
+
+
+		if(YieldOnly)
+		{
+			CalcYieldOnly(L, rho0, rho0);
+			std::vector<double> yields;
+			for (auto state : SpinSpace->first->States())
+			{
+				yields.push_back(0);
+			}
+			for(int i = 0; i < SubSystems; i++)
+			{
+				for(auto e = SubSystemsTransitions.begin(); e != SubSystemsTransitions.end(); e++)
+				{	
+					if(e->type != 0)
+					{
+						continue;
+					}
+					if(e->source != SubSystemSpins[i].first)
+					{
+						continue;
+					}
+
+					int index = 0;
+					SpinAPI::state_ptr TransitionState;
+					for(auto state : SpinSpace->first->States())
+					{
+						if(e->transition->SourceState() != state)
+						{
+							index++;
+							continue;
+						}
+						TransitionState = state;
+						break;
+					}
+					double rate = e->transition->Rate();
+					arma::cx_mat P; 
+					//*(SpinSpace->second))->GetState(TransitionState,P);
+					SpinSpace->second->GetState(TransitionState,P);
+					StateYield(rate,yields[index],i,SubSystems,P,rho0);
+				}
+			}
+
+			this->Data() << this->RunSettings()->CurrentStep() << " ";
+			this->WriteStandardOutput(this->Data());
+			for(unsigned int i = 0; i < yields.size(); i++)
+			{
+				this->Data() << std::setprecision(16) << yields[i] << " ";
+			}
+			this->Data() << std::endl;
+			return true;
+		}
+
+
 		while(Currenttime <= this->totaltime)
 		{
 		//for (unsigned int n = 1; n <= steps; n++)
@@ -500,7 +562,38 @@ namespace RunSection
 		_yeild = simpson_integration(_time, ylist);
 	}
 
-	double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
+    void TaskMultiRadicalPairSSTimeEvo::StateYield(double rate, double& yield, int spinsystem, int spinsystems, arma::cx_mat& projection_operator, arma::cx_vec& StateDensityVec) 
+    {
+		arma::cx_vec p = projection_operator.as_row();
+		arma::cx_vec vec;
+		vec.zeros(StateDensityVec.size());
+		int TotalSize = vec.size();
+		int SpinSystemSize = TotalSize /spinsystems;
+		int index = 0;
+		for(unsigned int i = 0; i < spinsystems; i++)
+		{
+			if(i != spinsystem)
+			{
+				index = index + SpinSystemSize;
+				continue;
+			}
+			
+			for(int e = 0; e < SpinSystemSize; e++)
+			{
+				vec[e + index] = p[e];
+			}
+
+		}
+		
+		std::complex<double> TempYield = 0;
+		for(int i = 0; i < TotalSize; i++)
+		{
+			TempYield += (rate * vec[i] * StateDensityVec[i]);
+		}
+		yield += -1 * TempYield.real();
+    }
+
+    double TaskMultiRadicalPairSSTimeEvo::simpson_integration(std::vector<double> x_list, std::vector<double> y_list)
 	{
 		double area = 0;
 		for (unsigned int i = 0; i < x_list.size()-1; i++)
@@ -589,10 +682,11 @@ namespace RunSection
 	}
 
 	// Writes the header of the data file (but can also be passed to other streams)
-	void TaskMultiRadicalPairSSTimeEvo::WriteHeader(std::ostream &_stream)
+	void TaskMultiRadicalPairSSTimeEvo::WriteHeader(std::ostream &_stream, bool yield)
 	{
 		_stream << "Step ";
-		_stream << "Time(ns) ";
+		if(!yield)
+			_stream << "Time(ns) ";
 		this->WriteStandardOutputHeader(_stream);
 
 		// Get header for each spin system
@@ -710,37 +804,6 @@ namespace RunSection
 		return true;
 	}
     
- 	bool TaskMultiRadicalPairSSTimeEvo::RungeKutta4(arma::sp_cx_mat &L, arma::cx_vec &RhoNaught, arma::cx_vec &drhodt, double timestep)
-    {
-		//arma::cx_vec k0;
-		//arma::cx_vec k1;
-		//arma::cx_vec k2;
-		//arma::cx_vec k3;
-		//arma::cx_vec k4;
-		//{
-	//		k0.zeros(L.n_rows);
-	//		k1 = ComputeRhoDot(L, k0, RhoNaught);
-	//		k0.clear();
-		//}
-		//{
-	//		arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k1;
-	//		k2 = ComputeRhoDot(L, temp, RhoNaught);
-		//}
-		//{
-	//		arma::cx_vec temp = arma::cx_double(0.5 * timestep,0.0) * k2;
-	//		k3 = ComputeRhoDot(L, temp, RhoNaught);
-		//}
-		//{
-	//		arma::cx_vec temp = arma::cx_double(timestep,0.0) * k3;
-	//		k4 = ComputeRhoDot(L, temp, RhoNaught);
-		//}
-
-		//drhodt = RhoNaught + ((timestep/6.0) * (k1 + (arma::cx_double(2.0,0.0) * k2) + (arma::cx_double(2.0,0.0) * k3) + k4));
-
-        //return true;
-		return true;
-	}
-
     arma::cx_vec TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot(double t, arma::sp_cx_mat &L, arma::cx_vec &K, arma::cx_vec RhoNaught)
     {
         arma::cx_vec ReturnVec(L.n_rows);
@@ -749,4 +812,14 @@ namespace RunSection
 		return ReturnVec;
     }
 
+    bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
+    {
+		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
+		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught, arma::solve_opts::refine);
+		if(solution)
+			return true;
+
+		this->Log() << "Error: Failed to find solution" << std::endl;
+		std::cout << "Error: Failed to find solution" << std::endl;
+    }
 }
