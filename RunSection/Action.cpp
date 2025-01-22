@@ -169,7 +169,10 @@ namespace RunSection
 
 		//sets this->first to 1 if set to 0
 		if(this->first == 0)
+		{
 			this->first = 1;
+			std::cout << "INFO: " << this->Name() << " first step initially set to zero, this has been changed to 1" << std::endl;
+		}
 
 		// Let derived classes validate their input
 		this->isValid = this->DoValidate();
