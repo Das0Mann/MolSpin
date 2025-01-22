@@ -469,7 +469,7 @@ namespace SpinAPI
 				}
 				else
 				{
-					std::cout << D << E << std::endl;
+					//std::cout << D << E << std::endl;
 
 					// Calculate Zfs interaction
 

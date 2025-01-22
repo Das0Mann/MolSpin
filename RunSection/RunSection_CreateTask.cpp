@@ -51,6 +51,8 @@
 #include "TaskStaticHSStochYieldsSymmUncoupled.h"
 #include "TaskStaticHSDirectTimeEvoSymmUncoupled.h"
 #include "TaskStaticHSStochTimeEvoSymmUncoupled.h"
+#include "TaskStaticHSDirectSpectra.h"
+//#include "TaskDynamicHSDirectSpectra.h"
 
 #include "TaskActionSpectrumHistogram.h"
 #include "TaskActionSpectrumHistogramRPOnlyDec.h"
@@ -224,6 +226,12 @@ namespace RunSection
 		{
 			task = std::make_shared<TaskStaticHSStochTimeEvoSymmUncoupled>(_obj, *this);
 		}
+
+		// NEW (ADDED by Luca Gerhards): Spectroscopy task in Hilbert space
+		else if (_tasktype.compare("statichs-direct-spectra") == 0 || _tasktype.compare("StaticHS-Direct-Yields") == 0)
+        {
+            task = std::make_shared<TaskStaticHSDirectSpectra>(_obj, *this);
+        }
 
 		// NEW (ADDED by Luca Gerhards): Including Action Histrograms in the context of Hamish Hiscock
 		else if (_tasktype.compare("actionspectrumhistogram") == 0 || _tasktype.compare("ActionSpectrumHistogram") == 0)
