@@ -15,7 +15,7 @@ namespace RunSection
 	// Action Constructors and Destructor
 	// -----------------------------------------------------
 	Action::Action(const MSDParser::ObjectParser &_properties, const std::map<std::string, ActionScalar> &_scalars, const std::map<std::string, ActionVector> &_vectors)
-		: properties(std::make_shared<MSDParser::ObjectParser>(_properties)), scalars(_scalars), vectors(_vectors), isValid(false), value(1.0), first(0), last(0), period(1)
+		: properties(std::make_shared<MSDParser::ObjectParser>(_properties)), scalars(_scalars), vectors(_vectors), isValid(false), value(1.0), first(1), last(0), period(1)
 	{
 		this->properties->Get("value", this->value);
 		this->properties->Get("first", this->first);
@@ -126,7 +126,7 @@ namespace RunSection
 		// Only use the action if we are at a step between "first" and "last", and take steps with the given periodicity
 		if(!m_loop)
 		{
-			if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first - 1) % this->period) != 0)
+			if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first) % this->period) != 0)
 				return;
 
 			//std::cout << "updating" << std::endl;
@@ -138,13 +138,13 @@ namespace RunSection
 			{
 				this->Reset();
 				//std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
-				int gap = this->last - this->first; //this-last - this-first
+				int gap = this->last - (this->first - 1); //this-last - this-first //this-last - this-first
 				this->first = _currentStep; //_currentStep
-				this->last = this->first + gap; //this->first + gap 
+				this->last = this->first + gap - 1; //this->first + gap 
 				return;
 			}
 
-			if(((_currentStep - this->first -1) % this->period) != 0)
+			if(((_currentStep - this->first) % this->period) != 0)
 			{
 				return;
 			}
