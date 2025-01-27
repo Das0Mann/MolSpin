@@ -788,10 +788,11 @@ namespace SpinAPI
 				arma::cx_double factor = 1;
 				for(auto a = e->second.begin(); a != e->second.end(); a++)
 				{	
+					int jump = i->size();
 					auto f = this->Functions[FuncNum];
 					if(f->GetVariable()[0] == "") //checks whether it acutally has a function to apply 
 					{
-						FuncNum = FuncNum + i->size();
+						FuncNum = FuncNum + jump;
 						continue;
 					}
 
@@ -809,7 +810,7 @@ namespace SpinAPI
 						factor = this->InitialFactors[FuncNum] * f->operator()(v);
 					}
 					a->second = factor; //can't use a->second as this would have a culmative effect over time
-					FuncNum = FuncNum + i->size();
+					FuncNum = FuncNum + jump;
 				}
 			}
 		}

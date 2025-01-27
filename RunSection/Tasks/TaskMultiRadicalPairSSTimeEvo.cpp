@@ -357,7 +357,8 @@ namespace RunSection
 
 		if(YieldOnly)
 		{
-			CalcYieldOnly(L, rho0, rho0);
+			arma::cx_vec rho1(super_dimensions);
+			CalcYieldOnly(L, rho0, rho1);
 			std::vector<double> yields;
 			for (auto state : SpinSpace->first->States())
 			{
@@ -392,7 +393,7 @@ namespace RunSection
 					arma::cx_mat P; 
 					//*(SpinSpace->second))->GetState(TransitionState,P);
 					SpinSpace->second->GetState(TransitionState,P);
-					StateYield(rate,yields[index],i,SubSystems,P,rho0);
+					StateYield(rate,yields[index],i,SubSystems,P,rho1);
 				}
 			}
 
@@ -400,7 +401,7 @@ namespace RunSection
 			this->WriteStandardOutput(this->Data());
 			for(unsigned int i = 0; i < yields.size(); i++)
 			{
-				this->Data() << std::setprecision(16) << yields[i] << " ";
+				this->Data() << std::setprecision(8) << yields[i] << " ";
 			}
 			this->Data() << std::endl;
 			return true;
@@ -815,7 +816,7 @@ namespace RunSection
     bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
     {
 		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
-		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught, arma::solve_opts::refine);
+		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught);
 		if(solution)
 			return true;
 
