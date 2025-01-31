@@ -528,7 +528,11 @@ namespace SpinAPI
 	double SpinSystem::Temperature()
 	{
 		double temperature;
-		this->properties->Get("temperature", temperature);
+		if (!this->properties->Get("temperature", temperature))
+		{
+			std::cerr << "Warning: Failed to find temperature value. We set the temperature to 300 K." << std::endl;
+			temperature = 300;
+		}
 
 		return temperature;
 	}
