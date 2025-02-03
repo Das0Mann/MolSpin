@@ -263,12 +263,8 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				arma::cx_double FuncFactor = 1;
 				this->InitialFactors.push_back(factor);
-				if(Func == nullptr)
-				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
-				}
 				std::vector<std::string> vars = Func->GetVariable();
 				for(auto x : vars)
 				{
@@ -278,48 +274,22 @@ namespace SpinAPI
 						Variables[x] = var;
 					}
 				}
-				Functions.push_back(Func);
-				BracketDepth.push_back(depth);
-				FuncNum++;
-
-				// Reset buffer and prepare reading next mz value
-				buffer = "";
-				++currentSpinPair;
-			}
-			else if (inState && (*i) == '>')
-			{
-				// Make sure that we still have a spin left to assign an "mz" value to
-				if (currentSpinPair == newState.end())
-					return false;
-
-				// Attempt to parse the "mz" value
-				if (!ParseMz(buffer, mz))
-					return false;
-
-				// Check whether the mz value is allowed
-				if (mz > currentSpinPair->first->S() || mz < -currentSpinPair->first->S())
-				{
-					std::cout << "ERROR: Value " << mz << "/2 for mz is not allowed for a spin of " << currentSpinPair->first->S() << "/2!" << std::endl;
-					return false;
-				}
-
-				// Extend the StateSeries with a new pair of "mz" and "factor" values
-				// Add a function to the list of function, in the case where no function is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
-				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
 				}
-				std::vector<std::string> vars = Func->GetVariable();
-				for(auto x : vars)
-				{
-					double var;
-					if(properties->Get(x, var))
+				else
+				{					
+					std::vector<std::string> vars = Func->GetVariable();
+					std::vector<void*> v;
+					for (auto x : vars)
 					{
-						Variables[x] = var;
+						v.push_back((void*)(double*)&Variables[x]);
 					}
+					FuncFactor = this->InitialFactors[FuncNum] * Func->operator()(v);
+					//do something
 				}
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, FuncFactor));
 				//throw a error if var not found 
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
@@ -801,10 +771,11 @@ namespace SpinAPI
 					}
 					else
 					{
+						std::vector<std::string> vars = Func->GetVariable();
 						std::vector<void*> v;
-						for(unsigned int i = 0; i < Variables.size(); i++)
+						for (auto x : vars)
 						{
-							v.push_back((void*)(double*)&Variables[f->GetVariable()[i]]);
+							v.push_back((void*)(double*)&Variables[x]);
 						}
 						factor = this->InitialFactors[FuncNum] * f->operator()(v);
 					}

@@ -42,6 +42,14 @@ namespace RunSection
 		this->Log() << "Running method StaticSS-MultiRadicalPairSystem." << std::endl;
 
 		// If this is the first step, write first part of header to the data file
+		bool YieldOnly = false;
+		if (this->Properties()->Get("yieldonly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
+			YieldOnly = true;
+
+		bool SilentMode = false;
+		if (this->Properties()->Get("silentmode", SilentMode) || this->Properties()->Get("silent mode", SilentMode))
+			SilentMode = true;
+			
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
 			this->WriteHeader(this->Data());
@@ -304,28 +312,38 @@ namespace RunSection
 		};
 
 		std::vector<std::pair<double, std::vector<TrajectoryData>>> trajectory;
-		trajectory.push_back({0.0, {}});
-		for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
+		//L = L * this->timestep;
+		if(!YieldOnly)
 		{
-			trajectory[0].second.push_back(TrajectoryData(i->first));
-			// Get the superspace result vector and convert it back to the native Hilbert space
-			arma::cx_mat rho_result;
-			arma::cx_vec rho_result_vec;
-			rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
-			//std::cout << rho_result_vec << std::endl;
-			if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+			// Write results for initial state as well (i.e. at time 0)
+			if(!SilentMode)
+				this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
+			else
+				this->Data() << this->RunSettings()->CurrentStep();
+			trajectory.push_back({0.0, {}});
+			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
 			{
-				//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
-				return false;
+				trajectory[0].second.push_back(TrajectoryData(i->first));
+				// Get the superspace result vector and convert it back to the native Hilbert space
+				arma::cx_mat rho_result;
+				arma::cx_vec rho_result_vec;
+				rho_result_vec = rho0.rows(nextDimension, nextDimension + SpinSpace->second->SpaceDimensions() - 1);
+				//std::cout << rho_result_vec << std::endl;
+				if (!SpinSpace->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+				{
+					//this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
+
+				// Get the results
+				this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[0].second[i - SubSystemSpins.begin()].StateTrace);
+
+				// Move on to next spin space
+				nextDimension += SpinSpace->second->SpaceDimensions();
 			}
-
-			// Get the results
-			this->GatherResults(rho_result, *(SpinSpace->first), *(SpinSpace->second), trajectory[0].second[i - SubSystemSpins.begin()].StateTrace);
-
-			// Move on to next spin space
-			nextDimension += SpinSpace->second->SpaceDimensions();
+			if(!SilentMode)
+				this->Data() << std::endl;
 		}
-		this->Data() << std::endl;
 
 		//arma::umat locations = { {0,0,1,1},{0,1,0,1}};
 		//arma::cx_vec values = {1,2,3,4};
@@ -345,15 +363,20 @@ namespace RunSection
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
 		double InitialTimestep = this->timestep;
 		unsigned int n = 1;
+		//auto LInitial = L;
 		while(Currenttime <= this->totaltime)
 		{
 		//for (unsigned int n = 1; n <= steps; n++)
 		//{
 			// Write first part of the data output
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			Currenttime += this->timestep;
-			this->Data() << Currenttime << " ";
-			this->WriteStandardOutput(this->Data());
+			if(!SilentMode)
+			{
+				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				this->Data() << Currenttime << " ";
+				this->WriteStandardOutput(this->Data());
+			}
+			//L = LInitial * this->timestep;
 			trajectory.push_back({Currenttime, {}});
 			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
@@ -387,7 +410,8 @@ namespace RunSection
 			}
 
 			// Terminate the line in the data file after iteration through all spin systems
-			this->Data() << std::endl;
+			if(!SilentMode)
+				this->Data() << std::endl;
 			n++;
 		}
 
@@ -459,13 +483,16 @@ namespace RunSection
 		{
 			this->Data() << y << " ";
 		}
-		this->Data() << "\n" << std::endl;
+		if(!SilentMode)
+			this->Data() << "\n" << std::endl;
+		else
+			this->Data() << std::endl;
 
 		return true;
 	}
 
 	// Gathers and outputs the results from a given time-integrated density operator
-	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space, std::vector<std::complex<double>>& traj)
+	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space, std::vector<std::complex<double>>& traj, bool Silent)
 	{
 		// Loop through all states
 		arma::cx_mat P;
@@ -481,7 +508,8 @@ namespace RunSection
 			// Return the yield for this state - note that no reaction rates are included here.
 			//std::cout << P << std::endl;
 			double tr = std::abs(arma::trace(P * _rho));
-			this->Data() << tr << " ";
+			if(!Silent)
+				this->Data() << tr << " ";
 			//this->Data() << tr.real() << " ";
 			traj.push_back(tr);
 		}
