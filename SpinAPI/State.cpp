@@ -244,7 +244,62 @@ namespace SpinAPI
 				inState = true;
 				buffer = "";
 			}
-			else if (inState && (*i) == ',')
+			else if(inState && (*i) == ',')
+			{
+				// Make sure that we still have a spin left to assign an "mz" value to
+				if (currentSpinPair == newState.end())
+					return false;
+
+				// Attempt to parse the "mz" value
+				if (!ParseMz(buffer, mz))
+					return false;
+
+				// Check whether the mz value is allowed
+				if (mz > currentSpinPair->first->S() || mz < -currentSpinPair->first->S())
+				{
+					std::cout << "ERROR: Value " << mz << "/2 for mz is not allowed for a spin of " << currentSpinPair->first->S() << "/2!" << std::endl;
+					return false;
+				}
+
+				// Extend the StateSeries with a new pair of "mz" and "factor" values
+				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
+				arma::cx_double FuncFactor = 1;
+				this->InitialFactors.push_back(factor);
+				std::vector<std::string> vars = Func->GetVariable();
+				for(auto x : vars)
+				{
+					double var;
+					if(properties->Get(x, var))
+					{
+						Variables[x] = var;
+					}
+				}
+				if(Func == nullptr)
+				{
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
+				}
+				else
+				{					
+					std::vector<std::string> vars = Func->GetVariable();
+					std::vector<void*> v;
+					for (auto x : vars)
+					{
+						v.push_back((void*)(double*)&Variables[x]);
+					}
+					FuncFactor = this->InitialFactors[FuncNum] * Func->operator()(v);
+					//do something
+				}
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, FuncFactor));
+				//throw a error if var not found 
+				Functions.push_back(Func);
+				BracketDepth.push_back(depth);
+				FuncNum++;
+
+				// Reset buffer and prepare to read the next state
+				buffer = "";
+				++currentSpinPair;
+			}
+			else if (inState && (*i) == '>')
 			{
 				// Make sure that we still have a spin left to assign an "mz" value to
 				if (currentSpinPair == newState.end())
@@ -772,7 +827,7 @@ namespace SpinAPI
 					}
 					else
 					{
-						std::vector<std::string> vars = Func->GetVariable();
+						std::vector<std::string> vars = f->GetVariable();
 						std::vector<void*> v;
 						for (auto x : vars)
 						{

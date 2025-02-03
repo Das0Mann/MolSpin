@@ -52,7 +52,7 @@ namespace RunSection
 			SilentMode = true;
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
-			this->WriteHeader(this->Data());
+			this->WriteHeader(this->Data(), YieldOnly);
 		}
 
 		// Loop through all SpinSystems to obtain SpinSpace objects
@@ -315,7 +315,10 @@ namespace RunSection
 		{
 			// Write results for initial state as well (i.e. at time 0)
 			if(!SilentMode)
-				this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
+			{
+				this->Data() << this->RunSettings()->CurrentStep() << " 0 " << " ";
+				this->WriteStandardOutput(this->Data());
+			}
 			else
 				this->Data() << this->RunSettings()->CurrentStep();
       
