@@ -82,8 +82,9 @@ namespace SpinAPI
 		std::vector<double> tdThetas;
 		std::vector<double> tdPhis;
 		
-
-
+		double tdCorrTime;
+		double tdAmp;
+		bool tdDist;
 
 
 		// parameters for broadband noise generation
@@ -102,7 +103,9 @@ namespace SpinAPI
 
 		
 		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
-		void TensorTimeDependenceGaussianNoise(arma::mat, double, double, double, double, double, int);
+		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
+		void TensorTimeDependenceOUGeneral(arma::mat _m, double _time, double _timestep, double _stdev, double _corrtime, int _seed);
+		void TensorTimeDependenceOUSpring(arma::mat, double, double, double, double, double, int);
 
 
 		// ActionTarget methods

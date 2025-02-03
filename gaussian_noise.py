@@ -85,7 +85,7 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
 
     stdevs= []
 
-    for i in range(3):
+    for i in range(9):
         
         # i=2
         d_file = open(file, 'r')
@@ -111,14 +111,17 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
         ax.spines['left'].set_linewidth(linewidth)
         ax.spines['bottom'].set_linewidth(linewidth)
 
-        ax.plot(time*1e9, sig, alpha =0.8)
+        ax.plot(time*1e9, sig[0:N], alpha =0.8)
 
         ax.set_xlabel("Simulation Time / ns", fontsize=20)
         ax.set_ylabel("$T_{zz}(t)$ / mT", fontsize=20)
 
 fig, ax = plt.subplots(num=1)
 # plot_trj("Example/standard_examples/GaussianNoise.mst", 10, 5000, ax)
-plot_trj("Example/standard_examples/FieldBBNoise.mst", 10, 50, ax)
+# plot_trj("Example/standard_examples/FieldBBNoise.mst", 10, 50, ax)
+plot_trj("Example/standard_examples/OUGeneral.mst", 5000, 5000, ax)
+# plot_trj("Example/standard_examples/dist.txt", 4998, 4998, ax)
+# plot_trj("Example/standard_examples/Monochromatic.mst", 500, 500, ax)
 fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
   
 # fig, ax = plt.subplots(num=2)
@@ -143,6 +146,11 @@ fig, ax = plt.subplots(num=13)
 # plot_result("dat_gaussian_test.dat", ax, label="built-in")
 # plot_result("example_timeevolution.dat", ax)
 # plot_result("dat_BBfield_test.dat", ax, label="BB")
-plot_result("dat_BBfield_mst_test.dat", ax, label="BB mst")
+# plot_result("dat_BBfield_mst_test.dat", ax, label="BB mst")
+plot_result("dat_monochromatic_test.dat", ax, label="built-in")
+plot_result("dat_monochromatic_test_mst.dat", ax, label="built-in")
+# plot_result("dat_ougeneral_test.dat", ax, label="built-in")
+
+
 fig.savefig("gaussian_Pst.png", dpi=300)
 

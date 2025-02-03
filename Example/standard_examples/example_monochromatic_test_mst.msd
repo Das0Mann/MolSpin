@@ -3,6 +3,11 @@
 // See the user manual for more information
 // Find it at www.molspin.eu
 // -------------------------------------------------------------
+
+// SHOULD PRODUCE SAME OUTPUT AS EXAMPLE_OUGENERAL_TEST.MSD USING THE MST FILE THAT IT GENERATES (SET PRINT_TENSOR
+// TO TRUE IN THE TensorTimeDependenceOUGeneral FUNCTION TO TRUE)
+
+
 SpinSystem system1
 {
 	// -------------------------
@@ -50,24 +55,19 @@ SpinSystem system1
 
 	Interaction HF1
 	{
-	   
+	    
 		type = DoubleSpin;
-       prefactor=10;
+        prefactor=10;
 
-		tensor = matrix("-0.0003 -0.00004 -0.0001; -0.00004 -0.00055 0.00004; -0.0001 0.00004 -0.00038");
-		tensortype = gaussian;
-		temperature = 300;
-		damping =1e-12;
-		restoring = 0.05;
-		seed=12;
-		timestep=1;
+		tensor = trajectory("Monochromatic.mst");
+        trajectory = "Monochromatic.mst";
 
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
 		group2 = "nucleus1";
 	}
 
 
-
+	
 
 	// -------------------------
 	// Spin States
@@ -98,14 +98,16 @@ SpinSystem system1
 		spin(electron2) = |-1/2>;
 	}
 	
-	//State Identity
-	//{
-	//	// An empty state provides an identity projection
-	//}
+	State Identity
+	{
+		// An empty state provides an identity projection
+	}
 	
 	// -------------------------
 	// Transitions
 	// -------------------------
+	
+
 	// Spin-independent decay can be added using the Identity state defined above
 	Transition spinindependent_decay
 	{
@@ -123,18 +125,19 @@ SpinSystem system1
 }
 // -------------------------------------------------------------
 
+
 Run
 {
 	// Calculate quantum yields using Hilbert-space formalism - general method
 	Task Method1
 	{
 		type = "DynamicHS-Direct-TimeEvo";
-		logfile = "log_gaussian_test.log";
-		datafile = "dat_gaussian_test.dat";
+		logfile = "log_monochromatic_test_mst.log";
+		datafile = "dat_monochromatic_test_mst.dat";
 		totaltime=5000;
 		Timestep=1;
-		transitionyields = "false";
-		initialstate= "singlet";
+		initialstate="singlet";
+		transitionyields="false";
 	}
 
 }

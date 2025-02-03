@@ -1,13 +1,3 @@
-// -------------------------------------------------------------
-// MolSpin Input file example
-// See the user manual for more information
-// Find it at www.molspin.eu
-// -------------------------------------------------------------
-
-// SHOULD PRODUCE SAME OUTPUT AS EXAMPLE_GAUSSIAN_TEST.MSD USING THE MST FILE THAT IT GENERATES (SET PRINT_TENSOR
-// TO TRUE IN THE TensorTimeDependenceGaussianNoise FUNCTION TO TRUE)
-
-
 SpinSystem system1
 {
 	// -------------------------
@@ -48,26 +38,30 @@ SpinSystem system1
 	{
 		prefactor = 0.001;	// Change field units from T to mT/
 		type = Zeeman;
-		field = "0.0 0.035355339 0.035355339 ";	// 0.05 mT along the z-axis
+		field = "0.0 0.0 0.05 ";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
 	}
 
-
-	Interaction HF1
+    	Interaction HF1
 	{
-	    
+	   
 		type = DoubleSpin;
-        prefactor=10;
+        prefactor=1;
 
-		tensor = trajectory("GaussianNoise.mst");
-        trajectory = "GaussianNoise.mst";
+		tensor = matrix("0.000039 -0.000432 0.000175; -0.000432 -0.000279 0.000251; 0.000175 0.000251 0.000239");
+		tensortype = ougeneral;
+		correlationtime = 100;
+		stdev = 0.1;
+		modulatedistance=true;
+		seed=12;
+		timestep=1;
 
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
-		group2 = "nucleus1";
+		group2 = "electron2";
 	}
 
 
-	
+
 
 	// -------------------------
 	// Spin States
@@ -98,16 +92,14 @@ SpinSystem system1
 		spin(electron2) = |-1/2>;
 	}
 	
-	State Identity
-	{
-		// An empty state provides an identity projection
-	}
+	//State Identity
+	//{
+	//	// An empty state provides an identity projection
+	//}
 	
 	// -------------------------
 	// Transitions
 	// -------------------------
-	
-
 	// Spin-independent decay can be added using the Identity state defined above
 	Transition spinindependent_decay
 	{
@@ -121,23 +113,6 @@ SpinSystem system1
 	Properties properties
 	{
 		initialstate = Singlet;
-	}
-}
-// -------------------------------------------------------------
-
-
-Run
-{
-	// Calculate quantum yields using Hilbert-space formalism - general method
-	Task Method1
-	{
-		type = "DynamicHS-Direct-TimeEvo";
-		logfile = "log_gaussian_test_mst.log";
-		datafile = "dat_gaussian_test_mst.dat";
-		totaltime=5000;
-		Timestep=1;
-		initialstate="singlet";
-		transitionyields="false";
 	}
 
 }

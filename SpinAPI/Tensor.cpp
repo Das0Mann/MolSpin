@@ -673,6 +673,7 @@ namespace SpinAPI
 
 	void Tensor::SetTensor(arma::mat &m)
 	{	
+		std::cout << m << std::endl;
 		this->DiagonalizeMatrix(m); //diagonalise the matrix m - resets the anisotropic part
 		this->isotropic = arma::sum(this->anisotropic) / 3.0; //separate the anisotropic and isotropic parts
 		this->anisotropic -= this->isotropic;				 

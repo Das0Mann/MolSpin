@@ -52,7 +52,9 @@ namespace SpinAPI
 	{
 		Static,
 		SinMat, //example 
-		GaussianNoise,
+		Monochromatic,
+		OUGeneral,
+		OUSpring,
 		BroadbandNoise,
 		Trajectory,			   // Time-dependence is given by a trajectory
 	};

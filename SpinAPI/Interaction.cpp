@@ -24,7 +24,7 @@ namespace SpinAPI
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0) ,tdSeed(0),
-																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0), tdRandOrients(false), tdThetas{}, tdPhis{} //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
+																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0), tdRandOrients(false), tdThetas{}, tdPhis{}, tdCorrTime(0.0), tdAmp(0.0), tdDist(false)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -246,9 +246,29 @@ namespace SpinAPI
 					this->properties->Get("frequency", this->tdFrequency);
 					this->properties->Get("phase", this->tdPhase);
 				}
-				else if (str.compare("gaussian") == 0)
+
+				else if (str.compare("monochromatic") == 0)
 				{
-					this->tensorType = InteractionTensorType::GaussianNoise;
+					this->tensorType = InteractionTensorType::Monochromatic;
+					this->properties->Get("frequency", this->tdFrequency);
+					this->properties->Get("phase", this->tdPhase);
+					this->properties->Get("amplitude", this->tdAmp);
+					this->properties->Get("modulatedistance", this->tdDist);
+				}
+
+				else if (str.compare("ougeneral") == 0)
+				{
+					this->tensorType = InteractionTensorType::OUGeneral;
+					this->properties->Get("stdev", this->tdStdev);
+					this->properties->Get("correlationtime", this->tdCorrTime);
+					this->properties->Get("timestep", this->tdTimestep);
+					this->properties->Get("modulatedistance", this->tdDist);
+
+				}
+
+				else if (str.compare("ouspring") == 0)
+				{
+					this->tensorType = InteractionTensorType::OUSpring;
 					this->properties->Get("temperature", this->tdTemperature);
 					this->properties->Get("damping", this->tdDamping);
 					this->properties->Get("restoring", this->tdRestoring);
@@ -291,7 +311,7 @@ namespace SpinAPI
 																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), tdTemperature(_interaction.tdTemperature), 
 																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor),
 																tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), 
-																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
+																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis), tdCorrTime(_interaction.tdCorrTime), tdAmp(_interaction.tdAmp), tdDist(_interaction.tdDist)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
 																//,tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
 	{
 	}
@@ -350,6 +370,10 @@ namespace SpinAPI
 		this->tdRandOrients = _interaction.tdRandOrients;
 		this->tdThetas = _interaction.tdThetas;
 		this->tdPhis = _interaction.tdPhis;
+
+		this->tdCorrTime = _interaction.tdCorrTime;
+		this->tdAmp = _interaction.tdAmp;
+		this->tdDist = _interaction.tdDist;
 		
 		// this->tdFreqs = _interaction.tdFreqs;
 
@@ -546,9 +570,15 @@ namespace SpinAPI
 			TensorTimeDependenceSinMat(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
 		}
 		//TODO: COULD DEFINE RANDOM SEED HERE
+		if (this->tensorType == InteractionTensorType::Monochromatic){
+			TensorTimeDependenceMonochromatic(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase, this->tdAmp);
+		}
 		
-		else if (this->tensorType == InteractionTensorType::GaussianNoise){
-			TensorTimeDependenceGaussianNoise(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
+		else if (this->tensorType == InteractionTensorType::OUGeneral){
+			TensorTimeDependenceOUGeneral(this->tdInitialTensor, _time, this->tdTimestep, this->tdStdev,  this->tdCorrTime, this->tdSeed);
+		}
+		else if (this->tensorType == InteractionTensorType::OUSpring){
+			TensorTimeDependenceOUSpring(this->tdInitialTensor, _time, this->tdTimestep, this->tdTemperature, this->tdDamping, this->tdRestoring, this->tdSeed);
 		}
 		// else if(this->tensorType == InteractionTensorType::Broadband){
 		// 	TensorTimeDependenceBroadbandNoise(this->tdInitialTensor);
@@ -822,8 +852,7 @@ namespace SpinAPI
 		return scalars;
 	}
 
-	//TODO: THESE PROBABLY NEED TO BE NON MEMBER FUNCTIONS
-	//make a matrix with sinusoidal modulation on one tensor component
+	//TEST
 	void Interaction::TensorTimeDependenceSinMat(arma::mat _m, double _time, double _frequency, double _phase)
 	{
 		_m(0,0) = _m(0,0);
@@ -838,8 +867,198 @@ namespace SpinAPI
 
 		this->couplingTensor->SetTensor(_m);
 	}
-	//Applies Gaussian noise to each tensor component
-	void Interaction::TensorTimeDependenceGaussianNoise(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
+
+	//Applies monochromatic noise to each tensor component, scaled by the static value
+	void Interaction::TensorTimeDependenceMonochromatic(arma::mat _m, double _time, double _frequency, double _phase, double amp)
+	{	
+		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
+		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
+
+		bool print_tensor = true;
+
+		if(_time == 0){
+			//for development purposes
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/Monochromatic.mst");
+				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
+				file.close();
+			}
+		}
+
+		if(this->tdDist == true){
+
+			arma::vec eigvals = eig_sym(_m);
+			arma::uword max_index = arma::index_max(arma::abs(eigvals));
+			double avg_D_factor = eigvals(max_index);
+
+			double avg_dist = std::cbrt(-2.78/avg_D_factor); //cube root
+			double new_dist = avg_dist * (1 + amp * std::sin(_frequency * _time + _phase));
+
+			double new_D_factor = -2.78 / std::pow(new_dist, 3.0);
+
+			arma::mat tdTensor = _m * (new_D_factor/avg_D_factor);
+
+			A_xx = tdTensor(0,0); A_yy = tdTensor(1,1); A_zz = tdTensor(2,2);
+			A_xy = tdTensor(0,1); A_xz = tdTensor(0,2); A_yz = tdTensor(1,2);
+
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/Monochromatic.mst", std::ofstream::app);
+				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file.close();
+			}
+
+			this->couplingTensor->SetTensor(tdTensor);
+
+		}
+		else{
+			A_xx = A_xx * (1 + amp * std::sin(_frequency * _time + _phase));
+			A_yy = A_yy * (1 + amp * std::sin(_frequency * _time + _phase));
+			A_zz = A_zz * (1 + amp * std::sin(_frequency * _time + _phase));
+			A_xy = A_xy * (1 + amp * std::sin(_frequency * _time + _phase));
+			A_xz = A_xz * (1 + amp * std::sin(_frequency * _time + _phase));
+			A_yz = A_yz * (1 + amp * std::sin(_frequency * _time + _phase));
+			
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+									{A_xy, A_yy, A_yz},
+									{A_xz, A_yz, A_zz}};
+
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/Monochromatic.mst", std::ofstream::app);
+				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file.close();
+			}
+
+			this->couplingTensor->SetTensor(tdTensor);
+		}
+	}
+
+
+	//Applies noise generated using the Ornstein-Uhlenbeck process
+	void Interaction::TensorTimeDependenceOUGeneral(arma::mat _m, double _time, double _timestep, double _stdev, double _corrtime, int _seed)
+	{
+		arma::mat labTensor = this->couplingTensor->GetTensor();
+	
+		// Random Number Generator Preparation
+		std::random_device rand_dev;		// random number generator
+		std::mt19937 generator(rand_dev()); // random number generator - TODO: probably define this elsewhere?
+		// std::cout << "Seed number is " << _seed  << std::endl; //TODO: should we allow random seed to be parsed to interaction?
+		// generator.seed(_seed);
+		std::normal_distribution<double> dist(0.0, 1.0);
+
+		double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
+		double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
+
+		bool print_tensor = true; 
+
+		if(_time == 0){
+			
+			//for development purposes
+			if(print_tensor == true){
+				std::ofstream file;
+				file.open("Example/standard_examples/OUGeneral.mst");
+				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
+				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file.close();
+			}
+
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+								{A_xy, A_yy, A_yz},
+								{A_xz, A_yz, A_zz}};
+
+			this->couplingTensor->SetTensor(tdTensor);
+		}
+
+		else{
+
+			if(this->tdDist == true){//if we vary the distance of a dipolar tensor
+				
+				//calculate D factor and distance for mean matrix
+				arma::vec eigvals_mean = eig_sym(_m);
+				std::cout << eigvals_mean << std::endl;
+				arma::uword max_index_mean = arma::index_max(arma::abs(eigvals_mean));
+				double mean_D_factor = 3.0 * eigvals_mean(max_index_mean)/4.0;
+				double mean_dist = std::abs(std::cbrt(-0.00278/mean_D_factor)); //cube root
+
+				//calculate D factor and distance for the previous timestep
+				arma::vec eigvals = eig_sym(labTensor);
+				std::cout << eigvals << std::endl;
+				arma::uword max_index = arma::index_max(arma::abs(eigvals));
+				double old_D_factor = 3.0 * eigvals(max_index)/4.0;
+				double old_dist = std::abs(std::cbrt(-0.00278/old_D_factor)); //cube root
+
+				//generate noise for the new time
+				double noise_dist = dist(generator);
+				double new_dist = old_dist + _timestep * (mean_dist - old_dist) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_dist;
+				double new_D_factor = -0.00278 / std::pow(std::abs(new_dist), 3.0);
+
+				std::cout << _corrtime << std::endl;
+				std::cout << "old " << old_dist << std::endl;
+				std::cout << "new " << new_dist << std::endl;
+
+
+				arma::mat tdTensor = labTensor * (new_D_factor/old_D_factor);
+
+				A_xx = tdTensor(0,0); A_yy = tdTensor(1,1); A_zz = tdTensor(2,2);
+				A_xy = tdTensor(0,1); A_xz = tdTensor(0,2); A_yz = tdTensor(1,2);
+
+				if(print_tensor == true){
+					std::ofstream file;
+					file.open("Example/standard_examples/OUGeneral.mst", std::ofstream::app);
+					file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+					file.close();
+					
+					std::ofstream file_dist;
+					file_dist.open("Example/standard_examples/dist.txt", std::ofstream::app);
+					file_dist << _time << " " << new_dist << std::endl;
+					file_dist.close();
+				}
+
+				this->couplingTensor->SetTensor(tdTensor);
+
+			}
+
+			else{
+
+				double noise_xx = dist(generator);
+				double noise_yy = dist(generator);
+				double noise_zz = dist(generator);
+				double noise_xy = dist(generator);
+				double noise_xz = dist(generator);
+				double noise_yz = dist(generator);
+
+				A_xx = A_xx + _timestep * (_m(0,0) - A_xx) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_xx;
+				A_yy = A_yy + _timestep * (_m(1,1) - A_yy) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_yy;
+				A_zz = A_zz + _timestep * (_m(2,2) - A_zz) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_zz;
+				A_xy = A_xy + _timestep * (_m(0,1) - A_xy) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_xy;
+				A_xz = A_xz + _timestep * (_m(0,2) - A_xz) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_xz;
+				A_yz = A_yz + _timestep * (_m(1,2) - A_yz) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_yz;
+
+				std::cout << _timestep/_corrtime << std::endl; 
+
+
+				arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+										{A_xy, A_yy, A_yz},
+										{A_xz, A_yz, A_zz}};
+
+				if(print_tensor == true){
+					std::ofstream file;
+					file.open("Example/standard_examples/OUGeneral.mst", std::ofstream::app);
+					file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+					file.close();
+				}
+				//set the new diagonalised matrix within the Tensor object
+				this->couplingTensor->SetTensor(tdTensor);	
+
+			}
+					
+		}
+	}
+
+	//Applies noise generated using the Ornstein-Uhlenbeck process for a Hookean Spring
+	void Interaction::TensorTimeDependenceOUSpring(arma::mat _m, double _time, double _timestep, double _temperature, double _damping,  double _restoring, int _seed)
 	{	
 		//TODO: check behaviour is as expected
 		double k_B = 1.380649e-23;
@@ -873,7 +1092,7 @@ namespace SpinAPI
 			//for development purposes
 			if(print_tensor == true){
 				std::ofstream file;
-				file.open("Example/standard_examples/GaussianNoise.mst");
+				file.open("Example/standard_examples/OUSpring.mst");
 				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
 				file.close();
@@ -901,7 +1120,7 @@ namespace SpinAPI
 
 			if(print_tensor == true){
 				std::ofstream file;
-				file.open("Example/standard_examples/GaussianNoise.mst", std::ofstream::app);
+				file.open("Example/standard_examples/OUSpring.mst", std::ofstream::app);
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
 				file.close();
 			}
@@ -1006,53 +1225,50 @@ namespace SpinAPI
 				std::ofstream file;
 				file.open("Example/standard_examples/FieldBBNoise.mst");
 				file << "time "  << "field.x " << "field.y " << "field.z " <<  std::endl;
-				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
 				file.close();
 			}
 		}
+	
+		//if we include random orientations - each component of the time-dependent field has independent broadband noise. If not,
+		//a scalar function applies noise to the field terms defined in the interaction
+		if(randorients == true){
+
+			for(int comp=0; comp<comps; comp++){ 
+				double phase = phases.at(comp);
+				double freq = freqs.at(comp);
+				double amp = amps.at(comp);
+				double theta = thetas.at(comp);
+				double phi = phis.at(comp);
+
+				arma::vec orient = {std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)};
+
+				new_field += orient * amp/sqrt(comps) * std::sin(freq * time + phase);
+			}	
+		}
 		else{
-			//if we include random orientations - each component of the time-dependent field has independent broadband noise. If not,
-			//a scalar function applies noise to the field terms defined in the interaction
-			if(randorients == true){
-
-				new_field.s
-
+			double Asinwdt = 0.0;
+			//IF RANDORIENTS
+			if(comps > 0){
 				for(int comp=0; comp<comps; comp++){ 
 					double phase = phases.at(comp);
 					double freq = freqs.at(comp);
 					double amp = amps.at(comp);
-					double theta = thetas.at(comp);
-					double phi = phis.at(comp);
 
-					arma::vec orient = {std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)};
-
-					new_field += orient * amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
-				}	
+					Asinwdt += amp/sqrt(comps) * std::sin(freq * time + phase);
+				}
 			}
 			else{
-				double Asinwdt = 0.0;
-				//IF RANDORIENTS
-				if(comps > 0){
-					for(int comp=0; comp<comps; comp++){ 
-						double phase = phases.at(comp);
-						double freq = freqs.at(comp);
-						double amp = amps.at(comp);
-
-						Asinwdt += amp/sqrt(comps) * std::sin(2.0 * M_PI * freq * time + phase);
-					}
-				}
-				else{
-					Asinwdt = 1.0;
-				}	
-				new_field += Asinwdt * _v;
-			}
-			if(print_tensor == true){
-				std::ofstream file;
-				file.open("Example/standard_examples/FieldBBNoise.mst", std::ofstream::app);
-				file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
-				file.close();
-			}
+				Asinwdt = 1.0;
+			}	
+			new_field += Asinwdt * _v;
 		}
+		if(print_tensor == true){
+			std::ofstream file;
+			file.open("Example/standard_examples/FieldBBNoise.mst", std::ofstream::app);
+			file << time << " " << new_field(0) << " " << new_field(1) << " " << new_field(2) <<  std::endl;
+			file.close();
+		}
+		
 
 		return new_field;
 	}
