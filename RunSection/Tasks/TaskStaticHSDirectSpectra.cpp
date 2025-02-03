@@ -47,9 +47,6 @@ namespace RunSection
 		auto systems = this->SpinSystems();
 		for (auto i = systems.cbegin(); i != systems.cend(); i++) // iteration through all spin systems, in this case (or usually), this is one
 		{
-			// Gyromagnetic constant
-			double gamma_e = 176.0859644; // gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1
-
 			// Count the number of nuclear spins
 			int nucspins = 0;
 			std::vector<int> SpinNumbers;
@@ -76,12 +73,12 @@ namespace RunSection
 			}
 
 			// Check if there are any nuclear spins
-			if (nucspins == 0)
-			{
-				this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no nuclear spins were specified." << std::endl;
-				std::cout << "# ERROR: no nuclear spins were specified, skipping the system" << std::endl;
-				return 1;
-			}
+			//if (nucspins == 0)
+			//{
+			//	this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no nuclear spins were specified." << std::endl;
+			//	std::cout << "# ERROR: no nuclear spins were specified, skipping the system" << std::endl;
+			//	return 1;
+			//}
 
 			this->Log() << "\nStarting with SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 
@@ -192,12 +189,7 @@ namespace RunSection
 								{
 									if ((*j)->SourceState() == nullptr)
 										continue;
-									if (!space.GetState((*j)->SourceState(), P))
-									{
-										std::cout << "# ERROR: Could not obtain projection matrix!" << std::endl;
-										this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-										return 1;
-									}
+
 									if (num_transitions != 0)
 									{
 										rates.insert_rows(num_transitions, 1);
@@ -211,8 +203,6 @@ namespace RunSection
 					}
 				}
 			}
-
-			std::cout << projection_counter << std::endl;
 
 			arma::sp_cx_mat K;
 			K.zeros(4 * Z, 4 * Z);
@@ -296,6 +286,8 @@ namespace RunSection
 				temp(it) = 1;
 				B.col(it) = arma::kron(InitialStateVector, temp);
 			}
+
+			std::cout << (B * B.t())/Z << std::endl;
 
 			// Setting or calculating total time.
 			double totaltime;
@@ -408,7 +400,7 @@ namespace RunSection
 			{
 				arma::mat M; // used for variable estimation
 				// Include the recombination operator K
-				H = -H * arma::cx_double(0.0, 1.0) - K;
+				H = H - arma::cx_double(0.0, 1.0) * K;
 				for (int k = 0; k < num_steps; k++)
 				{
 					// Set the current time
@@ -424,7 +416,7 @@ namespace RunSection
 					}
 
 					// Update B using the Higham propagator
-					B = space.HighamProp(H, B, dt, precision, M);
+					B = space.HighamProp(H, B, -arma::cx_double(0.0, 1.0) * dt, precision, M);
 				}
 
 				for (int k = 0; k < num_steps; k++)
@@ -445,7 +437,7 @@ namespace RunSection
 			else if (propmethod == "krylov")
 			{
 				// Include the recombination operator K
-				H = -(H * arma::cx_double(0.0, 1.0) + K);
+				H =  H - arma::cx_double(0.0, 1.0) * K;
 
 				// #pragma omp parallel for
 				for (int itr = 0; itr < Z; itr++)
@@ -534,7 +526,7 @@ namespace RunSection
 				this->Log() << "Using robust matrix exponential propagator for time-independent Hamiltonian." << std::endl;
 
 				// Include the recombination operator K
-				arma::sp_cx_mat H_total = -(H * arma::cx_double(0.0, 1.0) + K);
+				arma::sp_cx_mat H_total = arma::cx_double(0.0, -1.0) * H - K;
 
 				// Precompute the matrix exponential for the entire time step
 				arma::cx_mat exp_H = arma::expmat(arma::cx_mat(H_total) * dt);
@@ -547,66 +539,60 @@ namespace RunSection
 
 					// Calculate the expected values for each transition operator
 					for (int idx = 0; idx < projection_counter; ++idx) {
-						double abs_trace = std::real(arma::trace(B.t() * Operators[idx] * B));
+						double abs_trace = std::real(arma::trace(B.t() * arma::cx_mat(Operators[idx]) * B));
 						double expected_value = abs_trace / Z;
 						ExptValues(k, idx) = expected_value;
 					}
 
-					// Update B using the precomputed exp(H*dt)
-					B = exp_H * B;
+					for (int i = 0; i < B.n_cols; ++i) {
+						B.col(i) = exp_H * B.col(i);
+					}
 				}
 
-				for (int k = 0; k < num_steps; ++k) {
+				// Read if the result should be integrated or not
+				bool integration = false;
+
+				if (!this->Properties()->Get("integration", integration))
+				{
+					this->Log() << "Failed to obtain an input for an Integtation." << std::endl;
+
+				}
+				
+				if(integration==true)
+				{
 					// Write results
 					this->Data() << this->RunSettings()->CurrentStep() << " ";
-					this->Data() << time(k) << " ";
 					this->WriteStandardOutput(this->Data());
+					
+					arma::mat ans = arma::trapz(time, ExptValues);
 
-					for (int idx = 0; idx < projection_counter; ++idx) {
-						this->Data() << " " << ExptValues(k, idx);
+					for (int it = 0; it < projection_counter; it++)
+					{
+						// Quantym yields without correction factor
+						ans(0, it) = ans(0, it) * rates(it);
+						
+						this->Data() << std::setprecision(6) << ans(0, it) << " ";
 					}
-					this->Data() << std::endl;
+				}
+				else
+				{
+					for (int k = 0; k < num_steps; ++k) {
+						// Write results
+						this->Data() << this->RunSettings()->CurrentStep() << " ";
+						this->Data() << time(k) << " ";
+						this->WriteStandardOutput(this->Data());
+
+						for (int idx = 0; idx < projection_counter; ++idx) {
+							this->Data() << " " << ExptValues(k, idx);
+						}
+						this->Data() << std::endl;
+					}
 				}
 			}
-
 
 			this->Log() << "\nDone with SpinSystem \"" << (*i)->Name() << "\"" << std::endl;
 		}
 		this->Data() << std::endl;
-		return true;
-	}
-
-	bool TaskStaticHSDirectSpectra::is_identity_matrix(arma::sp_cx_mat &matrix)
-	{
-		// Check if the matrix is square.
-		if (matrix.n_rows != matrix.n_cols)
-		{
-			return false;
-		}
-
-		double EPSILON = 1e-14;
-		// Check if all the diagonal elements of the matrix are equal to 1.0.
-		for (int i = 0; i < int(matrix.n_rows); i++)
-		{
-			if (std::abs(matrix(i, i).real() - 1.0) > EPSILON || std::abs(matrix(i, i).imag()) > EPSILON)
-			{
-				return false;
-			}
-		}
-
-		// Check if all the non-diagonal elements of the matrix are equal to 0.0.
-		for (int i = 0; i < int(matrix.n_rows); i++)
-		{
-			for (int j = 0; j < int(matrix.n_cols); j++)
-			{
-				if (i != j && (std::abs(matrix(i, j).real()) > EPSILON || std::abs(matrix(i, j).imag()) > EPSILON))
-				{
-					return false;
-				}
-			}
-		}
-
-		// If we reach here, then the matrix is an identity matrix.
 		return true;
 	}
 
