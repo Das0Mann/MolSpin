@@ -24,7 +24,7 @@ namespace SpinAPI
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
 																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
 																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTemperature(0.0), tdDamping(0.0), tdRestoring(0.0), tdTimestep(0) ,tdSeed(0),
-																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0), tdRandOrients(false), tdThetas{}, tdPhis{}, tdCorrTime(0.0), tdAmp(0.0), tdDist(false)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
+																		 tdInitialTensor(3,3, arma::fill::zeros),  tdStdev(0.0), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs{}, tdAmps{}, tdPhases{}, tdComponents(0), tdRandOrients(false), tdThetas{}, tdPhis{}, tdCorrTime(0.0), tdAmp(0.0), tdDist(false), tdPrintTensor(false)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -67,10 +67,6 @@ namespace SpinAPI
 
 				// A onespin interaction should have a field attached, either directly or through a trajectory
 				arma::vec inField = arma::zeros<arma::vec>(3);
-				// std::map<std::string, std::string> fields = this->properties->GetFields();
-				// for (const auto& pair : fields) {
-        		// 	std::cout << pair.first << ": " << pair.second << std::endl;
-    			// }
 
 				this->properties->Get("field", inField);
 
@@ -110,8 +106,6 @@ namespace SpinAPI
 			if (this->properties->Get("tensor", inTensor))
 			{
 				this->couplingTensor = std::make_shared<Tensor>(inTensor);
-				// std::cout << couplingTensor->anisotropic << std::endl;
-
 			}
 
 			this->properties->Get("prefactor", this->prefactor);
@@ -254,6 +248,7 @@ namespace SpinAPI
 					this->properties->Get("phase", this->tdPhase);
 					this->properties->Get("amplitude", this->tdAmp);
 					this->properties->Get("modulatedistance", this->tdDist);
+					this->properties->Get("printtensor", this->tdPrintTensor);
 				}
 
 				else if (str.compare("ougeneral") == 0)
@@ -263,7 +258,7 @@ namespace SpinAPI
 					this->properties->Get("correlationtime", this->tdCorrTime);
 					this->properties->Get("timestep", this->tdTimestep);
 					this->properties->Get("modulatedistance", this->tdDist);
-
+					this->properties->Get("printtensor", this->tdPrintTensor);
 				}
 
 				else if (str.compare("ouspring") == 0)
@@ -273,6 +268,8 @@ namespace SpinAPI
 					this->properties->Get("damping", this->tdDamping);
 					this->properties->Get("restoring", this->tdRestoring);
 					this->properties->Get("timestep", this->tdTimestep);
+					this->properties->Get("printtensor", this->tdPrintTensor);
+
 				}
 				// else if (str.compare("broadband") == 0)
 				// {
@@ -311,8 +308,9 @@ namespace SpinAPI
 																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), tdTemperature(_interaction.tdTemperature), 
 																tdDamping(_interaction.tdDamping), tdRestoring(_interaction.tdRestoring), tdTimestep(_interaction.tdTimestep), tdSeed(_interaction.tdSeed),tdInitialTensor(_interaction.tdInitialTensor),
 																tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), 
-																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis), tdCorrTime(_interaction.tdCorrTime), tdAmp(_interaction.tdAmp), tdDist(_interaction.tdDist)//, tdStdev(_interaction.tdStdev), tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdComponents(_interaction.tdComponents)
-																//,tdFreqs(_interaction.tdFreqs)//, tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases)
+																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis), tdCorrTime(_interaction.tdCorrTime), 
+																tdAmp(_interaction.tdAmp), tdDist(_interaction.tdDist), tdPrintTensor(_interaction.tdPrintTensor)
+															
 	{
 	}
 
@@ -374,9 +372,8 @@ namespace SpinAPI
 		this->tdCorrTime = _interaction.tdCorrTime;
 		this->tdAmp = _interaction.tdAmp;
 		this->tdDist = _interaction.tdDist;
+		this->tdPrintTensor = _interaction.tdPrintTensor;
 		
-		// this->tdFreqs = _interaction.tdFreqs;
-
 		return (*this);
 	}
 	// -----------------------------------------------------
@@ -874,11 +871,9 @@ namespace SpinAPI
 		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
 		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
 
-		bool print_tensor = true;
-
 		if(_time == 0){
 			//for development purposes
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/Monochromatic.mst");
 				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
@@ -892,17 +887,17 @@ namespace SpinAPI
 			arma::uword max_index = arma::index_max(arma::abs(eigvals));
 			double avg_D_factor = eigvals(max_index);
 
-			double avg_dist = std::cbrt(-2.78/avg_D_factor); //cube root
+			double avg_dist = std::cbrt(-0.00278/avg_D_factor); //cube root
 			double new_dist = avg_dist * (1 + amp * std::sin(_frequency * _time + _phase));
 
-			double new_D_factor = -2.78 / std::pow(new_dist, 3.0);
+			double new_D_factor = -0.00278 / std::pow(new_dist, 3.0);
 
 			arma::mat tdTensor = _m * (new_D_factor/avg_D_factor);
 
 			A_xx = tdTensor(0,0); A_yy = tdTensor(1,1); A_zz = tdTensor(2,2);
 			A_xy = tdTensor(0,1); A_xz = tdTensor(0,2); A_yz = tdTensor(1,2);
 
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/Monochromatic.mst", std::ofstream::app);
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
@@ -924,7 +919,7 @@ namespace SpinAPI
 									{A_xy, A_yy, A_yz},
 									{A_xz, A_yz, A_zz}};
 
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/Monochromatic.mst", std::ofstream::app);
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
@@ -951,12 +946,9 @@ namespace SpinAPI
 		double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
 		double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
 
-		bool print_tensor = true; 
-
 		if(_time == 0){
 			
-			//for development purposes
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/OUGeneral.mst");
 				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
@@ -977,14 +969,12 @@ namespace SpinAPI
 				
 				//calculate D factor and distance for mean matrix
 				arma::vec eigvals_mean = eig_sym(_m);
-				std::cout << eigvals_mean << std::endl;
 				arma::uword max_index_mean = arma::index_max(arma::abs(eigvals_mean));
 				double mean_D_factor = 3.0 * eigvals_mean(max_index_mean)/4.0;
 				double mean_dist = std::abs(std::cbrt(-0.00278/mean_D_factor)); //cube root
 
 				//calculate D factor and distance for the previous timestep
 				arma::vec eigvals = eig_sym(labTensor);
-				std::cout << eigvals << std::endl;
 				arma::uword max_index = arma::index_max(arma::abs(eigvals));
 				double old_D_factor = 3.0 * eigvals(max_index)/4.0;
 				double old_dist = std::abs(std::cbrt(-0.00278/old_D_factor)); //cube root
@@ -994,17 +984,12 @@ namespace SpinAPI
 				double new_dist = old_dist + _timestep * (mean_dist - old_dist) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_dist;
 				double new_D_factor = -0.00278 / std::pow(std::abs(new_dist), 3.0);
 
-				std::cout << _corrtime << std::endl;
-				std::cout << "old " << old_dist << std::endl;
-				std::cout << "new " << new_dist << std::endl;
-
-
 				arma::mat tdTensor = labTensor * (new_D_factor/old_D_factor);
 
 				A_xx = tdTensor(0,0); A_yy = tdTensor(1,1); A_zz = tdTensor(2,2);
 				A_xy = tdTensor(0,1); A_xz = tdTensor(0,2); A_yz = tdTensor(1,2);
 
-				if(print_tensor == true){
+				if(this->tdPrintTensor == true){
 					std::ofstream file;
 					file.open("Example/standard_examples/OUGeneral.mst", std::ofstream::app);
 					file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
@@ -1036,14 +1021,11 @@ namespace SpinAPI
 				A_xz = A_xz + _timestep * (_m(0,2) - A_xz) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_xz;
 				A_yz = A_yz + _timestep * (_m(1,2) - A_yz) /_corrtime + _stdev * std::sqrt(2.0 * _timestep/_corrtime) * noise_yz;
 
-				std::cout << _timestep/_corrtime << std::endl; 
-
-
 				arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
 										{A_xy, A_yy, A_yz},
 										{A_xz, A_yz, A_zz}};
 
-				if(print_tensor == true){
+				if(this->tdPrintTensor == true){
 					std::ofstream file;
 					file.open("Example/standard_examples/OUGeneral.mst", std::ofstream::app);
 					file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
@@ -1084,13 +1066,11 @@ namespace SpinAPI
 		double noise_xz = dist(generator);
 		double noise_yz = dist(generator);
 
-		bool print_tensor = true;
-
 		//this makes sure the matrix at time=0 is that input in the msd file 
 		if(_time == 0){
 			
 			//for development purposes
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/OUSpring.mst");
 				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
@@ -1118,7 +1098,7 @@ namespace SpinAPI
 								{A_xy, A_yy, A_yz},
 								{A_xz, A_yz, A_zz}};
 
-			if(print_tensor == true){
+			if(this->tdPrintTensor == true){
 				std::ofstream file;
 				file.open("Example/standard_examples/OUSpring.mst", std::ofstream::app);
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;

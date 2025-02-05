@@ -1,8 +1,3 @@
-// -------------------------------------------------------------
-// MolSpin Input file example
-// See the user manual for more information
-// Find it at www.molspin.eu
-// -------------------------------------------------------------
 SpinSystem system1
 {
 	// -------------------------
@@ -21,16 +16,16 @@ SpinSystem system1
 	// -------------------------
 	// Nuclear spins
 	// -------------------------
-	Spin nucleus1
+	Spin FN5
 	{
-		spin = 1/2;
+		spin = 1;
 		type = nucleus;
 		tensor = isotropic(1);	// Here we don't want a g-factor of 2
 	}
 	
-	Spin nucleus2
+	Spin WNE1   
 	{
-		spin = 1/2;
+		spin = 1;
 		type = nucleus;
 		tensor = isotropic(1);
 	}
@@ -43,31 +38,71 @@ SpinSystem system1
 	{
 		prefactor = 0.001;	// Change field units from T to mT/
 		type = Zeeman;
-		field = "0.0 0.035355339 0.035355339 ";	// 0.05 mT along the z-axis
+		field = "0.0 0.0 0.05 ";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
 	}
 
 
-	Interaction HF1
+
+	Interaction Dipolar
 	{
 	   
 		type = DoubleSpin;
-        prefactor=1;
+        prefactor=0.0020023;
 
-		tensor = matrix("0.000039 -0.000432 0.000175; -0.000432 -0.000279 0.000251; 0.000175 0.000251 0.000239");
+		tensor = matrix("0.039 -0.432 0.175; -0.432 -0.279 0.251; 0.175 0.251 0.239");
 		tensortype = ougeneral;
 		correlationtime = 100;
 		stdev = 0.01;
 		modulatedistance=true;
-		seed=12;
 		timestep=1;
 
-		group1 = "electron1";	// Spins in group1 interact with spins in group2
-		group2 = "electron2";
+        printtensor=false;
+
+		group1 = electron1;	// Spins in group1 interact with spins in group2
+		group2 = electron2;
+	}
+    
+    Interaction HFI_FN5
+	{
+	  
+		type = DoubleSpin;
+        prefactor=0.001;
+
+		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
+		tensortype = ougeneral;
+		correlationtime = 10;
+		modulatedistance=false;
+
+		stdev = 0.01;
+
+        printtensor=false;
+	
+		timestep=1;
+		group1 = electron1;
+		group2 = FN5;
 	}
 
 
+    Interaction HFI_WNE1
+	{
+	  
+		type = DoubleSpin;
+        prefactor=0.001;
 
+		tensor = matrix("-0.053 0.059 -0.046; 0.059  0.564 -0.565; -0.046 -0.565 0.453");
+		tensortype = ougeneral;
+		correlationtime = 10;
+		modulatedistance=false;
+
+		stdev = 0.01;
+
+        printtensor=true;
+
+		timestep=1;
+		group1 = electron1;
+		group2 = WNE1;
+	}
 
 	// -------------------------
 	// Spin States
@@ -107,11 +142,10 @@ SpinSystem system1
 	// Transitions
 	// -------------------------
 	// Spin-independent decay can be added using the Identity state defined above
-	Transition spinindependent_decay
-	{
-		rate = 0;
-		source = Singlet;
-	}
+	Transition Product1{type = sink;source = Singlet;rate = 0.001;}
+    Transition Product2{type = sink;source = T0;rate = 0.001;}
+    Transition Product3{type = sink;source = Tp;rate = 0.001;}
+    Transition Product4{type = sink;source = Tm;rate = 0.001;}
 	
 	// -------------------------
 	// Spin system properties
@@ -120,17 +154,27 @@ SpinSystem system1
 	{
 		initialstate = Singlet;
 	}
+
 }
-// -------------------------------------------------------------
+
+Settings{Settings general {steps = 2; notifications = details;}
+        Action scan{
+                type = rotatevector;
+                vector = system1.zeeman1.field;
+                axis = "0 1 0";
+                value = 180;
+        }
+}
+
 
 Run
 {
 	// Calculate quantum yields using Hilbert-space formalism - general method
 	Task Method1
 	{
-		type = "DynamicHS-Direct-TimeEvo";
-		logfile = "log_ougeneral_test.log";
-		datafile = "dat_ougeneral_test.dat";
+		type = "DynamicHS-Direct-Yields";
+		logfile = "log_tdOU_test.log";
+		datafile = "dat_tdOU_test.dat";
 		totaltime=5000;
 		Timestep=1;
 		transitionyields = "false";

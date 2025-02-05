@@ -280,7 +280,6 @@ namespace SpinAPI
 			// Get the field at the current time or trajectory step
 			arma::vec field;
 			field = _interaction->Field();
-			// std::cout << field << std::endl;
 
 			// Obtain the list of spins interacting with the field, and define matrices to hold the magnetic moment operators
 			auto spinlist = _interaction->Group1();
@@ -529,7 +528,6 @@ namespace SpinAPI
 			return true;
 		}
 
-		// std::cout << "HERE" << std::endl;
 		// Get the first interaction contribution
 		auto i = this->interactions.cbegin();
 		arma::cx_mat tmp;

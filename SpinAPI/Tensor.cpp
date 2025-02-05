@@ -178,9 +178,6 @@ namespace SpinAPI
 		this->axis1 = principalAxes.col(0);
 		this->axis2 = principalAxes.col(1);
 		this->axis3 = principalAxes.col(2);
-
-		// std::cout << this->axis1 << std::endl;
-
 	}
 
 	void Tensor::SeparateIsotropy()
@@ -294,7 +291,6 @@ namespace SpinAPI
 				}
 				else if (keyword.compare("matrix") == 0)
 				{
-					// std::cout << value << std::endl;
 					arma::mat tmp(value);
 					//this->initialMatr = tmp;
 					arma::vec aniso(this->anisotropic); // Save the current value for the anisotropic part (can also contain isotropic contributions at this point)
@@ -437,10 +433,6 @@ namespace SpinAPI
 		axes.col(1) = this->axis2;
 		axes.col(2) = this->axis3;
 
-		// arma::mat anis  = axes * arma::diagmat(this->anisotropic) * axes.t() + arma::eye(size(axes)) * this->isotropic;
-		// std::cout << anis << std::endl;
-
-		// std::cout << this->isotropic << std::endl;
 		// TODO: Consider whether arma::inv(axes) should be used instead of axes.t() if "axes" are not orthogonal
 		return (axes * arma::diagmat(this->anisotropic) * axes.t()) + arma::eye(size(axes)) * this->isotropic;
 	}
@@ -673,7 +665,6 @@ namespace SpinAPI
 
 	void Tensor::SetTensor(arma::mat &m)
 	{	
-		std::cout << m << std::endl;
 		this->DiagonalizeMatrix(m); //diagonalise the matrix m - resets the anisotropic part
 		this->isotropic = arma::sum(this->anisotropic) / 3.0; //separate the anisotropic and isotropic parts
 		this->anisotropic -= this->isotropic;				 

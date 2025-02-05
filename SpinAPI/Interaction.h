@@ -85,6 +85,7 @@ namespace SpinAPI
 		double tdCorrTime;
 		double tdAmp;
 		bool tdDist;
+		bool tdPrintTensor;
 
 
 		// parameters for broadband noise generation

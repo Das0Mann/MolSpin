@@ -119,9 +119,9 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
 fig, ax = plt.subplots(num=1)
 # plot_trj("Example/standard_examples/GaussianNoise.mst", 10, 5000, ax)
 # plot_trj("Example/standard_examples/FieldBBNoise.mst", 10, 50, ax)
-plot_trj("Example/standard_examples/OUGeneral.mst", 5000, 5000, ax)
+# plot_trj("Example/standard_examples/OUGeneral.mst", 5000, 5000, ax)
 # plot_trj("Example/standard_examples/dist.txt", 4998, 4998, ax)
-# plot_trj("Example/standard_examples/Monochromatic.mst", 500, 500, ax)
+plot_trj("Example/standard_examples/OUGeneral.mst", 500, 500, ax)
 fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
   
 # fig, ax = plt.subplots(num=2)
@@ -147,8 +147,9 @@ fig, ax = plt.subplots(num=13)
 # plot_result("example_timeevolution.dat", ax)
 # plot_result("dat_BBfield_test.dat", ax, label="BB")
 # plot_result("dat_BBfield_mst_test.dat", ax, label="BB mst")
-plot_result("dat_monochromatic_test.dat", ax, label="built-in")
-plot_result("dat_monochromatic_test_mst.dat", ax, label="built-in")
+# plot_result("dat_monochromatic_test.dat", ax, label="built-in")
+# plot_result("dat_monochromatic_test_mst.dat", ax, label="built-in")
+plot_result("dat_tdMono_test.dat", ax, label="built-in")
 # plot_result("dat_ougeneral_test.dat", ax, label="built-in")
 
 
