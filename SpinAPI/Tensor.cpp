@@ -167,7 +167,7 @@ namespace SpinAPI
 
 		// Get a symmetric version of the matrix, i.e. the same matrix if is it symmetric
 		arma::mat symmetrized_matrix = (_matrix + _matrix.t()) / 2.0;
-
+//
 		// Check whether the matrix was symmetric (i.e. _matrix - symmetrized_matrix == 0)
 		if (abs(_matrix - symmetrized_matrix).max() > 1e-10)
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;

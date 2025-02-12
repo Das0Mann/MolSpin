@@ -68,7 +68,6 @@ namespace SpinAPI
 		double tdDamping;
 		double tdRestoring;
 		double tdTimestep;
-		int tdSeed;
 		arma::mat tdInitialTensor;
 
 		double tdStdev;
@@ -86,6 +85,11 @@ namespace SpinAPI
 		double tdAmp;
 		bool tdDist;
 		bool tdPrintTensor;
+		bool tdPrintField;
+
+		int tdSeed;
+		bool tdAutoseed;
+		std::mt19937 tdGenerator;
 
 
 		// parameters for broadband noise generation
@@ -105,8 +109,9 @@ namespace SpinAPI
 		
 		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
 		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
-		void TensorTimeDependenceOUGeneral(arma::mat _m, double _time, double _timestep, double _stdev, double _corrtime, int _seed);
-		void TensorTimeDependenceOUSpring(arma::mat, double, double, double, double, double, int);
+		void TensorTimeDependenceBroadband(arma::mat);
+		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double, double);
+		// void TensorTimeDependenceOUSpring(arma::mat, double, double, double, double, double);
 
 
 		// ActionTarget methods
@@ -185,8 +190,8 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::vec FieldTimeDependenceBroadbandNoise(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>,std::vector<double>,std::vector<double>,bool, int);
-
+	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>,std::vector<double>,std::vector<double>,bool, int);
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, const arma::vec &, double , double , double , double , std::mt19937);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);
