@@ -76,16 +76,22 @@ generate_reconstructed_hyperfine_fluctuations(
     output_file="reconstructed_hyperfine.mst"
 )
 
-def plot_trj(file, T, N, ax, pref=1, color="black"):
+def plot_trj(file, T, N, ax, terms, pref=1, color="black"):
 
     dt = T/N
     print(dt)
     time = np.linspace(0, T, N)
-    labels = ["mat.xx", "mat.xy", "mat.xz", "mat.yx", "mat.yy", "mat.yz", "mat.zx", "mat.zy", "mat.zz"]
+
+    labels = ["1","2","3","4","5", "6","7","8","9"]
+
+    if terms ==3:
+        labels = ["field.x", "field.y", "field.z"]
+    elif terms == 9: 
+        labels = ["mat.xx", "mat.xy", "mat.xz", "mat.yx", "mat.yy", "mat.yz", "mat.zx", "mat.zy", "mat.zz"]
 
     stdevs= []
 
-    for i in range(9):
+    for i in range(terms):
         
         # i=2
         d_file = open(file, 'r')
@@ -111,7 +117,8 @@ def plot_trj(file, T, N, ax, pref=1, color="black"):
         ax.spines['left'].set_linewidth(linewidth)
         ax.spines['bottom'].set_linewidth(linewidth)
 
-        ax.plot(time*1e9, sig[0:N], alpha =0.8)
+        ax.plot(time*1e9, sig[0:N], alpha =0.8, label=labels[i])
+        ax.legend()
 
         ax.set_xlabel("Simulation Time / ns", fontsize=20)
         ax.set_ylabel("$T_{zz}(t)$ / mT", fontsize=20)
@@ -121,7 +128,9 @@ fig, ax = plt.subplots(num=1)
 # plot_trj("Example/standard_examples/FieldBBNoise.mst", 10, 50, ax)
 # plot_trj("Example/standard_examples/OUGeneral.mst", 5000, 5000, ax)
 # plot_trj("Example/standard_examples/dist.txt", 4998, 4998, ax)
-plot_trj("Example/standard_examples/OUGeneral.mst", 500, 500, ax)
+# plot_trj("Example/standard_examples/OUGeneral.mst", 500, 500, ax)
+# plot_trj("zeeman_bb2.mst", 70, 700, ax, 3 )
+plot_trj("hf1.mst", 5000, 5000, ax, terms=9)
 fig.savefig("GaussianTensor.png", dpi=300, bbox_inches="tight")
   
 # fig, ax = plt.subplots(num=2)
@@ -149,7 +158,7 @@ fig, ax = plt.subplots(num=13)
 # plot_result("dat_BBfield_mst_test.dat", ax, label="BB mst")
 # plot_result("dat_monochromatic_test.dat", ax, label="built-in")
 # plot_result("dat_monochromatic_test_mst.dat", ax, label="built-in")
-plot_result("dat_tdMono_test.dat", ax, label="built-in")
+# plot_result("dat_tdMono_test.dat", ax, label="built-in")
 # plot_result("dat_ougeneral_test.dat", ax, label="built-in")
 
 

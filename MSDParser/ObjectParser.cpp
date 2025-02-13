@@ -89,6 +89,7 @@ namespace MSDParser
 	// Attempt to find a keyword matching the given name
 	bool ObjectParser::Get(const std::string &_str, std::string &_out) const
 	{		
+
 		auto i = this->fields.find(_str);
 
 		if (i != this->fields.end()){

@@ -22,20 +22,39 @@ SpinSystem system1
         Interaction Zeeman1 { type = zeeman;field = "0.000 0.000 0.00049";spins = E1;}
         Interaction Zeeman2 { type = zeeman;field = "0.000 0.000 0.00049";spins = E2;}
 
-        // Broadband field
-        Interaction zeeman_BB
+        ////Broadband field
+        Interaction zeeman_BB2
         {
-                type = Zeeman;
-                field = "0.0 0.0 0.000000421875";
+               type = Zeeman;
+               field = "0.0 0.0 0.000000421875";
                 spins = E1, E2;
 
                 fieldtype="broadband";
-                minfreq=0.00000314;
-                maxfreq=0.6283;
+                minfreq=3.14;
+                maxfreq=6.283;
                 stdev=0.5;
+                autoseed=true;
+                //seed=6;
+                printfield=true;
                 components=10000;
-                randomorientations = false;
-        }
+                randomorientations = true;
+       }
+
+//       Interaction zeeman_OU
+//     {
+ //           type = Zeeman;
+//                prefactor=1e3;
+//                field = " 0.05 0.01 0.05 ";
+//                spins = E1, E2;
+//
+//                fieldtype="ougeneral";
+//                correlationtime=10;
+//                timestep=0.1;
+//                stdev=0.1;
+//                printfield=true;
+//                seed=2;
+//                //autoseed=true;
+//       }
 
         // -------------------------
         // Hyperfine interactions
@@ -89,8 +108,7 @@ Run
                 logfile = "smaller_system_BB_static.log";
                 datafile = "smaller_system_BB_static.dat";
                 initialstate = Singlet;
-                seed = 1;
-                totaltime = 7000;
+                totaltime = 70;
                 timestep=0.1;
                 propagationmethod = "autoexpm";
                 precision = "double";

@@ -62,7 +62,7 @@ namespace SpinAPI
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
 
 
-		// Special data members for time-dependent tensors
+		// Special data members for time-dependent tensors - PB added
 		InteractionTensorType tensorType;	
 		double tdTemperature;
 		double tdDamping;
@@ -73,13 +73,13 @@ namespace SpinAPI
 		double tdStdev;
 		double tdMinFreq;
 		double tdMaxFreq;
-		std::vector<double> tdFreqs;
-		std::vector<double> tdAmps;
-		std::vector<double> tdPhases;
+		arma::mat tdFreqs;
+		arma::mat tdAmps;
+		arma::mat tdPhases;
 		int tdComponents;
 		bool tdRandOrients;
-		std::vector<double> tdThetas;
-		std::vector<double> tdPhis;
+		arma::mat tdThetas;
+		arma::mat tdPhis;
 		
 		double tdCorrTime;
 		double tdAmp;
@@ -92,15 +92,6 @@ namespace SpinAPI
 		std::mt19937 tdGenerator;
 
 
-		// parameters for broadband noise generation
-		
-		// std::vector<double> tdFreqs;
-		// std::vector<double> tdAmps;
-		// std::vector<double> tdPhases;
-
-		// arma::mat tdBBFreqs;
-		// arma::mat tdBBAmps;
-		// arma::mat tdBBPhases;
 
 		// Private methods to create ActionTargets
 		std::vector<RunSection::NamedActionVector> CreateActionVectors(const std::string &);
@@ -109,7 +100,7 @@ namespace SpinAPI
 		
 		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
 		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
-		void TensorTimeDependenceBroadband(arma::mat);
+		void TensorTimeDependenceBroadband(arma::mat, double, arma::mat, arma::mat, arma::mat, int);
 		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double, double);
 		// void TensorTimeDependenceOUSpring(arma::mat, double, double, double, double, double);
 
@@ -190,8 +181,8 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, std::vector<double>, std::vector<double>, std::vector<double>,std::vector<double>,std::vector<double>,bool, int);
-	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, const arma::vec &, double , double , double , double , std::mt19937);
+	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, arma::mat, arma::mat, arma::mat,arma::mat,arma::mat,bool, int);
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double , double , double , double , std::mt19937 &);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

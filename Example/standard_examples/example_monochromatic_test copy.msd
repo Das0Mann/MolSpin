@@ -59,6 +59,8 @@ SpinSystem system1
 		frequency = 0.1;
 		amplitude = 0.5;
 		phase = 0.0;
+
+		printtensor=true;
 	
 		group1 = "electron1";	// Spins in group1 interact with spins in group2
 		group2 = "nucleus1";
