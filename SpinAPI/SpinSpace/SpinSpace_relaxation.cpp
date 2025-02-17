@@ -65,6 +65,69 @@ namespace SpinAPI
 			// Set the resulting operator
 			_out = P;
 		}
+		else if (_operator->Type() == OperatorType::RelaxationLindbladDoubleSpin)
+		{
+			auto spins = _operator->Spins();
+
+			// Vectors to hold the spin operators for each spin
+			std::vector<arma::cx_mat> Sp_operators;
+			std::vector<arma::cx_mat> Sm_operators;
+
+			for (auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if (!this->Contains(*i))
+					continue;
+
+				// Temporary matrices to hold the operators
+				arma::cx_mat Sptmp, Smtmp;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sp()), (*i), Sptmp);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sm()), (*i), Smtmp);
+
+				// Store the operators in the vectors
+				Sp_operators.push_back(Sptmp);
+				Sm_operators.push_back(Smtmp);
+			}
+
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Total operator
+			arma::cx_mat PB;																			  // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;																			  // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;																			  // The right-hand operator (. * conj(P)*P)
+
+			for (auto it1 = spins.cbegin(); it1 != spins.cend(); ++it1)
+			{
+				for (auto it2 = spins.cbegin(); it2 != spins.cend(); ++it2)
+				{
+					if (it1 == it2)
+						continue; // Skip self-relaxation terms
+
+					// Get the actual spin objects
+					auto spin1 = *it1;
+					auto spin2 = *it2;
+
+					// Define cross-relaxation operators
+					arma::cx_mat L_minus = Sm_operators[it1 - spins.cbegin()] * Sp_operators[it2 - spins.cbegin()]; // S- I+
+					arma::cx_mat L_plus = Sp_operators[it1 - spins.cbegin()] * Sm_operators[it2 - spins.cbegin()];	// S+ I-
+
+					// Apply Lindblad terms for L_minus (cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_minus, L_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_minus.t() * L_minus, PL) || !this->SuperoperatorFromRightOperator(L_minus.t() * L_minus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+
+					// Apply Lindblad terms for L_plus (reverse cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_plus, L_plus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_plus.t() * L_plus, PL) || !this->SuperoperatorFromRightOperator(L_plus.t() * L_plus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+				}
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
 		else if (_operator->Type() == OperatorType::RelaxationDephasing)
 		{
 			auto spins = _operator->Spins();
@@ -292,6 +355,69 @@ namespace SpinAPI
 				if (!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
 					return false;
 				P += (PB - (PL + PR) / 2.0) * _operator->Rate3();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if (_operator->Type() == OperatorType::RelaxationLindbladDoubleSpin)
+		{
+			auto spins = _operator->Spins();
+
+			// Vectors to hold the spin operators for each spin
+			std::vector<arma::sp_cx_mat> Sp_operators;
+			std::vector<arma::sp_cx_mat> Sm_operators;
+
+			for (auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if (!this->Contains(*i))
+					continue;
+
+				// Temporary matrices to hold the operators
+				arma::sp_cx_mat Sptmp, Smtmp;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sp(), (*i), Sptmp);
+				this->CreateOperator((*i)->Sm(), (*i), Smtmp);
+
+				// Store the operators in the vectors
+				Sp_operators.push_back(Sptmp);
+				Sm_operators.push_back(Smtmp);
+			}
+
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Total operator
+			arma::sp_cx_mat PB;																					// Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;																					// The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;																					// The right-hand operator (. * conj(P)*P)
+
+			for (auto it1 = spins.cbegin(); it1 != spins.cend(); ++it1)
+			{
+				for (auto it2 = spins.cbegin(); it2 != spins.cend(); ++it2)
+				{
+					if (it1 == it2)
+						continue; // Skip self-relaxation terms
+
+					// Get the actual spin objects
+					auto spin1 = *it1;
+					auto spin2 = *it2;
+
+					// Define cross-relaxation operators
+					arma::sp_cx_mat L_minus = Sm_operators[it1 - spins.cbegin()] * Sp_operators[it2 - spins.cbegin()]; // S- I+
+					arma::sp_cx_mat L_plus = Sp_operators[it1 - spins.cbegin()] * Sm_operators[it2 - spins.cbegin()];  // S+ I-
+
+					// Apply Lindblad terms for L_minus (cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_minus, L_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_minus.t() * L_minus, PL) || !this->SuperoperatorFromRightOperator(L_minus.t() * L_minus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+
+					// Apply Lindblad terms for L_plus (reverse cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_plus, L_plus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_plus.t() * L_plus, PL) || !this->SuperoperatorFromRightOperator(L_plus.t() * L_plus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+				}
 			}
 
 			// Set the resulting operator
@@ -533,6 +659,72 @@ namespace SpinAPI
 				if (!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
 					return false;
 				P += (PB - (PL + PR) / 2.0) * _operator->Rate3();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if (_operator->Type() == OperatorType::RelaxationLindbladDoubleSpin)
+		{
+			auto spins = _operator->Spins();
+
+			// Vectors to hold the spin operators for each spin
+			std::vector<arma::cx_mat> Sp_operators;
+			std::vector<arma::cx_mat> Sm_operators;
+
+			for (auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if (!this->Contains(*i))
+					continue;
+
+				// Temporary matrices to hold the operators
+				arma::cx_mat Sptmp, Smtmp;
+
+				// Create the spin operators
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sp()), (*i), Sptmp);
+				this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sm()), (*i), Smtmp);
+
+				Sptmp = _rotationmatrix.t() * Sptmp * _rotationmatrix;
+				Smtmp = _rotationmatrix.t() * Smtmp * _rotationmatrix;
+
+				// Store the operators in the vectors
+				Sp_operators.push_back(Sptmp);
+				Sm_operators.push_back(Smtmp);
+			}
+
+			arma::cx_mat P = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Total operator
+			arma::cx_mat PB;																			  // Operator from both sides (P * . * conj(P))
+			arma::cx_mat PL;																			  // The left-hand operator (conj(P)*P * .)
+			arma::cx_mat PR;																			  // The right-hand operator (. * conj(P)*P)
+
+			for (auto it1 = spins.cbegin(); it1 != spins.cend(); ++it1)
+			{
+				for (auto it2 = spins.cbegin(); it2 != spins.cend(); ++it2)
+				{
+					if (it1 == it2)
+						continue; // Skip self-relaxation terms
+
+					// Get the actual spin objects
+					auto spin1 = *it1;
+					auto spin2 = *it2;
+
+					// Define cross-relaxation operators
+					arma::cx_mat L_minus = Sm_operators[it1 - spins.cbegin()] * Sp_operators[it2 - spins.cbegin()]; // S- I+
+					arma::cx_mat L_plus = Sp_operators[it1 - spins.cbegin()] * Sm_operators[it2 - spins.cbegin()];	// S+ I-
+
+					// Apply Lindblad terms for L_minus (cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_minus, L_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_minus.t() * L_minus, PL) || !this->SuperoperatorFromRightOperator(L_minus.t() * L_minus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+
+					// Apply Lindblad terms for L_plus (reverse cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_plus, L_plus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_plus.t() * L_plus, PL) || !this->SuperoperatorFromRightOperator(L_plus.t() * L_plus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+				}
 			}
 
 			// Set the resulting operator
@@ -788,6 +980,72 @@ namespace SpinAPI
 				if (!this->SuperoperatorFromOperators(Sz, Sz.t(), PB) || !this->SuperoperatorFromLeftOperator(Sz.t() * Sz, PL) || !this->SuperoperatorFromRightOperator(Sz.t() * Sz, PR))
 					return false;
 				P += (PB - (PL + PR) / 2.0) * _operator->Rate3();
+			}
+
+			// Set the resulting operator
+			_out = P;
+		}
+		else if (_operator->Type() == OperatorType::RelaxationLindbladDoubleSpin)
+		{
+			auto spins = _operator->Spins();
+
+			// Vectors to hold the spin operators for each spin
+			std::vector<arma::sp_cx_mat> Sp_operators;
+			std::vector<arma::sp_cx_mat> Sm_operators;
+
+			for (auto i = spins.cbegin(); i != spins.cend(); i++)
+			{
+				// Skip spins that are not part of the current SpinSpace
+				if (!this->Contains(*i))
+					continue;
+
+				// Temporary matrices to hold the operators
+				arma::sp_cx_mat Sptmp, Smtmp;
+
+				// Create the spin operators
+				this->CreateOperator((*i)->Sp(), (*i), Sptmp);
+				this->CreateOperator((*i)->Sm(), (*i), Smtmp);
+
+				Sptmp = _rotationmatrix.t() * Sptmp * _rotationmatrix;
+				Smtmp = _rotationmatrix.t() * Smtmp * _rotationmatrix;
+
+				// Store the operators in the vectors
+				Sp_operators.push_back(Sptmp);
+				Sm_operators.push_back(Smtmp);
+			}
+
+			arma::sp_cx_mat P = arma::zeros<arma::sp_cx_mat>(this->SpaceDimensions(), this->SpaceDimensions()); // Total operator
+			arma::sp_cx_mat PB;																					// Operator from both sides (P * . * conj(P))
+			arma::sp_cx_mat PL;																					// The left-hand operator (conj(P)*P * .)
+			arma::sp_cx_mat PR;																					// The right-hand operator (. * conj(P)*P)
+
+			for (auto it1 = spins.cbegin(); it1 != spins.cend(); ++it1)
+			{
+				for (auto it2 = spins.cbegin(); it2 != spins.cend(); ++it2)
+				{
+					if (it1 == it2)
+						continue; // Skip self-relaxation terms
+
+					// Get the actual spin objects
+					auto spin1 = *it1;
+					auto spin2 = *it2;
+
+					// Define cross-relaxation operators
+					arma::sp_cx_mat L_minus = Sm_operators[it1 - spins.cbegin()] * Sp_operators[it2 - spins.cbegin()]; // S- I+
+					arma::sp_cx_mat L_plus = Sp_operators[it1 - spins.cbegin()] * Sm_operators[it2 - spins.cbegin()];  // S+ I-
+
+					// Apply Lindblad terms for L_minus (cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_minus, L_minus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_minus.t() * L_minus, PL) || !this->SuperoperatorFromRightOperator(L_minus.t() * L_minus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+
+					// Apply Lindblad terms for L_plus (reverse cross-relaxation)
+					if (!this->SuperoperatorFromOperators(L_plus, L_plus.t(), PB) || !this->SuperoperatorFromLeftOperator(L_plus.t() * L_plus, PL) || !this->SuperoperatorFromRightOperator(L_plus.t() * L_plus, PR))
+						return false;
+
+					P += (PB - (PL + PR) / 2.0) * _operator->Rate1();
+				}
 			}
 
 			// Set the resulting operator

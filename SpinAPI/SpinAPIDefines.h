@@ -66,6 +66,7 @@ namespace SpinAPI
 	{
 		Unspecified,
 		RelaxationLindblad, // Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
+		RelaxationLindbladDoubleSpin, 
 		RelaxationDephasing,
 		RelaxationRandomFields,
 		RelaxationT1,
@@ -76,7 +77,7 @@ namespace SpinAPI
 	enum class PulseType
 	{
 		Unspecified,
-		InstantPulse, // Single-spin operator, i.e. uses Sx, Sy and Sz operators of the specified spins
+		InstantPulse,
 		LongPulse,
 		LongPulseStaticField,
 		ShapedPulse,
