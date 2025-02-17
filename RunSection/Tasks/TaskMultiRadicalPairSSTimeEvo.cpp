@@ -7,6 +7,7 @@
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
+//#define ARMA_USE_SUPERLU
 #include <iostream>
 #include <omp.h>
 #include <iomanip>
@@ -192,7 +193,7 @@ namespace RunSection
 		
 		for(auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.end(); i++)
 		{
-			std::cout << "Radical Pair: " << spinsystem << std::endl;
+			//std::cout << "Radical Pair: " << spinsystem << std::endl;
 			//Get intitial state
 			auto initial_state = InitialStates[spinsystem]; 
 			auto FindState = [&initial_state](auto state)
@@ -316,7 +317,7 @@ namespace RunSection
 			// Write results for initial state as well (i.e. at time 0)
 			if(!SilentMode)
 			{
-				this->Data() << this->RunSettings()->CurrentStep() << " 0 " << " ";
+				this->Data() << this->RunSettings()->CurrentStep() << " 0" << " ";
 				this->WriteStandardOutput(this->Data());
 			}
 			else
@@ -401,6 +402,11 @@ namespace RunSection
 						break;
 					}
 					double rate = e->transition->Rate();
+					if(rate == 0)
+					{
+						yields[index] += 0;
+						continue;
+					}
 					arma::cx_mat P; 
 					//*(SpinSpace->second))->GetState(TransitionState,P);
 					SpinSpace->second->GetState(TransitionState,P);
@@ -598,6 +604,7 @@ namespace RunSection
 				continue;
 			}
 			
+			//vec.subvec(index, SpinSystemSize) = p;
 			for(int e = 0; e < SpinSystemSize; e++)
 			{
 				vec[e + index] = p[e];
@@ -835,6 +842,7 @@ namespace RunSection
     bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
     {
 		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
+		//bool solution = arma::spsolve(ReturnVec, L, RhoNaught);
 		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught);
 		if(solution)
 			return true;

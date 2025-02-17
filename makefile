@@ -98,6 +98,16 @@ $(PATH_SPINAPI)/SpinSpace.o: $(PATH_SPINAPI)/SpinSpace.cpp $(PATH_SPINAPI)/SpinS
 %.o: %.cpp %.h
 	$(CC) $(CFLAGS) $(SEARCHDIR_MOLSPIN) $< -o $@
 # --------------------------------------------------------------------------
+# Compliation with SUPERLU
+# --------------------------------------------------------------------------
+SEARCHDIR_MOLSPIN_SUPERLU = $(SEARCHDIR_MOLSPIN) -lsuperlu
+molspin-superlu: $(OBJECTS)
+	$(CC) $(LFLAGS) $^ $(SEARCHDIR_MOLSPIN_SUPERLU) -o $@
+
+SEARCHDIR_MAIN_SUPERLU = $(SEARCHDIR_MAIN) -lsuperlu
+main-superlu.o: main.cpp $(DEP_MSDPARSER) $(DEP_SPINAPI)
+	$(CC) $(CFLAGS) $(SEARCHDIR_MAIN) main.cpp -o main.o
+# --------------------------------------------------------------------------
 # Unit testing module
 # --------------------------------------------------------------------------
 SEARCHDIR_TESTS = $(SEARCHDIR_MAIN) -I$(PATH_TESTS)
