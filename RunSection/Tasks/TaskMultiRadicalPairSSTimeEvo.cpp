@@ -7,6 +7,7 @@
 // (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
+//#define ARMA_USE_SUPERLU
 #include <iostream>
 #include <omp.h>
 #include <iomanip>
@@ -47,9 +48,12 @@ namespace RunSection
 		bool YieldOnly = false;
 		if (this->Properties()->Get("yieldonly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
 			YieldOnly = true;
+		bool SilentMode = false;
+		if (this->Properties()->Get("silentmode", SilentMode) || this->Properties()->Get("silent mode", SilentMode))
+			SilentMode = true;
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
-			this->WriteHeader(this->Data());
+			this->WriteHeader(this->Data(), YieldOnly);
 		}
 
 		// Loop through all SpinSystems to obtain SpinSpace objects
@@ -189,7 +193,7 @@ namespace RunSection
 		
 		for(auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.end(); i++)
 		{
-			std::cout << "Radical Pair: " << spinsystem << std::endl;
+			//std::cout << "Radical Pair: " << spinsystem << std::endl;
 			//Get intitial state
 			auto initial_state = InitialStates[spinsystem]; 
 			auto FindState = [&initial_state](auto state)
@@ -307,10 +311,18 @@ namespace RunSection
 		};
 
 		std::vector<std::pair<double, std::vector<TrajectoryData>>> trajectory;
+		//L = L * this->timestep;
 		if(!YieldOnly)
 		{
 			// Write results for initial state as well (i.e. at time 0)
-			this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
+			if(!SilentMode)
+			{
+				this->Data() << this->RunSettings()->CurrentStep() << " 0" << " ";
+				this->WriteStandardOutput(this->Data());
+			}
+			else
+				this->Data() << this->RunSettings()->CurrentStep();
+      
 			trajectory.push_back({0.0, {}});
 			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
 			{
@@ -332,7 +344,8 @@ namespace RunSection
 				// Move on to next spin space
 				nextDimension += SpinSpace->second->SpaceDimensions();
 			}
-			this->Data() << std::endl;
+			if(!SilentMode)
+				this->Data() << std::endl;
 		}
 
 		//arma::umat locations = { {0,0,1,1},{0,1,0,1}};
@@ -353,8 +366,7 @@ namespace RunSection
 		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
 		double InitialTimestep = this->timestep;
 		unsigned int n = 1;
-
-
+    
 		if(YieldOnly)
 		{
 			arma::cx_vec rho1(super_dimensions);
@@ -390,6 +402,11 @@ namespace RunSection
 						break;
 					}
 					double rate = e->transition->Rate();
+					if(rate == 0)
+					{
+						yields[index] += 0;
+						continue;
+					}
 					arma::cx_mat P; 
 					//*(SpinSpace->second))->GetState(TransitionState,P);
 					SpinSpace->second->GetState(TransitionState,P);
@@ -407,16 +424,19 @@ namespace RunSection
 			return true;
 		}
 
-
 		while(Currenttime <= this->totaltime)
 		{
 		//for (unsigned int n = 1; n <= steps; n++)
 		//{
 			// Write first part of the data output
-			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			Currenttime += this->timestep;
-			this->Data() << Currenttime << " ";
-			this->WriteStandardOutput(this->Data());
+			if(!SilentMode)
+			{
+				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				this->Data() << Currenttime << " ";
+				this->WriteStandardOutput(this->Data());
+			}
+			//L = LInitial * this->timestep;
 			trajectory.push_back({Currenttime, {}});
 			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
@@ -450,7 +470,8 @@ namespace RunSection
 			}
 
 			// Terminate the line in the data file after iteration through all spin systems
-			this->Data() << std::endl;
+			if(!SilentMode)
+				this->Data() << std::endl;
 			n++;
 		}
 
@@ -522,13 +543,16 @@ namespace RunSection
 		{
 			this->Data() << y << " ";
 		}
-		this->Data() << "\n" << std::endl;
+		if(!SilentMode)
+			this->Data() << "\n" << std::endl;
+		else
+			this->Data() << std::endl;
 
 		return true;
 	}
 
 	// Gathers and outputs the results from a given time-integrated density operator
-	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space, std::vector<std::complex<double>>& traj)
+	void TaskMultiRadicalPairSSTimeEvo::GatherResults(const arma::cx_mat &_rho, const SpinAPI::SpinSystem &_system, const SpinAPI::SpinSpace &_space, std::vector<std::complex<double>>& traj, bool Silent)
 	{
 		// Loop through all states
 		arma::cx_mat P;
@@ -544,7 +568,8 @@ namespace RunSection
 			// Return the yield for this state - note that no reaction rates are included here.
 			//std::cout << P << std::endl;
 			double tr = std::abs(arma::trace(P * _rho));
-			this->Data() << tr << " ";
+			if(!Silent)
+				this->Data() << tr << " ";
 			//this->Data() << tr.real() << " ";
 			traj.push_back(tr);
 		}
@@ -579,6 +604,7 @@ namespace RunSection
 				continue;
 			}
 			
+			//vec.subvec(index, SpinSystemSize) = p;
 			for(int e = 0; e < SpinSystemSize; e++)
 			{
 				vec[e + index] = p[e];
@@ -816,6 +842,7 @@ namespace RunSection
     bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
     {
 		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
+		//bool solution = arma::spsolve(ReturnVec, L, RhoNaught);
 		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught);
 		if(solution)
 			return true;
