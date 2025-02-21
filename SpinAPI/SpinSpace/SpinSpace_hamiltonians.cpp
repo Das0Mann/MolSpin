@@ -719,7 +719,6 @@ namespace SpinAPI
 			// Check if the interaction name is in the thermalhamiltonian_list
 			if (std::find(thermalhamiltonian_list.begin(), thermalhamiltonian_list.end(), (*i)->Name()) != thermalhamiltonian_list.end())
 			{
-				std::cout << (*i)->Name() << std::endl;
 				// Attempt to get the matrix representing the Interaction object in the spin space
 				if (!this->InteractionOperator((*i), tmp))
 					return false;
