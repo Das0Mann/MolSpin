@@ -37,6 +37,7 @@ namespace RunSection
 	{
 	private:
 		double timestep;
+		double OriginalTimestep;
 		double totaltime;
 		SpinAPI::ReactionOperatorType reactionOperators;
 

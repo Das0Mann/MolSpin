@@ -224,6 +224,7 @@ namespace SpinAPI
 		std::shared_ptr<Function> Func;
 		int mz = 0;
 		bool inState = false;
+		bool DefaultFunction = false;
 		auto currentSpinPair = newState.begin();
 		bool function = false;
 		int depth = 0;
@@ -265,18 +266,23 @@ namespace SpinAPI
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				arma::cx_double FuncFactor = 1;
 				this->InitialFactors.push_back(factor);
-				std::vector<std::string> vars = Func->GetVariable();
-				for(auto x : vars)
+				if(Func != nullptr)
 				{
-					double var;
-					if(properties->Get(x, var))
+					std::vector<std::string> vars = Func->GetVariable();
+					for(auto x : vars)
 					{
-						Variables[x] = var;
+						double var;
+						if(properties->Get(x, var))
+						{
+							Variables[x] = var;
+						}
 					}
-				}
+				}	
 				if(Func == nullptr)
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
+					FuncFactor = this->InitialFactors[FuncNum];
+					DefaultFunction = true;
 				}
 				else
 				{					
@@ -298,6 +304,8 @@ namespace SpinAPI
 				// Reset buffer and prepare to read the next state
 				buffer = "";
 				++currentSpinPair;
+				if(DefaultFunction)
+					Func = nullptr;
 			}
 			else if (inState && (*i) == '>')
 			{
@@ -320,18 +328,23 @@ namespace SpinAPI
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
 				arma::cx_double FuncFactor = 1;
 				this->InitialFactors.push_back(factor);
-				std::vector<std::string> vars = Func->GetVariable();
-				for(auto x : vars)
+				if(Func != nullptr)
 				{
-					double var;
-					if(properties->Get(x, var))
+					std::vector<std::string> vars = Func->GetVariable();
+					for(auto x : vars)
 					{
-						Variables[x] = var;
+						double var;
+						if(properties->Get(x, var))
+						{
+							Variables[x] = var;
+						}
 					}
 				}
 				if(Func == nullptr)
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
+					FuncFactor = this->InitialFactors[FuncNum];
+					DefaultFunction = true;
 				}
 				else
 				{					
@@ -349,6 +362,8 @@ namespace SpinAPI
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
 				FuncNum++;
+				if(DefaultFunction)
+					Func = nullptr;
 
 				// Reset buffer and prepare to read the next state
 				buffer = "";
