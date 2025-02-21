@@ -123,12 +123,24 @@ namespace RunSection
 					{
 						this->Log() << "Initial state = thermal " << std::endl;
 
+						// Get the thermalhamiltonianlist
+						std::vector<std::string> thermalhamiltonian_list = (*i)->ThermalHamiltonianList();
+						
+						this->Log() << "ThermalHamiltonianList = [";
+						for (size_t j = 0; j < thermalhamiltonian_list.size(); j++)
+						{
+							this->Log() << thermalhamiltonian_list[j];
+							if (j < thermalhamiltonian_list.size() - 1)
+								this->Log() << ", ";  // Add a comma between elements
+						}
+						this->Log() << "]" << std::endl;
+						
 						// Get temperature
 						double temperature = (*i)->Temperature();
 						this->Log() << "Temperature = " << temperature << "K" << std::endl;
 
 						// Get the initial state with thermal equilibrium
-						if (!space.GetThermalState(space, temperature, tmp_rho0))
+						if (!space.GetThermalState(space, temperature, thermalhamiltonian_list, tmp_rho0))
 						{
 							this->Log() << "Failed to obtain projection matrix onto thermal state, initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 							continue;
