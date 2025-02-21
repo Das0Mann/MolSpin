@@ -43,7 +43,7 @@ namespace RunSection
 		void WriteHeader(std::ostream &, bool yield = true); // Write header for the output file
 
 		// Private method that gathers and outputs the results from a given time-integrated density operator
-		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &, std::vector<std::complex<double>>& traj, bool Silent = false);
+		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &, std::vector<std::complex<double>>& traj);
 		
 		void StateYield(double, double&, const std::vector<std::complex<double>>&, std::vector<double>& ); //Method that calculates the yeild for a given state
 		void StateYield(double, double&, int, int, arma::cx_mat&, arma::cx_vec&); //rate, yield (to be retunred), spinsystem, projection operator, state density vec
