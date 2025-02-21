@@ -358,14 +358,14 @@ namespace SpinAPI
 		return true;
 	}
 
-	// Produces the thermal state of a respecitve spinsystem [created by Pedro Alvarez]
-	bool SpinSpace::GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, arma::cx_mat &_mat) const
+	// Produces the thermal state
+	bool SpinSpace::GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, std::vector<std::string> thermalhamiltonian_list, arma::cx_mat &_mat) const
 	{
 		_space.UseSuperoperatorSpace(false);
 
 		arma::cx_mat H;
 
-		if (!_space.Hamiltonian(H))
+		if (!_space.ThermalHamiltonian(thermalhamiltonian_list, H))
 		{
 			std::cout << "Failed to obtain Static Hamiltonian in superspace." << std::endl;
 		}
@@ -379,7 +379,7 @@ namespace SpinAPI
 
 		// Calculate thermal states here
 		result = (-beta) * H;
-		result = arma::expmat(result);
+		result = arma::expmat_sym(result);
 		result /= arma::trace(result);
 		_mat = result;
 

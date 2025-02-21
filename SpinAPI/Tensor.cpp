@@ -160,20 +160,35 @@ namespace SpinAPI
 			std::cout << "Error: Cannot set Tensor by matrix of dimensions " << _matrix.n_rows << "x" << _matrix.n_cols << "! Must be 3x3! Ignoring matrix." << std::endl;
 			return;
 		}
-
+		
 		// Get a symmetric version of the matrix, i.e. the same matrix if is it symmetric
 		arma::mat symmetrized_matrix = (_matrix + _matrix.t()) / 2.0;
 
 		// Check whether the matrix was symmetric (i.e. _matrix - symmetrized_matrix == 0)
 		if (abs(_matrix - symmetrized_matrix).max() > 1e-10)
+		{
 			std::cout << "Warning: Attempted to set Tensor from non-symmetric matrix." << std::endl;
+			arma::cx_vec anisotropic_tmp;
+			arma::cx_mat principalAxes_tmp = arma::eye<arma::cx_mat>(3, 3);;
+			arma::eig_gen(anisotropic_tmp, principalAxes_tmp, _matrix);
 
-		// Do the diagonalization
-		arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
-		arma::eig_sym(this->anisotropic, principalAxes, _matrix);
-		this->axis1 = principalAxes.col(0);
-		this->axis2 = principalAxes.col(1);
-		this->axis3 = principalAxes.col(2);
+			arma::mat principalAxes = arma::conv_to<arma::mat>::from(principalAxes_tmp);
+
+			this->anisotropic = arma::conv_to<arma::vec>::from(anisotropic_tmp);
+			this->axis1 = principalAxes.col(0);
+			this->axis2 = principalAxes.col(1);
+			this->axis3 = principalAxes.col(2);
+
+		}	
+		else
+		{
+			// Do the diagonalization
+			arma::mat principalAxes = arma::eye<arma::mat>(3, 3);
+			arma::eig_sym(this->anisotropic, principalAxes, _matrix);
+			this->axis1 = principalAxes.col(0);
+			this->axis2 = principalAxes.col(1);
+			this->axis3 = principalAxes.col(2);
+		}
 	}
 
 	void Tensor::SeparateIsotropy()
