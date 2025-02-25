@@ -52,8 +52,6 @@ namespace SpinAPI
 		unsigned int trjFieldZ;
 		unsigned int trjPrefactor;
 
-
-
 		// Special data members for time-dependent fields 
 		double tdFrequency;
 		double tdPhase;
@@ -61,15 +59,10 @@ namespace SpinAPI
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
 
-
-		// Special data members for time-dependent tensors - PB added
+		// Special data members for time-dependent tensors
 		InteractionTensorType tensorType;	
-		double tdTemperature;
-		double tdDamping;
-		double tdRestoring;
 		double tdTimestep;
 		arma::mat tdInitialTensor;
-
 		double tdStdev;
 		double tdMinFreq;
 		double tdMaxFreq;
@@ -80,30 +73,25 @@ namespace SpinAPI
 		bool tdRandOrients;
 		arma::mat tdThetas;
 		arma::mat tdPhis;
-		
 		double tdCorrTime;
 		double tdAmp;
 		bool tdDist;
 		bool tdPrintTensor;
 		bool tdPrintField;
 
+		// Special data members for random number generation
 		int tdSeed;
 		bool tdAutoseed;
 		std::mt19937 tdGenerator;
-
-
 
 		// Private methods to create ActionTargets
 		std::vector<RunSection::NamedActionVector> CreateActionVectors(const std::string &);
 		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);
 
-		
-		void TensorTimeDependenceSinMat(arma::mat, double, double, double);
+		//Member functions for time-dependent tensors
 		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
 		void TensorTimeDependenceBroadband(arma::mat, double, arma::mat, arma::mat, arma::mat, int);
 		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double, double);
-		// void TensorTimeDependenceOUSpring(arma::mat, double, double, double, double, double);
-
 
 		// ActionTarget methods
 		void SetField(arma::vec &);

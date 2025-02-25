@@ -43,20 +43,19 @@ namespace SpinAPI
 		Static,
 		LinearPolarization,	  // Monochromatic linearly polarized radiation, parameters: "frequency", "phase"
 		CircularPolarization, // Monochromatic circularly polarized radiation, parameters: "frequency", "phase", "axis"
-		Broadband,
+		Broadband,			  // Broadband noise, parameters: "minfreq", "maxfreq", "stdev", "components", "randomorientations"	
+		OUGeneral,			  // Ornstein-Uhlenbeck noise, parameters: "correlationtime", "stdev", "timestep", "randomorientations"
 		Trajectory,			  // Time-dependence is given by a trajectory
-		OUGeneral,
 	};
 
 	// Used by the Interaction class to determine the time-dependence of the tensor for DoubleSpin interactions
 	enum class InteractionTensorType 
 	{
 		Static,
-		Monochromatic, //Monochromatic noise, parameters: frequency, phase ...
-		OUGeneral,
-		OUSpring,
-		Broadband,
-		Trajectory,			   // Time-dependence is given by a trajectory
+		Monochromatic, //Monochromatic noise, parameters: "frequency", "phase", "amplitude"
+		Broadband, //Broaband noise, parameters: "minfreq", "maxfreq", "stdev", "components"
+		OUGeneral,	//Ornstein-Uhlenbeck noise, parameters: "correlationtime", "stdev", "timestep"
+		Trajectory,	// Time-dependence is given by a trajectory
 	};
 
 	// Used by the Transition class
