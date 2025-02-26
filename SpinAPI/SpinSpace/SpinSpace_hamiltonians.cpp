@@ -471,7 +471,7 @@ namespace SpinAPI
 				}
 				else
 				{
-					std::cout << D << E << std::endl;
+					//std::cout << D << E << std::endl;
 
 					// Calculate Zfs interaction
 
@@ -694,6 +694,39 @@ namespace SpinAPI
 				return false;
 
 			result += tmp;
+		}
+
+		_out = result;
+		return true;
+	}
+	
+	// Sets the dense matrix to the part of the Hamiltonian that is used in the thermal equilibrium (without Zeeman terms)
+	bool SpinSpace::ThermalHamiltonian(std::vector<std::string> thermalhamiltonian_list, arma::cx_mat &_out) const
+	{
+		// If we don't have any interactions, the Hamiltonian is zero
+		arma::cx_mat result = arma::zeros<arma::cx_mat>(this->SpaceDimensions(), this->SpaceDimensions());
+		if (this->interactions.size() < 1)
+		{
+			_out = result;
+			return true;
+		}
+
+		arma::cx_mat tmp;
+		for (auto i = this->interactions.cbegin(); i != this->interactions.cend(); i++)
+		{
+			// Skip any dynamic interactions (time-dependent or with a trajectory)
+			if (!IsStatic(*(*i)))
+				continue;	
+		
+			// Check if the interaction name is in the thermalhamiltonian_list
+			if (std::find(thermalhamiltonian_list.begin(), thermalhamiltonian_list.end(), (*i)->Name()) != thermalhamiltonian_list.end())
+			{
+				// Attempt to get the matrix representing the Interaction object in the spin space
+				if (!this->InteractionOperator((*i), tmp))
+					return false;
+
+				result += tmp;
+			}
 		}
 
 		_out = result;

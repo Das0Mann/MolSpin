@@ -267,7 +267,7 @@ namespace SpinAPI
 				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
 				}
 				std::vector<std::string> vars = Func->GetVariable();
 				for(auto x : vars)
@@ -304,12 +304,12 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
-				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
+				// Add a function to the list of function, in the case where no function is provided the defualt scaler multiply function is used
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
 				this->InitialFactors.push_back(factor);
 				if(Func == nullptr)
 				{
-					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum), "", 1.0);
+					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
 				}
 				std::vector<std::string> vars = Func->GetVariable();
 				for(auto x : vars)
@@ -377,7 +377,7 @@ namespace SpinAPI
 				}
 				variable = buffer;
 				function = false;
-				Func = FunctionParser(functionName, variable);
+				Func = FunctionParser(functionName, variable, 0, true);
 
 				buffer = functionName;
 			}
@@ -391,10 +391,6 @@ namespace SpinAPI
 				buffer +=(*i);
 			}
 		}
-
-		//Function sin_test(MathematicalFunctions::sin, Function::ReturnType::d, "sin", "x", 0.5);
-
-		//std::cout << sin_test((void*)((double*)&val)) << std::endl;
 
 		this->substates.push_back(newState);
 		return true;
@@ -792,10 +788,11 @@ namespace SpinAPI
 				arma::cx_double factor = 1;
 				for(auto a = e->second.begin(); a != e->second.end(); a++)
 				{	
+					int jump = i->size();
 					auto f = this->Functions[FuncNum];
 					if(f->GetVariable()[0] == "") //checks whether it acutally has a function to apply 
 					{
-						FuncNum = FuncNum + i->size();
+						FuncNum = FuncNum + jump;
 						continue;
 					}
 
@@ -813,7 +810,7 @@ namespace SpinAPI
 						factor = this->InitialFactors[FuncNum] * f->operator()(v);
 					}
 					a->second = factor; //can't use a->second as this would have a culmative effect over time
-					FuncNum = FuncNum + i->size();
+					FuncNum = FuncNum + jump;
 				}
 			}
 		}

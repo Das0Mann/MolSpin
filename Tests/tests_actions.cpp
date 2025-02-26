@@ -14,6 +14,7 @@
 #include "ActionScaleVector.h"
 #include "ActionFibonacciSphere.h"
 #include "ActionRotateVector.h"
+#include "ActionLogSpace.h"
 
 #include <iostream>
 //////////////////////////////////////////////////////////////////////////////
@@ -287,6 +288,49 @@ bool test_action_fibonaccisphere()
 	return isCorrect;
 
 }
+//////////////////////////////////////////////////////////////////////////////
+// Tests the Logspace action
+bool test_action_LogSpace()
+{
+	arma::rowvec logspace = arma::logspace<arma::rowvec>(0,6,50);
+	double d = logspace[0];
+	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr); // The ActionScalar (without check function)
+	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
+	std::map<std::string, RunSection::ActionVector> avMap;				// ActionVector map
+	asMap.insert(RunSection::NamedActionScalar("testscalar", as));
+	std::string actionname = "test";
+	std::string actioncontents = "scalar=testscalar;points=50;minvalue=0.0;maxvalue=6.0;";
+	MSDParser::ObjectParser parser(actionname, actioncontents);
+	RunSection::ActionLogSpace action(parser, asMap, avMap);
+	RunSection::Action *action_ptr = &action;
+
+	bool isCorrect = true;
+
+	//perform the test
+	isCorrect &= action_ptr->Validate();
+	isCorrect &= equal_double(d,logspace[0]);
+	for(int i = 1; i <= 10; i++ )
+	{
+		action.Step(i);
+	}
+	isCorrect &= equal_double(d, logspace[10]);
+	for(int i = 11; i <= 20; i++)
+	{
+		action_ptr->Step(i);
+	}
+	isCorrect &= equal_double(d, logspace[20]);
+	for(int i = 21; i < 50; i++)
+	{
+		action.Step(i);
+	}
+	isCorrect &= equal_double(d, logspace[49]);
+
+
+	// Return the result
+	return isCorrect;
+
+}
+
 // Add all the Action classes test cases
 void AddActionsTests(std::vector<test_case> &_cases)
 {
@@ -298,5 +342,6 @@ void AddActionsTests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("Action ScaleVector", test_action_scalevector));
 	_cases.push_back(test_case("Action RotateVector", test_action_rotatevector));
 	_cases.push_back(test_case("Action FibonacciSphere", test_action_fibonaccisphere));
+	_cases.push_back(test_case("Action Logspace", test_action_LogSpace));
 }
 //////////////////////////////////////////////////////////////////////////////

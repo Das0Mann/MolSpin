@@ -145,7 +145,6 @@ namespace RunSection
 
 			// Set up states for time-propagation
 			arma::cx_mat InitialStateVector(4, 1);
-
 			std::string InitialState;
 			this->Properties()->Get("initialstate", InitialState);
 			std::string InitialStateLower;
@@ -247,7 +246,7 @@ namespace RunSection
 					if ((*j)->SourceState() == nullptr)
 						continue;
 					space.GetState((*j)->SourceState(), P);
-					K = (*j)->Rate() / 2 * P;
+					K += (*j)->Rate() / 2 * P;
 				}
 			}
 			else

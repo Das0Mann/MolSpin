@@ -528,9 +528,21 @@ namespace SpinAPI
 	double SpinSystem::Temperature()
 	{
 		double temperature;
-		this->properties->Get("temperature", temperature);
+		if (!this->properties->Get("temperature", temperature))
+		{
+			std::cerr << "Warning: Failed to find temperature value. We set the temperature to 300 K." << std::endl;
+			temperature = 300;
+		}
 
 		return temperature;
+	}
+
+	std::vector<std::string> SpinSystem::ThermalHamiltonianList()
+	{
+		std::vector<std::string> thermalhamiltonian_list;
+		this->properties->GetList("thermalhamiltonian", thermalhamiltonian_list, ',');
+
+		return thermalhamiltonian_list;
 	}
 
 	// Obtain the weights for a specifically weighted density matrix

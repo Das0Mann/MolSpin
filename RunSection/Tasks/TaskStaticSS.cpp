@@ -129,7 +129,7 @@ namespace RunSection
 
 			// Obtain the results
 			arma::cx_mat P;
-			double sum_yield;
+			double sum_yield=0.0;
 
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			this->WriteStandardOutput(this->Data());

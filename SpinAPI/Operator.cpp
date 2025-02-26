@@ -52,6 +52,10 @@ namespace SpinAPI
 			{
 				this->type = OperatorType::RelaxationLindblad;
 			}
+			else if (str.compare("relaxationlindbladdoublespin") == 0)
+			{
+				this->type = OperatorType::RelaxationLindbladDoubleSpin;
+			}
 			else if (str.compare("relaxationdephasing") == 0)
 			{
 				this->type = OperatorType::RelaxationDephasing;
