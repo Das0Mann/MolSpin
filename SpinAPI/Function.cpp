@@ -972,7 +972,7 @@ namespace SpinAPI
 		}
 		else if(FunctionName.compare("expcx") == 0)
 		{
-			_func = std::make_shared<Function>(MathematicalFunctions::expcd, Function::ReturnType::cd, FunctionName, vardef);
+			_func = std::make_shared<Function>(MathematicalFunctions::expcx, Function::ReturnType::cd, FunctionName, vardef);
 		}
 		_func->SetFunctionString(FunctionName + "(" + var + ")");
 		_func->SetPostFix(PostFix);
@@ -1025,7 +1025,7 @@ namespace SpinAPI
 			return (void*)_val;
 		}
 
-		void* expcd(void* value)
+		void* expcx(void* value)
 		{
 			std::complex<double>* _val = new std::complex<double>;
 			std::complex<double> val = *(std::complex<double>*)value;

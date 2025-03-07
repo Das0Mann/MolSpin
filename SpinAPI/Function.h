@@ -111,7 +111,7 @@ namespace SpinAPI
 		void* scalar(void* = nullptr); //double
 		void* scalarcx(void* = nullptr); //complex double
 		void* exp(void*); //double
-		void* expcd(void*); //complex double
+		void* expcx(void*); //complex double
 	}
 
 }
