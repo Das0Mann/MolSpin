@@ -245,7 +245,7 @@ namespace SpinAPI
 				inState = true;
 				buffer = "";
 			}
-			else if(inState && (*i) == ',')
+			else if (inState && (*i) == ',')
 			{
 				// Make sure that we still have a spin left to assign an "mz" value to
 				if (currentSpinPair == newState.end())
@@ -264,19 +264,22 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
-				arma::cx_double FuncFactor = 1;
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
 				this->InitialFactors.push_back(factor);
 				if(Func != nullptr)
-				{
-					std::vector<std::string> vars = Func->GetVariable();
-					for(auto x : vars)
-					{
-						double var;
-						if(properties->Get(x, var))
-						{
-							Variables[x] = var;
-						}
-					}
+        {
+				  std::vector<std::string> vars = Func->GetVariable();
+				  for(auto x : vars)
+				  {
+				  	std::vector<std::string> vars = Func->GetVariable();
+				  	for(auto x : vars)
+				  	{
+				  		double var;
+				  		if(properties->Get(x, var))
+				  		{
+				  			Variables[x] = var;
+				  		}
+				  	}
 				}	
 				if(Func == nullptr)
 				{
@@ -301,7 +304,7 @@ namespace SpinAPI
 				BracketDepth.push_back(depth);
 				FuncNum++;
 
-				// Reset buffer and prepare to read the next state
+				// Reset buffer and prepare reading next mz value
 				buffer = "";
 				++currentSpinPair;
 				if(DefaultFunction)
@@ -325,8 +328,8 @@ namespace SpinAPI
 				}
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
-				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
-				arma::cx_double FuncFactor = 1;
+				// Add a function to the list of function, in the case where no function is provided the defualt scaler multiply function is used
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
 				this->InitialFactors.push_back(factor);
 				if(Func != nullptr)
 				{
@@ -358,6 +361,7 @@ namespace SpinAPI
 					//do something
 				}
 				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, FuncFactor));
+
 				//throw a error if var not found 
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
@@ -842,11 +846,10 @@ namespace SpinAPI
 					}
 					else
 					{
-						std::vector<std::string> vars = f->GetVariable();
 						std::vector<void*> v;
-						for (auto x : vars)
+						for(unsigned int i = 0; i < Variables.size(); i++)
 						{
-							v.push_back((void*)(double*)&Variables[x]);
+							v.push_back((void*)(double*)&Variables[f->GetVariable()[i]]);
 						}
 						factor = this->InitialFactors[FuncNum] * f->operator()(v);
 					}

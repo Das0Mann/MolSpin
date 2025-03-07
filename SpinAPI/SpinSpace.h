@@ -130,7 +130,7 @@ namespace SpinAPI
 		bool GetState(const state_ptr &, arma::cx_vec &) const;											 // Vector representing the state
 		bool GetState(const state_ptr &, arma::cx_mat &) const;											 // Projection operator onto the state (dense matrix)
 		bool GetState(const state_ptr &, arma::sp_cx_mat &) const;										 // Projection operator onto the state (sparse matrix)
-		bool GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, arma::cx_mat &_mat) const; // Projection operator onto the thermal equilibrium state (dense matrix) [created by Pedro Alvarez]
+		bool GetThermalState(SpinAPI::SpinSpace &_space, double _Temperature, std::vector<std::string> thermalhamiltonian_list, arma::cx_mat &_mat) const; // Projection operator onto the thermal equilibrium state (dense matrix)
 
 		// ------------------------------------------------
 		// Operators in the spin space (SpinSpace_operators.cpp)
@@ -222,6 +222,7 @@ namespace SpinAPI
 		bool StaticHamiltonian(arma::sp_cx_mat &) const;							// Time-independent part of the Hamiltonian operator (sparse matrix)
 		bool DynamicHamiltonian(arma::cx_mat &) const;								// Time-dependent part of the Hamiltonian operator (dense matrix)
 		bool DynamicHamiltonian(arma::sp_cx_mat &) const;							// Time-dependent part of the Hamiltonian operator (sparse matrix)
+		bool ThermalHamiltonian(std::vector<std::string> thermalhamiltonian_list, arma::cx_mat &_out) const;							// Time-independent part of the Hamiltonian for thermal state (dense matrix)
 
 		// ------------------------------------------------
 		// Transitions/decay operators (SpinSpace_transitions.cpp)

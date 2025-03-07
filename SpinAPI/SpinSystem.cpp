@@ -537,6 +537,14 @@ namespace SpinAPI
 		return temperature;
 	}
 
+	std::vector<std::string> SpinSystem::ThermalHamiltonianList()
+	{
+		std::vector<std::string> thermalhamiltonian_list;
+		this->properties->GetList("thermalhamiltonian", thermalhamiltonian_list, ',');
+
+		return thermalhamiltonian_list;
+	}
+
 	// Obtain the weights for a specifically weighted density matrix
 	std::vector<double> SpinSystem::Weights()
 	{
