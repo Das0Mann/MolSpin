@@ -1727,49 +1727,6 @@ bool test_spinapi_interaction_tensor_ornsteinuhlenbeck()
 }
 //////////////////////////////////////////////////////////////////////////////
 
-
-// // Tests an Interaction object with a time-dependent field
-// // DEPENDENCY NOTE: ObjectParser
-// bool test_spinapi_timedepfield()
-// {
-// 	// Setup objects for the test
-// 	std::string name = "oufield";
-// 	std::string contents = "type=ougeneral;group=RPElectron1;field=0.0 7.1 14.2;correlationtime = 0.71;stdev=0.142;timestep=0.71;prefactor=0.1;ignoretensors=true";
-// 	SpinAPI::Interaction I(name, contents);
-
-// 	auto field = arma::vec("0.0 7.1 14.2");
-// 	double correlationtime = 0.71;
-// 	auto prefactorlist = arma::vec("-176.085");
-// 	std::vector<bool> commonprefactorlist {0};
-// 	std::vector<bool> ignortensorslist {1};
-// 	double timestep = 0.71;
-// 	double stdev = 0.142;	
-
-// 	bool isCorrect = true;
-
-// 	// Perform the test
-// 	isCorrect &= I.FieldType() == SpinAPI::InteractionFieldType::OUGeneral;
-// 	isCorrect &= equal_vec(I.Field(), field);
-// 	// isCorrect &= equal_double(I.Pulsetime(), pulsetime);
-// 	// isCorrect &= equal_vec(I.PrefactorList(), prefactorlist);
-// 	for (auto i = 0; i < (int)commonprefactorlist.size(); i++)
-// 	{
-// 		isCorrect &= commonprefactorlist[i] == P.AddCommonPrefactorList()[i];
-// 	}
-// 	for (auto i = 0; i < (int)ignortensorslist.size(); i++)
-// 	{
-// 		isCorrect &= ignortensorslist[i] == P.IgnoreTensorsList()[i];
-// 	}
-// 	isCorrect &= equal_double(P.Timestep(), timestep);
-// 	isCorrect &= equal_double(P.Frequency(), frequency);
-
-// 	// Return the result
-// 	return isCorrect;
-
-// }
-
-
-//////////////////////////////////////////////////////////////////////////////
 // Add all the SpinAPI test cases
 void AddSpinAPITests(std::vector<test_case> &_cases)
 {
