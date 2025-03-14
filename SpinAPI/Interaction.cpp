@@ -1006,7 +1006,7 @@ namespace SpinAPI
 		}
 		
 		//set the new tensor
-		A_xx = A_j(0); A_xy = A_j(1); A_xz = A_j(3); A_yy = A_j(4); A_yz = A_j(4); A_zz = A_j(5);
+		A_xx = A_j(0); A_xy = A_j(1); A_xz = A_j(2); A_yy = A_j(3); A_yz = A_j(4); A_zz = A_j(5);
 		
 		//output the current tensor to file if required
 		if(this->tdPrintTensor == true){

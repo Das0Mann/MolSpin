@@ -1559,7 +1559,6 @@ bool test_spinapi_longpulse()
 	std::vector<bool> ignortensorslist {1};
 	double timestep = 0.42;
 	double frequency = 0.0004224;
-	
 
 	bool isCorrect = true;
 
@@ -1582,6 +1581,194 @@ bool test_spinapi_longpulse()
 	// Return the result
 	return isCorrect;
 }
+//////////////////////////////////////////////////////////////////////////////
+
+// Tests an Interaction object with a broadband time-dependent field.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_interaction_field_broadband()
+{
+	// Setup objects for the test
+	std::string name = "test1";
+	std::string contents = "type=singlespin;fieldtype=broadband;autoseed=false;seed=1;field=1 0 1;minfreq=0.1e+6;maxfreq=0.2e+6;stdev=0.0;components=100;randomorientations=true;";
+	SpinAPI::Interaction I(name, contents);
+
+	auto testfield1 = arma::vec("1 0 1");
+	double testtime = 1.0;
+
+	bool isCorrect = true;
+
+	// Perform the test - with zero standard deviation the field vector should not change with time
+	isCorrect &= equal_vec(I.Field(), testfield1);
+	isCorrect &= I.SetTime(testtime);
+	isCorrect &= equal_vec(I.Field(), testfield1);
+	isCorrect &= I.FieldType() == SpinAPI::InteractionFieldType::Broadband;
+	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
+	isCorrect &= I.HasTimeDependence();
+	isCorrect &= !IsStatic(I);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+
+// Tests an Interaction object with an Ornstein-Uhlenbeck time-dependent field.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_interaction_field_ornsteinuhlenbeck()
+{
+	// Setup objects for the test
+	std::string name = "test1";
+	std::string contents = "type=singlespin;fieldtype=ougeneral;autoseed=false;seed=1;field=1 0 1;correlationtime=10.0;stdev=0.0;timestep=1.0;randomorientations=true;";
+	SpinAPI::Interaction I(name, contents);
+
+	auto testfield1 = arma::vec("1 0 1");
+	double testtime = 1.0;
+
+	bool isCorrect = true;
+
+	// Perform the test - with zero standard deviation the field vector should not change with time
+	isCorrect &= equal_vec(I.Field(), testfield1);
+	isCorrect &= I.SetTime(testtime);
+	isCorrect &= equal_vec(I.Field(), testfield1);
+	isCorrect &= I.FieldType() == SpinAPI::InteractionFieldType::OUGeneral;
+	isCorrect &= I.Type() == SpinAPI::InteractionType::SingleSpin;
+	isCorrect &= I.HasTimeDependence();
+	isCorrect &= !IsStatic(I);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+
+// Tests an Interaction object with a monochromatic time-dependent tensor.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_interaction_tensor_monochromatic()
+{
+	// Setup objects for the test
+	std::string name = "test1";
+	std::string contents = "type=doublespin;tensortype=monochromatic;tensor=matrix(1 2 3; 2 4 5; 3 5 6);frequency=1e+6;phase=1.5;amplitude=0.0;";
+	SpinAPI::Interaction I(name, contents);
+
+	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	double testtime = 1.0;
+	double frequency=1e6;
+	//pefrom the test
+	bool isCorrect = true;
+	isCorrect &= equal_double(I.GetTDFrequency(), frequency);
+	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor1.LabFrame(), testmatrix);
+	isCorrect &= I.SetTime(testtime);
+	SpinAPI::Tensor testTensor2 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor2.LabFrame(), testmatrix);
+	isCorrect &= I.TensorType() == SpinAPI::InteractionTensorType::Monochromatic;
+	isCorrect &= I.Type() == SpinAPI::InteractionType::DoubleSpin;
+	isCorrect &= I.HasTimeDependence();
+	isCorrect &= !IsStatic(I);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+
+// Tests an Interaction object with a broadband time-dependent tensor.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_interaction_tensor_broadband()
+{
+	// Setup objects for the test
+	std::string name = "test1";
+	std::string contents = "type=doublespin;tensortype=broadband;autoseed=false;seed=1;tensor=matrix(1 2 3; 2 4 5; 3 5 6);minfreq=0.1e+6;maxfreq=0.2e+6;stdev=0.0;components=100;";
+	SpinAPI::Interaction I(name, contents);
+
+	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	double testtime = 1.0;
+
+	//pefrom the test
+	bool isCorrect = true;
+	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor1.LabFrame(), testmatrix);
+	isCorrect &= I.SetTime(testtime);
+	SpinAPI::Tensor testTensor2 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor2.LabFrame(), testmatrix);
+	isCorrect &= I.TensorType() == SpinAPI::InteractionTensorType::Broadband;
+	isCorrect &= I.Type() == SpinAPI::InteractionType::DoubleSpin;
+	isCorrect &= I.HasTimeDependence();
+	isCorrect &= !IsStatic(I);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+
+// Tests an Interaction object with an Ornstein-Uhlenbeck time-dependent tensor.
+// DEPENDENCY NOTE: ObjectParser
+bool test_spinapi_interaction_tensor_ornsteinuhlenbeck()
+{
+	// Setup objects for the test
+	std::string name = "test1";
+	std::string contents = "type=doublespin;tensortype=ougeneral;autoseed=false;seed=1;tensor=matrix(1 2 3; 2 4 5; 3 5 6);correlationtime=10.0;stdev=0.0;timestep=1.0;";
+	SpinAPI::Interaction I(name, contents);
+
+	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	double testtime = 1.0;
+
+	//pefrom the test
+	bool isCorrect = true;
+	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor1.LabFrame(), testmatrix);
+	isCorrect &= I.SetTime(testtime);
+	SpinAPI::Tensor testTensor2 = *I.CouplingTensor();
+	isCorrect &= equal_matrices(testTensor2.LabFrame(), testmatrix);
+	isCorrect &= I.TensorType() == SpinAPI::InteractionTensorType::OUGeneral;
+	isCorrect &= I.Type() == SpinAPI::InteractionType::DoubleSpin;
+	isCorrect &= I.HasTimeDependence();
+	isCorrect &= !IsStatic(I);
+
+	// Return the result
+	return isCorrect;
+}
+//////////////////////////////////////////////////////////////////////////////
+
+
+// // Tests an Interaction object with a time-dependent field
+// // DEPENDENCY NOTE: ObjectParser
+// bool test_spinapi_timedepfield()
+// {
+// 	// Setup objects for the test
+// 	std::string name = "oufield";
+// 	std::string contents = "type=ougeneral;group=RPElectron1;field=0.0 7.1 14.2;correlationtime = 0.71;stdev=0.142;timestep=0.71;prefactor=0.1;ignoretensors=true";
+// 	SpinAPI::Interaction I(name, contents);
+
+// 	auto field = arma::vec("0.0 7.1 14.2");
+// 	double correlationtime = 0.71;
+// 	auto prefactorlist = arma::vec("-176.085");
+// 	std::vector<bool> commonprefactorlist {0};
+// 	std::vector<bool> ignortensorslist {1};
+// 	double timestep = 0.71;
+// 	double stdev = 0.142;	
+
+// 	bool isCorrect = true;
+
+// 	// Perform the test
+// 	isCorrect &= I.FieldType() == SpinAPI::InteractionFieldType::OUGeneral;
+// 	isCorrect &= equal_vec(I.Field(), field);
+// 	// isCorrect &= equal_double(I.Pulsetime(), pulsetime);
+// 	// isCorrect &= equal_vec(I.PrefactorList(), prefactorlist);
+// 	for (auto i = 0; i < (int)commonprefactorlist.size(); i++)
+// 	{
+// 		isCorrect &= commonprefactorlist[i] == P.AddCommonPrefactorList()[i];
+// 	}
+// 	for (auto i = 0; i < (int)ignortensorslist.size(); i++)
+// 	{
+// 		isCorrect &= ignortensorslist[i] == P.IgnoreTensorsList()[i];
+// 	}
+// 	isCorrect &= equal_double(P.Timestep(), timestep);
+// 	isCorrect &= equal_double(P.Frequency(), frequency);
+
+// 	// Return the result
+// 	return isCorrect;
+
+// }
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Add all the SpinAPI test cases
 void AddSpinAPITests(std::vector<test_case> &_cases)
@@ -1624,5 +1811,10 @@ void AddSpinAPITests(std::vector<test_case> &_cases)
 	_cases.push_back(test_case("SpinAPI::Pulse InstantPulse", test_spinapi_instantpulse));
 	_cases.push_back(test_case("SpinAPI::Pulse LongPulseStaticField", test_spinapi_longpulsestaticfield));
 	_cases.push_back(test_case("SpinAPI::Pulse LongPulse", test_spinapi_longpulse));
+	_cases.push_back(test_case("SpinAPI::Interaction BroadbandField", test_spinapi_interaction_field_broadband));
+	_cases.push_back(test_case("SpinAPI::Interaction OUGeneralField", test_spinapi_interaction_field_ornsteinuhlenbeck));
+	_cases.push_back(test_case("SpinAPI::Interaction MonochromaticTensor", test_spinapi_interaction_tensor_monochromatic));
+	_cases.push_back(test_case("SpinAPI::Interaction BroadbandTensor", test_spinapi_interaction_tensor_broadband));
+	_cases.push_back(test_case("SpinAPI::Interaction OUGeneralTensor", test_spinapi_interaction_tensor_ornsteinuhlenbeck));
 }
 //////////////////////////////////////////////////////////////////////////////

@@ -124,6 +124,7 @@ namespace SpinAPI
 		std::vector<spin_ptr> Group2() const { return this->group2; };
 		InteractionType Type() const { return this->type; };
 		InteractionFieldType FieldType() const { return this->fieldType; };
+		InteractionTensorType TensorType() const { return this->tensorType; };
 		const bool AddCommonPrefactor() const { return this->addCommonPrefactor; };
 		const bool IgnoreTensors() const { return this->ignoreTensors; };
 		const double Prefactor() const;
