@@ -47,34 +47,6 @@ SpinSystem system1
 	}
 	
 	// -------------------------
-	// Oscillating fields
-	// -------------------------
-	// You can add oscillating magnetic fields like this.
-	// Note that you would need to use a task class that supports time-dependent interactions such as DynamicHS-TimeEvolution.
-	// For now, these time-dependent interactions are commented out.
-	/*Interaction linearpolarized
-	{
-		type = Zeeman;
-		field = "0 0 5e-5";
-		spins = electron1, electron2;
-		fieldtype = LinearPolarized;
-		frequency = 1e-1;
-		phase = 0;
-	}
-	
-	Interaction circularpolarized
-	{
-		type = Zeeman;
-		field = "1e-5 0 1e-5";
-		spins = electron1, electron2;
-		fieldtype = CircularPolarized;
-		frequency = 1e-3;
-		phase = 1;
-		axis = "0 0 1"
-		PerpendicularOscillations = false;
-	}*/
-	
-	// -------------------------
 	// Hyperfine interactions
 	// -------------------------
 	Interaction HF1
