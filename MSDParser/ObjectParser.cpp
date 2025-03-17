@@ -54,7 +54,6 @@ namespace MSDParser
 					if (key.size() > 0 && value.size() > 0){
 						this->fields[key] = value;
 					}
-						
 					// Clear buffers and reset
 					key.clear();
 					value.clear();
@@ -69,9 +68,6 @@ namespace MSDParser
 		}
 	}
 
-	std::map<std::string, std::string> ObjectParser::GetFields(){
-		return this->fields;
-	}
 	// Copy-constructor
 	// Copies the values through the initializer list
 	ObjectParser::ObjectParser(const ObjectParser &_objParser) : fields(_objParser.fields), name(_objParser.name)
@@ -89,15 +85,12 @@ namespace MSDParser
 	// Attempt to find a keyword matching the given name
 	bool ObjectParser::Get(const std::string &_str, std::string &_out) const
 	{		
-
 		auto i = this->fields.find(_str);
-
 		if (i != this->fields.end()){
 			_out = i->second;
 		}
 		else
 			return false;		
-
 		return true;
 	}
 
@@ -203,15 +196,10 @@ namespace MSDParser
 	// Attemp to find a vector with the given name
 	bool ObjectParser::Get(const std::string &_str, arma::vec &_out) const
 	{
-
 		std::string str("");
-		// std::cout << _str << std::endl;
 		if (!this->Get(_str, str)){
-			// std::cout << _str <<" " << "false" << std::endl;
 			return false;
 		}
-		// std::cout << _str << std::endl;
-
 
 		// Parse string and make sure that we have a 3D vector
 		arma::vec tmpVec = arma::vec(str);

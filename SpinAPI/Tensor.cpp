@@ -146,7 +146,6 @@ namespace SpinAPI
 		this->trjMatZY = _tensor.trjMatZY;
 		this->trjMatZZ = _tensor.trjMatZZ;
 
-
 		return (*this);
 	}
 
@@ -197,16 +196,12 @@ namespace SpinAPI
 
 	void Tensor::SeparateIsotropy()
 	{
-
 		// Put everything into the anisotropy vector
 		this->anisotropic += this->isotropic;
-
 		// Get the isotropic value
 		this->isotropic = arma::sum(this->anisotropic) / 3.0;
-
 		// And separate the isotropic value from the anisotropy
 		this->anisotropic -= this->isotropic;
-
 	}
 
 	void Tensor::OrthonormalizeAxes()
@@ -307,7 +302,6 @@ namespace SpinAPI
 				else if (keyword.compare("matrix") == 0)
 				{
 					arma::mat tmp(value);
-					//this->initialMatr = tmp;
 					arma::vec aniso(this->anisotropic); // Save the current value for the anisotropic part (can also contain isotropic contributions at this point)
 					this->DiagonalizeMatrix(tmp);		// Sets anisotropic part and axes
 					this->anisotropic += aniso;			// Add whatever anisotropies that were specified previously

@@ -158,7 +158,7 @@ namespace SpinAPI
 					std::cout << "Warning: Ignored fieldtype for Interaction \"" << this->Name() << "\"! Using trajectory instead." << std::endl;
 				}
 				// Figure out what type of time-dependence should be used
-				else if (str.compare("linearpolarized") == 0 || str.compare("linearpolarization") == 0 || str.compare("oscillating") == 0)
+				else if (str.compare("linearpolarized") == 0 || str.compare("linearpolarization") == 0 || str.compare("oscillating") == 0 || str.compare("monochromatic") == 0)
 				{
 					this->fieldType = InteractionFieldType::LinearPolarization;
 					this->properties->Get("frequency", this->tdFrequency);

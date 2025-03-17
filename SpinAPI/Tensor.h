@@ -74,8 +74,6 @@ namespace SpinAPI
 		unsigned int trjMatZY;
 		unsigned int trjMatZZ;
 		
-
-
 		// Private methods
 		void DiagonalizeMatrix(const arma::mat &);					// Set the tensor from a matrix
 		void SeparateIsotropy();									// Separate the isotropic value from the anisotropic values

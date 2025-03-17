@@ -471,12 +471,8 @@ namespace SpinAPI
 				}
 				else
 				{
-					//std::cout << D << E << std::endl;
-
 					// Calculate Zfs interaction
-
 					tmp = D * (Sz * Sz - ((1.00 / 3.00) * (*i)->S() * ((*i)->S() + 1))) + E * (Sx * Sx - Sy * Sy);
-					// std::cout << tmp << std::endl;
 				}
 			}
 		}
