@@ -28,6 +28,7 @@ namespace SpinAPI
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::shared_ptr<Tensor> couplingTensor;				 // Coupling tensor for two-spin interactions, i.e. "A" in "S1 * A * S2". Example: Hyperfine tensor. Could also be used for one-spin interactions.
+		
 		arma::vec field;									 // Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
 		double dvalue, evalue;								 // D and E value for zero-field splitting
 		std::vector<spin_ptr> group1;						 // Spins to use for one-spin interaction and left-hand-side of two-spin interaction
@@ -43,6 +44,7 @@ namespace SpinAPI
 		Trajectory trajectory;
 		bool trjHasTime;
 		bool trjHasField;
+		bool trjHasTensor;
 		bool trjHasPrefactor;
 		unsigned int trjTime;
 		unsigned int trjFieldX;
@@ -50,16 +52,46 @@ namespace SpinAPI
 		unsigned int trjFieldZ;
 		unsigned int trjPrefactor;
 
-		// Special data members for time-dependent fields
+		// Special data members for time-dependent fields 
 		double tdFrequency;
 		double tdPhase;
 		arma::vec tdAxis;
 		bool tdPerpendicularOscillation;
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
 
+		// Special data members for time-dependent tensors
+		InteractionTensorType tensorType;	// Tensor type for tensor interactions (static / time-dependence specification)
+		double tdTimestep;
+		arma::mat tdInitialTensor;
+		double tdStdev;
+		double tdMinFreq;
+		double tdMaxFreq;
+		arma::mat tdFreqs;
+		arma::mat tdAmps;
+		arma::mat tdPhases;
+		int tdComponents;
+		bool tdRandOrients;
+		arma::mat tdThetas;
+		arma::mat tdPhis;
+		double tdCorrTime;
+		double tdAmp;
+		bool tdDist;
+		bool tdPrintTensor;
+		bool tdPrintField;
+
+		// Special data members for random number generation
+		int tdSeed;
+		bool tdAutoseed;
+		std::mt19937 tdGenerator;
+
 		// Private methods to create ActionTargets
 		std::vector<RunSection::NamedActionVector> CreateActionVectors(const std::string &);
 		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);
+
+		//Member functions for time-dependent tensors
+		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
+		void TensorTimeDependenceBroadband(arma::mat, double, arma::mat, arma::mat, arma::mat, int);
+		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double, double);
 
 		// ActionTarget methods
 		void SetField(arma::vec &);
@@ -92,6 +124,7 @@ namespace SpinAPI
 		std::vector<spin_ptr> Group2() const { return this->group2; };
 		InteractionType Type() const { return this->type; };
 		InteractionFieldType FieldType() const { return this->fieldType; };
+		InteractionTensorType TensorType() const { return this->tensorType; };
 		const bool AddCommonPrefactor() const { return this->addCommonPrefactor; };
 		const bool IgnoreTensors() const { return this->ignoreTensors; };
 		const double Prefactor() const;
@@ -100,6 +133,7 @@ namespace SpinAPI
 		const double Dvalue() const;
 		const double Evalue() const;
 		bool HasFieldTimeDependence() const;
+		bool HasTensorTimeDependence() const;
 		bool HasTimeDependence() const;
 
 		// Get time-dependency parameters
@@ -136,6 +170,8 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
+	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, arma::mat, arma::mat, arma::mat,arma::mat,arma::mat,bool, int);
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double , double , double , double , std::mt19937 &);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

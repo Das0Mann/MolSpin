@@ -73,7 +73,7 @@ namespace SpinAPI
 		unsigned int trjMatZX;
 		unsigned int trjMatZY;
 		unsigned int trjMatZZ;
-
+		
 		// Private methods
 		void DiagonalizeMatrix(const arma::mat &);					// Set the tensor from a matrix
 		void SeparateIsotropy();									// Separate the isotropic value from the anisotropic values
@@ -122,6 +122,10 @@ namespace SpinAPI
 		unsigned int TrajectoryLength() const; // Number of steps in the trajectory for tensor (0 means no trajectory)
 		bool SetTrajectoryStep(unsigned int);  // Set value from trajectory based on step number
 		bool SetTime(double);				   // Set value from trajectory based on time
+
+		//Methods for time-dependent interactions
+		void SetTensor(arma::mat &);		   // Set value from lab frame matrix
+		arma::mat GetTensor();				   // return lab frame matrix
 
 		// Public method for creating ActionTargets
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
