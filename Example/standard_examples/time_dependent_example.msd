@@ -52,7 +52,7 @@ SpinSystem system1
 	// You can add time-dependent magnetic fields like this.
 	// Note that you would need to use a task class that supports time-dependent interactions such as DynamicHS-TimeEvolution.
 	
-	Interaction linearpolarized
+	Interaction linearpolarized       //generate a linearly polarized magnetic field
 	{
 		type = Zeeman;
 		field = "0 0 5e-5";
@@ -60,12 +60,12 @@ SpinSystem system1
 		fieldtype = LinearPolarized;
 		frequency = 1e-2;
 		phase = 0;
-        printfield=true; //outputs the file 'linearpolarized.mst'
+        printfield = true; //outputs the file 'linearpolarized.mst'
 	}
 
     // For now, additional time-dependent field interactions are commented out.
     /*
-	Interaction circularpolarized
+	Interaction circularpolarized      //generate a circularly polarized magnetic field
 	{
 		type = Zeeman;
 		field = "1e-5 0 1e-5";
@@ -77,7 +77,7 @@ SpinSystem system1
 		PerpendicularOscillations = false;
 	}
     
-    Interaction zeeman_BB 
+    Interaction zeeman_BB      //generate a magnetic field modulated by broadband noise
 	{
 		prefactor = 0.001;
 		type = Zeeman;
@@ -89,21 +89,22 @@ SpinSystem system1
 		maxfreq=0.001;
 		stdev=0.01;
 		components=100;
-		randomorientations = "false";
+		randomorientations = false;
+		printfield = true;   //outputs the file 'zeeman_BB.mst'
 	}
     
-    Interaction zeeman_OU
+    Interaction zeeman_OU      //generate a magnetic field modulated by Ornstein-Uhlenbeck noise
     {
         prefactor = 0.001;
 		type = Zeeman;
 		field = "0.1 0.0 0.8";
 		spins = electron1, electron2;   
 
-        fieldtype="ougeneral";
+        fieldtype = "ougeneral";
         correlationtime = 1e6;
 		stdev = 0.3;
-		seed=1;
-		timestep=1; 
+		seed = 1;
+		timestep = 1; 
     }    
     */
 
@@ -111,19 +112,22 @@ SpinSystem system1
 	// Time-dependent Interactions - Tensors
 	// -------------------------
 	// You can add time-dependent interaction tensors like this.
-    Interaction HFI_OU
+
+    Interaction HFI_OU     //generate a time-dependent hyperfine interaction modulated by Ornstein-Uhlenbeck noise
 	{
 	  
 		type = DoubleSpin;
-        prefactor=0.001;
+        prefactor = 0.001;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
 
-		tensortype = ougeneral;
+		tensortype = "ougeneral";
         correlationtime = 1e6;
 		stdev = 1.0;
-		seed=1;
-		timestep=1;
+		seed = 1;
+		timestep = 1;
+
+        printtensor = true;    //outputs the file 'HFI_OU.mst'
 
 		group1 = electron1;
 		group2 = nucleus1;
@@ -131,40 +135,39 @@ SpinSystem system1
 
     // For now, additional time-dependent tensor interactions are commented out.
     /*
-    Interaction HFI_monochromatic
+    Interaction HFI_monochromatic  //generate a time-dependent hyperfine interaction modulated by monochromatic noise
     {
         type = DoubleSpin;
-        prefactor=0.001;
+        prefactor = 0.001;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
-		tensortype = monochromatic;
+		tensortype = "monochromatic";
 		frequency = 0.01;
 		phase = 0;
 		amplitude = 0.1;
-		modulatedistance=false;
 
-        printtensor=false;
+        printtensor = false;   
 
 		group1 = electron1;
 		group2 = nucleus1;
 
     }
 
-    Interaction HFI_BB
+    Interaction HFI_BB       //generate a time-dependent hyperfine interaction modulated by broadband noise
 	{
 
 		type = DoubleSpin;
-        prefactor=0.001;
+        prefactor = 0.001;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
-        tensortype = broadband;
-		minfreq=0.1;
-		maxfreq=10;
-		stdev=0.5;
-		components=1000;
+        tensortype = "broadband";
+		minfreq = 0.1;
+		maxfreq = 10;
+		stdev = 0.5;
+		components = 1000;
 	
-		printtensor=true;
-		autoseed=true;
+		printtensor = true;   //outputs the file 'HFI_BB.mst'
+		seed = 1;
 	
 		group1 = electron1;	
 		group2 = nucleus1;
@@ -231,7 +234,7 @@ Run
 		type = "DynamicHS-Direct-TimeEvo";
 		logfile = "log_time_dependent.log";
 		datafile = "dat_time_dependent.dat";
-		totaltime=5000;
+		totaltime=8000;
 		Timestep=1;
 		transitionyields = "false";
 		initialstate= "singlet";

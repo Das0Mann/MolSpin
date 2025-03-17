@@ -1118,7 +1118,8 @@ namespace SpinAPI
 				//output the current tensor to file if required
 				if(this->tdPrintTensor == true){
 					std::ofstream file;
-					file.open("Example/standard_examples/OUGeneral.mst", std::ofstream::app);
+					std::string tdFilename = this->Name() + ".mst";
+					file.open(tdFilename, std::ofstream::app);
 					file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
 					file.close();
 				}
