@@ -32,3 +32,4 @@ msd-files/
 #ignore vscode workspase files
 MolSpin.code-workspace
 MolSpin copy.code-workspace
+makefile
