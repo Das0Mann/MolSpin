@@ -224,6 +224,7 @@ namespace SpinAPI
 		std::shared_ptr<Function> Func;
 		int mz = 0;
 		bool inState = false;
+		bool DefaultFunction = false;
 		auto currentSpinPair = newState.begin();
 		bool function = false;
 		int depth = 0;
@@ -263,21 +264,45 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				//currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
 				this->InitialFactors.push_back(factor);
+				std::complex<double> FuncFactor;
+				if(Func != nullptr)
+        		{
+					DefaultFunction = false;
+				  	std::vector<std::string> vars = Func->GetVariable();
+				  	for(auto x : vars)
+				  	{
+				  		std::vector<std::string> vars = Func->GetVariable();
+				  		for(auto x : vars)
+				  		{
+							double var;
+							if(properties->Get(x, var))
+				  			{
+				  				Variables[x] = var;
+				  			}
+				  		}
+					}
+				}	
 				if(Func == nullptr)
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
+					FuncFactor = this->InitialFactors[FuncNum];
+					DefaultFunction = true;
 				}
-				std::vector<std::string> vars = Func->GetVariable();
-				for(auto x : vars)
-				{
-					double var;
-					if(properties->Get(x, var))
+				else
+				{					
+					std::vector<std::string> vars = Func->GetVariable();
+					std::vector<void*> v;
+					for (auto x : vars)
 					{
-						Variables[x] = var;
+						v.push_back((void*)(double*)&Variables[x]);
 					}
+					FuncFactor = this->InitialFactors[FuncNum] * Func->operator()(v);
+					//do something
 				}
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, FuncFactor));
+				//throw a error if var not found 
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
 				FuncNum++;
@@ -285,6 +310,8 @@ namespace SpinAPI
 				// Reset buffer and prepare reading next mz value
 				buffer = "";
 				++currentSpinPair;
+				if(DefaultFunction)
+					Func = nullptr;
 			}
 			else if (inState && (*i) == '>')
 			{
@@ -305,25 +332,47 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no function is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				//currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				std::complex<double> FuncFactor;
 				this->InitialFactors.push_back(factor);
+				if(Func != nullptr)
+				{
+					DefaultFunction = false;
+					std::vector<std::string> vars = Func->GetVariable();
+					for(auto x : vars)
+					{
+						double var;
+						if(properties->Get(x, var))
+						{
+							Variables[x] = var;
+						}
+					}
+				}
 				if(Func == nullptr)
 				{
 					Func = std::make_shared<Function>(MathematicalFunctions::scalar, Function::ReturnType::d, std::to_string(FuncNum));
+					FuncFactor = this->InitialFactors[FuncNum];
+					DefaultFunction = true;
 				}
-				std::vector<std::string> vars = Func->GetVariable();
-				for(auto x : vars)
-				{
-					double var;
-					if(properties->Get(x, var))
+				else
+				{					
+					std::vector<std::string> vars = Func->GetVariable();
+					std::vector<void*> v;
+					for (auto x : vars)
 					{
-						Variables[x] = var;
+						v.push_back((void*)(double*)&Variables[x]);
 					}
+					FuncFactor = this->InitialFactors[FuncNum] * Func->operator()(v);
+					//do something
 				}
+				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, FuncFactor));
+
 				//throw a error if var not found 
 				Functions.push_back(Func);
 				BracketDepth.push_back(depth);
 				FuncNum++;
+				if(DefaultFunction)
+					Func = nullptr;
 
 				// Reset buffer and prepare to read the next state
 				buffer = "";
