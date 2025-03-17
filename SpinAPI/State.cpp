@@ -264,22 +264,25 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no funcion is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				//currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
 				this->InitialFactors.push_back(factor);
+				std::complex<double> FuncFactor;
 				if(Func != nullptr)
-        {
-				  std::vector<std::string> vars = Func->GetVariable();
-				  for(auto x : vars)
-				  {
+        		{
+					DefaultFunction = false;
 				  	std::vector<std::string> vars = Func->GetVariable();
 				  	for(auto x : vars)
 				  	{
-				  		double var;
-				  		if(properties->Get(x, var))
+				  		std::vector<std::string> vars = Func->GetVariable();
+				  		for(auto x : vars)
 				  		{
-				  			Variables[x] = var;
+							double var;
+							if(properties->Get(x, var))
+				  			{
+				  				Variables[x] = var;
+				  			}
 				  		}
-				  	}
+					}
 				}	
 				if(Func == nullptr)
 				{
@@ -329,10 +332,12 @@ namespace SpinAPI
 
 				// Extend the StateSeries with a new pair of "mz" and "factor" values
 				// Add a function to the list of function, in the case where no function is provided the defualt scaler multiply function is used
-				currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				//currentSpinPair->second.push_back(std::pair<int, arma::cx_double>(mz, factor));
+				std::complex<double> FuncFactor;
 				this->InitialFactors.push_back(factor);
 				if(Func != nullptr)
 				{
+					DefaultFunction = false;
 					std::vector<std::string> vars = Func->GetVariable();
 					for(auto x : vars)
 					{
