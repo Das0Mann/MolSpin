@@ -20,9 +20,9 @@
 # Note that this line should be added to LFLAGS only.
 # --------------------------------------------------------------------------
 # Compile using Armadillo, here assuming OpenBLAS and Lapack is used
-#ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
+ARMADILLO = -larmadillo -lopenblas -llapack -fopenmp -DARMA_NO_DEBUG
 # For an installation in a non-standard location, use:
-ARMADILLO = -I ~/armadillo-12.8.4/include -DARMA_DONT_USE_WRAPPER -lopenblas -llapack -fopenmp 
+#ARMADILLO = -I/path/to/armadillo/installdir/include/ -DARMA_DONT_USE_WRAPPER -fopenmp
 # --------------------------------------------------------------------------
 # If you have different versions of gcc or the C++ stdlib installed,
 # adding the following to LFLAGS may help:
@@ -68,7 +68,7 @@ PATH_LINALG_VENDOR = ./Vendor/
 #---------------------------------------------------------------------------
 # General Compilation Options
 OBJECTS = main.o $(OBJS_SPINAPI) $(OBJS_MSDPARSER) $(OBJS_RUNSECTION) $(OBJS_RUNSECTION_TASKS) $(OBJS_RUNSECTION_ACTIONS)
-CC = g++ -std=c++17	# Compiler to use
+CC = g++ -std=c++17		# Compiler to use
 DEBUG = -g				# Add this to LFLAGS/CFLAGS to be able to debug
 LFLAGS = -Wall -g -DARMA_DONT_PRINT_FAST_MATH_WARNING -O3	# Linker Flags
 CFLAGS = -Wall -c -march=native -funroll-loops -fconcepts -g -fopenmp -DARMA_DONT_PRINT_FAST_MATH_WARNING -O3 # Compile flags to .o
