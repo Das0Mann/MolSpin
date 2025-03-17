@@ -42,6 +42,7 @@ namespace RunSection
 	bool TaskMultiRadicalPairSSTimeEvo::RunLocal()
 	{
 		this->Log() << "Running method StaticSS-MultiRadicalPairSystem." << std::endl;
+		this->timestep = this->OriginalTimestep;
 
 		// If this is the first step, write first part of header to the data file
 		bool YieldOnly = false;
@@ -407,6 +408,18 @@ namespace RunSection
 			return true;
 		}
 
+		//auto LInitial = L;
+
+		double MinTimeStep = 0;
+		double MaxTimeStep = 0;
+		if(!this->Properties()->Get("minimumtimestep", MinTimeStep) and !this->Properties()->Get("minimum timestep", MinTimeStep))
+		{
+			MinTimeStep = InitialTimestep * 1e-3;
+		}
+		if(!this->Properties()->Get("maximumtimestep", MaxTimeStep) and !this->Properties()->Get("maximum timestep", MaxTimeStep))
+		{
+			MaxTimeStep = InitialTimestep * 1e4;
+		}
 
 		while(Currenttime <= this->totaltime)
 		{
@@ -415,8 +428,13 @@ namespace RunSection
 			// Write first part of the data output
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
 			Currenttime += this->timestep;
-			this->Data() << Currenttime << " ";
-			this->WriteStandardOutput(this->Data());
+			if(!SilentMode)
+			{
+				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				this->Data() << Currenttime << " ";
+				this->WriteStandardOutput(this->Data());
+			}
+			//L = LInitial//* this->timestep;
 			trajectory.push_back({Currenttime, {}});
 			// Propagate (use special scope to be able to dispose of the temporary vector asap)
 			{
@@ -424,7 +442,7 @@ namespace RunSection
 				//auto rho0Eigen = ConvertAramdilloToEigen(rho0);
 				//this->timestep = RungeKutta4AdaptiveTimeStep(LEigen, rho0Eigen, rho0Eigen, this->timestep, TaskMultiRadicalPairSSTimeEvo::ComputeRhoDot, {1e-4,1e-3}, InitialTimestep * 1e-2);
 				//rho0 = ConvertEigenToArmadillo(rho0Eigen).col(0);
-				this->timestep = RungeKutta45Armadillo(L,rho0,rho0,this->timestep,ComputeRhoDot,{1e-7,1e-6},InitialTimestep * 1e-3, InitialTimestep * 1e4);
+				this->timestep = RungeKutta45Armadillo(L,rho0,rho0,this->timestep,ComputeRhoDot,{1e-7,1e-6},MinTimeStep, MaxTimeStep);
 			}
 
 			// Retrieve the resulting density matrix for each spin system and output the results
@@ -515,6 +533,7 @@ namespace RunSection
 					state_data.push_back(a[index]);
 				}
 				StateYield(rate, yield, state_data, time);
+				std::cout << yield << std::endl;
 				yields[index] += yield;
 			}
 		}
@@ -557,10 +576,12 @@ namespace RunSection
 		for(unsigned int i = 0; i < _traj.size(); i++)
 		{
 			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
-			ylist.push_back(_rate * _traj[i].real());
+			//ylist.push_back(_rate * _traj[i].real());
+			ylist.push_back(_traj[i].real());
+
 		}
-		//_yeild = _rate * simpson_integration(_time, ylist);
-		_yeild = simpson_integration(_time, ylist);
+		_yeild = _rate * simpson_integration(_time, ylist);
+		//_yeild = simpson_integration(_time, ylist);
 	}
 
     void TaskMultiRadicalPairSSTimeEvo::StateYield(double rate, double& yield, int spinsystem, int spinsystems, arma::cx_mat& projection_operator, arma::cx_vec& StateDensityVec) 
@@ -602,7 +623,7 @@ namespace RunSection
 			double diff = x_list[i + 1] - x_list[i];
 			double ab = y_list[i] + y_list[i + 1];
 
-			area = area + (ab * 0.5) * diff;
+			area = area + ((ab * 0.5) * diff);
 		}
 		return area;
 	}
@@ -714,6 +735,7 @@ namespace RunSection
 			if (std::isfinite(inputTimestep) && inputTimestep > 0.0)
 			{
 				this->timestep = inputTimestep;
+				this->OriginalTimestep = inputTimestep;
 			}
 			else
 			{
