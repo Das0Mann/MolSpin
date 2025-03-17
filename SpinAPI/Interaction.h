@@ -34,7 +34,7 @@ namespace SpinAPI
 		std::vector<spin_ptr> group1;						 // Spins to use for one-spin interaction and left-hand-side of two-spin interaction
 		std::vector<spin_ptr> group2;						 // Spins to use on right-hand-side of coupling tensor in two-spin interaction
 		InteractionType type;								 // Interaction type (one-spin / two-spin)
-		InteractionFieldType fieldType;						 // Field type for one-spin interactions (static / time-dependence specification)				 // Tensor type for tensor interactions (static / time-dependence specification)
+		InteractionFieldType fieldType;						 // Field type for one-spin interactions (static / time-dependence specification)
 		double prefactor;									 // An optional additional prefactor that can be specified in input file (default = 1.0)
 		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
@@ -60,7 +60,7 @@ namespace SpinAPI
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
 
 		// Special data members for time-dependent tensors
-		InteractionTensorType tensorType;	
+		InteractionTensorType tensorType;	// Tensor type for tensor interactions (static / time-dependence specification)
 		double tdTimestep;
 		arma::mat tdInitialTensor;
 		double tdStdev;
