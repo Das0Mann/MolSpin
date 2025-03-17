@@ -28,7 +28,7 @@ extern "C" void omp_set_num_threads(int);
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-	const std::string MolSpin_version = "v2.2";
+	const std::string MolSpin_version = "v2.5";
 	const std::string hline = "# ---------------------------------------------------------------------------------";
 
 	// Check for proper input
@@ -111,7 +111,8 @@ int main(int argc, char **argv)
 	std::cout << hline << std::endl;
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;
-	std::cout << "# Developed 2017-2019 by Claus Nielsen* and 2021-2024 by Luca Gerhards**." << std::endl;
+	std::cout << "# Developed 2017-2019 by Claus Nielsen* and 2021-2025 by Luca Gerhards**." << std::endl;
+	std::cout << "# Other development contributor: Benji Tiggs, Philip Benjamin, Gediminas Pazera, Irina S. Anisiomva" << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
 	std::cout << "# *:  University of Southern Denmark." << std::endl;
 	std::cout << "# **: Carl von Ossietzky University of Oldenburg." << std::endl;
