@@ -33,7 +33,6 @@ namespace MSDParser
 
 		// Operators
 		ObjectParser &operator=(const ObjectParser &); // Default Copy-assignment
-
 		// Public methods to get a property
 		bool Get(const std::string &, std::string &) const;
 		bool Get(const std::string &, double &) const;
