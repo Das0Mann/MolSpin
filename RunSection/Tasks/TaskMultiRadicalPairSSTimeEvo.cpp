@@ -48,6 +48,9 @@ namespace RunSection
 		bool YieldOnly = false;
 		if (this->Properties()->Get("yieldonly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
 			YieldOnly = true;
+		bool SilentMode = false;
+		if (this->Properties()->Get("silentmode", SilentMode) || this->Properties()->Get("silent mode", SilentMode))
+			SilentMode = true;
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
 			this->WriteHeader(this->Data());
@@ -420,6 +423,7 @@ namespace RunSection
 		{
 			MaxTimeStep = InitialTimestep * 1e4;
 		}
+		if(!this->Properties())
 
 		while(Currenttime <= this->totaltime)
 		{
