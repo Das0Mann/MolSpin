@@ -55,7 +55,7 @@ SpinSystem system1
 	Interaction linearpolarized       //generate a linearly polarized magnetic field
 	{
 		type = Zeeman;
-		prefactor = 1e-4
+		prefactor = 1e-4;
 		field = "0.0 0 0.05";
 		spins = electron1, electron2;
 		fieldtype = LinearPolarized;
@@ -64,12 +64,10 @@ SpinSystem system1
         printfield = true; //outputs the file 'linearpolarized.mst'
 	}
 
-    // For now, additional time-dependent field interactions are commented out.
-    
 	Interaction circularpolarized      //generate a circularly polarized magnetic field
 	{
 		type = Zeeman;
-		prefactor = 1e-4
+		prefactor = 1e-4;
 		field = "0.05 0 0.05";
 		spins = electron1, electron2;
 		fieldtype = CircularPolarized;
@@ -83,7 +81,7 @@ SpinSystem system1
     Interaction zeeman_BB      //generate a magnetic field modulated by broadband noise
 	{
 		type = Zeeman;
-		prefactor = 1e-4
+		prefactor = 1e-4;
 		field = "0.0 0 0.05";
 		spins = electron1, electron2;
 
@@ -99,12 +97,12 @@ SpinSystem system1
     Interaction zeeman_OU      //generate a magnetic field modulated by Ornstein-Uhlenbeck noise
     {
 		type = Zeeman;
-		prefactor = 1e-4
+		prefactor = 1e-4;
 		field = "0.0 0 0.05";
 		spins = electron1, electron2;   
 
         fieldtype = "ougeneral";
-        correlationtime = 1e6;
+        correlationtime = 1e3;
 		seed = 1;
 		timestep = 1; 
         printfield = true; //outputs the file 'zeeman_OU.mst'
@@ -134,8 +132,8 @@ SpinSystem system1
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
 
 		tensortype = "ougeneral";
-        correlationtime = 1e6;
-		seed = 4;
+        correlationtime = 1e3;
+		seed = 1;
 		timestep = 1;
 
         printtensor = true;    //outputs the file 'HFI_OU.mst'
@@ -144,8 +142,6 @@ SpinSystem system1
 		group2 = nucleus1;
 	}
 
-    // For now, additional time-dependent tensor interactions are commented out.
-    
     Interaction HFI_monochromatic  //generate a time-dependent hyperfine interaction modulated by monochromatic noise
     {
         type = DoubleSpin;

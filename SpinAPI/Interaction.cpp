@@ -1005,10 +1005,28 @@ namespace SpinAPI
 
 		std::normal_distribution<double> dist(0.0, 1.0);
 
-		double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
-		double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
+		double noise_xx = dist(this->tdGenerator);
+		double noise_yy = dist(this->tdGenerator);
+		double noise_zz = dist(this->tdGenerator);
+		double noise_xy = dist(this->tdGenerator);
+		double noise_xz = dist(this->tdGenerator);
+		double noise_yz = dist(this->tdGenerator);
 
 		if(_time == 0){
+			//initial condition
+			double A_xx = noise_xx * _m(0,0);
+			double A_xy = noise_xy * _m(0,1);
+			double A_xz = noise_xz * _m(0,2);
+			double A_yy = noise_yy * _m(1,1);
+			double A_yz = noise_yz * _m(1,2);
+			double A_zz = noise_zz * _m(2,2);
+
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
+								{A_xy, A_yy, A_yz},
+								{A_xz, A_yz, A_zz}};
+			//set the new diagonalised matrix within the Tensor object
+			this->couplingTensor->SetTensor(tdTensor);
+
 			//output the tensor at time=0 to file if required
 			if(this->tdPrintTensor == true){
 				std::ofstream file;
@@ -1017,21 +1035,10 @@ namespace SpinAPI
 				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
 				file.close();
 			}
-
-			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-								{A_xy, A_yy, A_yz},
-								{A_xz, A_yz, A_zz}};
-			//set the new diagonalised matrix within the Tensor object
-			this->couplingTensor->SetTensor(tdTensor);
 		}
-
 		else{
-			double noise_xx = dist(this->tdGenerator);
-			double noise_yy = dist(this->tdGenerator);
-			double noise_zz = dist(this->tdGenerator);
-			double noise_xy = dist(this->tdGenerator);
-			double noise_xz = dist(this->tdGenerator);
-			double noise_yz = dist(this->tdGenerator);
+			double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
+			double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
 
 			A_xx = A_xx * (1 - _timestep/_corrtime) + _m(0,0) * std::sqrt(2.0 * _timestep/_corrtime) * noise_xx;
 			A_yy = A_yy * (1 - _timestep/_corrtime) + _m(1,1) * std::sqrt(2.0 * _timestep/_corrtime) * noise_yy;
@@ -1197,8 +1204,13 @@ namespace SpinAPI
 		double field_y = _v_prev(1) * (1 - _timestep / _corrtime) + _v_init(1) * std::sqrt(2.0 * _timestep/_corrtime) * noise_y; 
 		double field_z = _v_prev(2) * (1 - _timestep / _corrtime) + _v_init(2) * std::sqrt(2.0 * _timestep/_corrtime) * noise_z; 
 		
-		arma::vec newField = {field_x, field_y, field_z};
-
+		arma::vec newField;
+		if(_time == 0 ){
+			newField = {_v_init(0)*noise_x, _v_init(1)*noise_y, _v_init(2)*noise_z};
+		}
+		else{
+			newField = {field_x, field_y, field_z};
+		}
 		return newField;
 	}
 
