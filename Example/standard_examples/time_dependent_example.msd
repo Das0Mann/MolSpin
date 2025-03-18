@@ -38,9 +38,9 @@ SpinSystem system1
 	// -------------------------
 	// Zeeman interaction
 	// -------------------------
-	Interaction zeeman1
+	Interaction zeeman_static //Static Zeeman interaction
 	{
-		prefactor = 0.001;	// Change field units from T to mT
+		prefactor = 1e-3;	// Change field units from T to mT
 		type = Zeeman;
 		field = "0 0 0.05";	// 0.05 mT along the z-axis
 		spins = electron1, electron2;
@@ -55,7 +55,8 @@ SpinSystem system1
 	Interaction linearpolarized       //generate a linearly polarized magnetic field
 	{
 		type = Zeeman;
-		field = "0 0 5e-5";
+		prefactor = 1e-4;
+		field = "0.0 0 0.05";
 		spins = electron1, electron2;
 		fieldtype = LinearPolarized;
 		frequency = 1e-2;
@@ -63,50 +64,59 @@ SpinSystem system1
         printfield = true; //outputs the file 'linearpolarized.mst'
 	}
 
-    // For now, additional time-dependent field interactions are commented out.
-    /*
 	Interaction circularpolarized      //generate a circularly polarized magnetic field
 	{
 		type = Zeeman;
-		field = "1e-5 0 1e-5";
+		prefactor = 1e-4;
+		field = "0.05 0 0.05";
 		spins = electron1, electron2;
 		fieldtype = CircularPolarized;
 		frequency = 1e-3;
 		phase = 1;
 		axis = "0 0 1"
 		PerpendicularOscillations = false;
+        printfield = true; //outputs the file 'circularpolarized.mst'
 	}
     
     Interaction zeeman_BB      //generate a magnetic field modulated by broadband noise
 	{
-		prefactor = 0.001;
 		type = Zeeman;
-		field = "0.01 0.0 0.08";
+		prefactor = 1e-4;
+		field = "0.0 0 0.05";
 		spins = electron1, electron2;
 
 		fieldtype="broadband";
 		minfreq=0.1;
 		maxfreq=0.001;
-		stdev=0.01;
 		components=100;
 		randomorientations = false;
+		seed=1;
 		printfield = true;   //outputs the file 'zeeman_BB.mst'
 	}
     
     Interaction zeeman_OU      //generate a magnetic field modulated by Ornstein-Uhlenbeck noise
     {
-        prefactor = 0.001;
 		type = Zeeman;
-		field = "0.1 0.0 0.8";
+		prefactor = 1e-4;
+		field = "0.0 0 0.05";
 		spins = electron1, electron2;   
 
         fieldtype = "ougeneral";
-        correlationtime = 1e6;
-		stdev = 0.3;
+        correlationtime = 1e3;
 		seed = 1;
 		timestep = 1; 
+        printfield = true; //outputs the file 'zeeman_OU.mst'
+
     }    
-    */
+
+	Interaction HFI_static     //Static hyperfine interaction
+	{
+		type = DoubleSpin;
+        prefactor = 1e-3;
+		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
+		group1 = electron1;
+		group2 = nucleus1;
+	}
 
     // -------------------------
 	// Time-dependent Interactions - Tensors
@@ -117,13 +127,12 @@ SpinSystem system1
 	{
 	  
 		type = DoubleSpin;
-        prefactor = 0.001;
+        prefactor = 1e-4;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
 
 		tensortype = "ougeneral";
-        correlationtime = 1e6;
-		stdev = 1.0;
+        correlationtime = 1e3;
 		seed = 1;
 		timestep = 1;
 
@@ -133,20 +142,17 @@ SpinSystem system1
 		group2 = nucleus1;
 	}
 
-    // For now, additional time-dependent tensor interactions are commented out.
-    /*
     Interaction HFI_monochromatic  //generate a time-dependent hyperfine interaction modulated by monochromatic noise
     {
         type = DoubleSpin;
-        prefactor = 0.001;
+        prefactor = 1e-4;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
 		tensortype = "monochromatic";
 		frequency = 0.01;
 		phase = 0;
-		amplitude = 0.1;
 
-        printtensor = false;   
+        printtensor = true;   //outputs the file 'HFI_monochromatic.mst'
 
 		group1 = electron1;
 		group2 = nucleus1;
@@ -157,13 +163,12 @@ SpinSystem system1
 	{
 
 		type = DoubleSpin;
-        prefactor = 0.001;
+        prefactor = 1e-4;
 
 		tensor = matrix("-0.099 -0.003 0.000; -0.003 -0.087 0.000; 0.000 0.000 1.757");
         tensortype = "broadband";
 		minfreq = 0.1;
 		maxfreq = 10;
-		stdev = 0.5;
 		components = 1000;
 	
 		printtensor = true;   //outputs the file 'HFI_BB.mst'
@@ -172,7 +177,7 @@ SpinSystem system1
 		group1 = electron1;	
 		group2 = nucleus1;
 	}
-    */
+    
 
     // -------------------------
 	// Spin States

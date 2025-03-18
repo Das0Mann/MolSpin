@@ -1589,10 +1589,10 @@ bool test_spinapi_interaction_field_broadband()
 {
 	// Setup objects for the test
 	std::string name = "test1";
-	std::string contents = "type=singlespin;fieldtype=broadband;autoseed=false;seed=1;field=1 0 1;minfreq=0.1e+6;maxfreq=0.2e+6;stdev=0.0;components=100;randomorientations=true;";
+	std::string contents = "type=singlespin;fieldtype=broadband;autoseed=false;seed=1;field=0 0 0;minfreq=0.1e+6;maxfreq=0.2e+6;components=100;randomorientations=false;";
 	SpinAPI::Interaction I(name, contents);
 
-	auto testfield1 = arma::vec("1 0 1");
+	auto testfield1 = arma::vec("0 0 0");
 	double testtime = 1.0;
 
 	bool isCorrect = true;
@@ -1617,10 +1617,10 @@ bool test_spinapi_interaction_field_ornsteinuhlenbeck()
 {
 	// Setup objects for the test
 	std::string name = "test1";
-	std::string contents = "type=singlespin;fieldtype=ougeneral;autoseed=false;seed=1;field=1 0 1;correlationtime=10.0;stdev=0.0;timestep=1.0;randomorientations=true;";
+	std::string contents = "type=singlespin;fieldtype=ougeneral;autoseed=false;seed=1;field=0 0 0;correlationtime=10.0;timestep=1.0;randomorientations=true;";
 	SpinAPI::Interaction I(name, contents);
 
-	auto testfield1 = arma::vec("1 0 1");
+	auto testfield1 = arma::vec("0 0 0");
 	double testtime = 1.0;
 
 	bool isCorrect = true;
@@ -1645,10 +1645,10 @@ bool test_spinapi_interaction_tensor_monochromatic()
 {
 	// Setup objects for the test
 	std::string name = "test1";
-	std::string contents = "type=doublespin;tensortype=monochromatic;tensor=matrix(1 2 3; 2 4 5; 3 5 6);frequency=1e+6;phase=1.5;amplitude=0.0;";
+	std::string contents = "type=doublespin;tensortype=monochromatic;tensor=matrix(0 0 0; 0 0 0; 0 0 0);frequency=1e+6;phase=1.5;";
 	SpinAPI::Interaction I(name, contents);
 
-	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
 	double frequency=1e6;
 	//pefrom the test
@@ -1675,10 +1675,10 @@ bool test_spinapi_interaction_tensor_broadband()
 {
 	// Setup objects for the test
 	std::string name = "test1";
-	std::string contents = "type=doublespin;tensortype=broadband;autoseed=false;seed=1;tensor=matrix(1 2 3; 2 4 5; 3 5 6);minfreq=0.1e+6;maxfreq=0.2e+6;stdev=0.0;components=100;";
+	std::string contents = "type=doublespin;tensortype=broadband;autoseed=false;seed=1;tensor=matrix(0 0 0; 0 0 0; 0 0 0);minfreq=0.1e+6;maxfreq=0.2e+6;components=100;";
 	SpinAPI::Interaction I(name, contents);
 
-	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
 
 	//pefrom the test
@@ -1704,10 +1704,10 @@ bool test_spinapi_interaction_tensor_ornsteinuhlenbeck()
 {
 	// Setup objects for the test
 	std::string name = "test1";
-	std::string contents = "type=doublespin;tensortype=ougeneral;autoseed=false;seed=1;tensor=matrix(1 2 3; 2 4 5; 3 5 6);correlationtime=10.0;stdev=0.0;timestep=1.0;";
+	std::string contents = "type=doublespin;tensortype=ougeneral;autoseed=false;seed=1;tensor=matrix(0 0 0; 0 0 0; 0 0 0);correlationtime=10.0;timestep=1.0;";
 	SpinAPI::Interaction I(name, contents);
 
-	auto testmatrix = arma::mat("1 2 3; 2 4 5; 3 5 6");
+	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
 
 	//pefrom the test

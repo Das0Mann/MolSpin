@@ -63,7 +63,6 @@ namespace SpinAPI
 		InteractionTensorType tensorType;	// Tensor type for tensor interactions (static / time-dependence specification)
 		double tdTimestep;
 		arma::mat tdInitialTensor;
-		double tdStdev;
 		double tdMinFreq;
 		double tdMaxFreq;
 		arma::mat tdFreqs;
@@ -75,7 +74,6 @@ namespace SpinAPI
 		arma::mat tdPhis;
 		double tdCorrTime;
 		double tdAmp;
-		bool tdDist;
 		bool tdPrintTensor;
 		bool tdPrintField;
 
@@ -89,9 +87,9 @@ namespace SpinAPI
 		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);
 
 		//Member functions for time-dependent tensors
-		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double, double);
+		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double);
 		void TensorTimeDependenceBroadband(arma::mat, double, arma::mat, arma::mat, arma::mat, int);
-		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double, double);
+		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double);
 
 		// ActionTarget methods
 		void SetField(arma::vec &);
@@ -171,7 +169,7 @@ namespace SpinAPI
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
 	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, arma::mat, arma::mat, arma::mat,arma::mat,arma::mat,bool, int);
-	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double , double , double , double , std::mt19937 &);
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double , double , double , std::mt19937 &);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);
