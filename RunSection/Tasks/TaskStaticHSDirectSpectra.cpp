@@ -544,7 +544,7 @@ namespace RunSection
 						ExptValues(k, idx) = expected_value;
 					}
 
-					for (int i = 0; i < B.n_cols; ++i) {
+					for (int i = 0; i < int(B.n_cols); i++) {
 						B.col(i) = exp_H * B.col(i);
 					}
 				}

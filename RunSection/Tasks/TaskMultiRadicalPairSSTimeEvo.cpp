@@ -354,7 +354,7 @@ namespace RunSection
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
 		double Currenttime = 0;
-		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
+		//unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
 		double InitialTimestep = this->timestep;
 		unsigned int n = 1;
 
@@ -575,7 +575,7 @@ namespace RunSection
 
 	void TaskMultiRadicalPairSSTimeEvo::StateYield(double _rate, double& _yeild, const std::vector<std::complex<double>>& _traj, std::vector<double>& _time)
 	{
-		auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
+		//auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
 		std::vector<double> ylist;
 		for(unsigned int i = 0; i < _traj.size(); i++)
 		{
@@ -596,7 +596,7 @@ namespace RunSection
 		int TotalSize = vec.size();
 		int SpinSystemSize = TotalSize /spinsystems;
 		int index = 0;
-		for(unsigned int i = 0; i < spinsystems; i++)
+		for(auto i = 0; i < spinsystems; i++)
 		{
 			if(i != spinsystem)
 			{
@@ -848,5 +848,6 @@ namespace RunSection
 
 		this->Log() << "Error: Failed to find solution" << std::endl;
 		std::cout << "Error: Failed to find solution" << std::endl;
-    }
+		return false;
+	}
 }
