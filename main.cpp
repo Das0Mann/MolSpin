@@ -112,10 +112,24 @@ int main(int argc, char **argv)
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;
 	std::cout << "# Developed 2017-2019 by Claus Nielsen* and 2021-2025 by Luca Gerhards**." << std::endl;
-	std::cout << "# Other development contributor: Benji Tiggs, Philip Benjamin, Gediminas Pazera, Irina S. Anisiomva" << std::endl;
+	std::cout << "# Other code contributor: Benji Tigg, Philip Benjamin, Gediminas Pazera, and Irina S. Anisiomva" << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
 	std::cout << "# *:  University of Southern Denmark." << std::endl;
 	std::cout << "# **: Carl von Ossietzky University of Oldenburg." << std::endl;
+	std::cout << hline << std::endl;
+	std::cout << "# Please cite all references: " << std::endl;
+	std::cout << "# Spin Dynamics of Radical Pairs Using the Stochastic Schrödinger Equation in MolSpin" << std::endl;
+	std::cout << "# Gediminas Jurgis Pazera, Thomas P. Fay, Ilia A. Solov’yov, P. J. Hore, Luca Gerhards" << std::endl;
+	std::cout << "# Journal of Chemical Theory and Computation 20, 19, 8412–8421, (2024)" << std::endl;
+	std::cout << "#" << std::endl;
+	std::cout << "# Modeling spin relaxation in complex radical systems using MolSpin" << std::endl;
+	std::cout << "# Luca Gerhards, Claus Nielsen, Daniel R. Kattnig, R. J. Hore, Ilia A. Solov'yov" << std::endl;
+	std::cout << "# Journal of Computational Chemistry 1, (2023)" << std::endl;
+	std::cout << "#" << std::endl;
+	std::cout << "# MolSpin - Flexible and extensible general spin dynamics software" << std::endl;
+	std::cout << "# Claus Nielsen, Ilia A. Solov'yov" << std::endl;
+	std::cout << "# Journal of Physical Chemistry 151, 194105, (2019)" << std::endl;
+	std::cout << "#" << std::endl;
 	std::cout << "# For more information see www.molspin.eu" << std::endl;
 	std::cout << hline << std::endl;
 
