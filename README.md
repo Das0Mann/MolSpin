@@ -56,7 +56,7 @@ PLEASE CITE THE FOLLOWING PAPER WHEN USING MOLSPIN.
 
 LICENCE:
 
-Developed by Luca Gerhards & Claus Nielsen and copyright 2019 Quantum Biology and Computational Physics Group.
+Developed by Luca Gerhards & Claus Nielsen and copyright 2025 Quantum Biology and Computational Physics Group.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
