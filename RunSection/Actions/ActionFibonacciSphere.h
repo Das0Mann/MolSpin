@@ -16,29 +16,28 @@
 
 namespace RunSection
 {
-    class ActionFibonacciSphere : public Action
-    {
-    private:
-        // Data members
+	class ActionFibonacciSphere : public Action
+	{
+	private:
+		// Data members
 		ActionVector *actionVector;
 
-		//std::vector<std::pair<float,float>> points; //stores y and theta 
-		typedef std::pair<float,float> point;
-		point* m_Points; //stores y and theta
+		// std::vector<std::pair<float,float>> points; //stores y and theta
+		typedef std::pair<float, float> point;
+		point *m_Points; // stores y and theta
 		int m_Num;
 		int m_Step;
-		double m_Magnitude; //Maginitude of the intial vector;
+		double m_Magnitude; // Maginitude of the intial vector;
 
 	private:
 		bool CalculatePoints(int n);
-		bool GetPoint(std::array<double,3>&);
+		bool GetPoint(std::array<double, 3> &);
 
-    protected:
+	protected:
 		// Overwritten protected methods
 		bool DoStep() override;
 		bool DoValidate() override;
 		bool Reset() override;
-		
 
 	public:
 		// Constructors / Destructors

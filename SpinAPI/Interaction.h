@@ -28,17 +28,17 @@ namespace SpinAPI
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::shared_ptr<Tensor> couplingTensor;				 // Coupling tensor for two-spin interactions, i.e. "A" in "S1 * A * S2". Example: Hyperfine tensor. Could also be used for one-spin interactions.
-		
-		arma::vec field;									 // Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
-		double dvalue, evalue;								 // D and E value for zero-field splitting
-		std::vector<spin_ptr> group1;						 // Spins to use for one-spin interaction and left-hand-side of two-spin interaction
-		std::vector<spin_ptr> group2;						 // Spins to use on right-hand-side of coupling tensor in two-spin interaction
-		InteractionType type;								 // Interaction type (one-spin / two-spin)
-		InteractionFieldType fieldType;						 // Field type for one-spin interactions (static / time-dependence specification)
-		double prefactor;									 // An optional additional prefactor that can be specified in input file (default = 1.0)
-		bool addCommonPrefactor;							 // Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
+
+		arma::vec field;				// Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
+		double dvalue, evalue;			// D and E value for zero-field splitting
+		std::vector<spin_ptr> group1;	// Spins to use for one-spin interaction and left-hand-side of two-spin interaction
+		std::vector<spin_ptr> group2;	// Spins to use on right-hand-side of coupling tensor in two-spin interaction
+		InteractionType type;			// Interaction type (one-spin / two-spin)
+		InteractionFieldType fieldType; // Field type for one-spin interactions (static / time-dependence specification)
+		double prefactor;				// An optional additional prefactor that can be specified in input file (default = 1.0)
+		bool addCommonPrefactor;		// Whether or not to multiply by "g mu_B" for electronic spins, or the equivalent for nuclear spins
 		bool ignoreTensors;
-		bool isValid;										 // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system 
+		bool isValid; // If false, it overrides the existing IsValid function and forces it to automatically return false. Used when larger spin systems are split into smaller spin systems and the interaction hasn't been assigned to a given spin system
 
 		// Trajectory parameters
 		Trajectory trajectory;
@@ -52,7 +52,7 @@ namespace SpinAPI
 		unsigned int trjFieldZ;
 		unsigned int trjPrefactor;
 
-		// Special data members for time-dependent fields 
+		// Special data members for time-dependent fields
 		double tdFrequency;
 		double tdPhase;
 		arma::vec tdAxis;
@@ -60,7 +60,7 @@ namespace SpinAPI
 		arma::vec tdInitialField; // Time-dependent fields will have readonly ActionTargets, so we can save the initial state
 
 		// Special data members for time-dependent tensors
-		InteractionTensorType tensorType;	// Tensor type for tensor interactions (static / time-dependence specification)
+		InteractionTensorType tensorType; // Tensor type for tensor interactions (static / time-dependence specification)
 		double tdTimestep;
 		arma::mat tdInitialTensor;
 		double tdMinFreq;
@@ -86,7 +86,7 @@ namespace SpinAPI
 		std::vector<RunSection::NamedActionVector> CreateActionVectors(const std::string &);
 		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);
 
-		//Member functions for time-dependent tensors
+		// Member functions for time-dependent tensors
 		void TensorTimeDependenceMonochromatic(arma::mat, double, double, double);
 		void TensorTimeDependenceBroadband(arma::mat, double, arma::mat, arma::mat, arma::mat, int);
 		void TensorTimeDependenceOUGeneral(arma::mat, double, double, double);
@@ -168,8 +168,8 @@ namespace SpinAPI
 	// Non-member non-friend functions for time-dependent fields
 	arma::vec FieldTimeDependenceLinearPolarization(const arma::vec &, double, double, double);
 	arma::vec FieldTimeDependenceCircularPolarization(const arma::vec &, double, double, double, const arma::vec &, bool);
-	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, arma::mat, arma::mat, arma::mat,arma::mat,arma::mat,bool, int);
-	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double , double , double , std::mt19937 &);
+	arma::vec FieldTimeDependenceBroadband(const arma::vec &, double, arma::mat, arma::mat, arma::mat, arma::mat, arma::mat, bool, int);
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &, arma::vec &, double, double, double, std::mt19937 &);
 
 	// Non-member non-friend functions for ActionTarget validation
 	bool CheckActionVectorInteractionField(const arma::vec &);

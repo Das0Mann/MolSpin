@@ -177,12 +177,12 @@ namespace MSDParser
 			for (auto j = failedTransitions.cbegin(); j != failedTransitions.cend(); j++)
 				std::cout << "Failed to load transition " << (*j)->Name() << "!" << std::endl;
 		}
-		
-		//validating subsystems;
-		for(auto i = this->systems.cbegin(); i != this->systems.cend(); i++)
+
+		// validating subsystems;
+		for (auto i = this->systems.cbegin(); i != this->systems.cend(); i++)
 		{
 			auto failedsubsystems = (*i)->ValidateSubSystems();
-			for(auto j = failedsubsystems.cbegin(); j != failedsubsystems.cend(); j++)
+			for (auto j = failedsubsystems.cbegin(); j != failedsubsystems.cend(); j++)
 			{
 				std::cout << "Failed to load SubSystem " << (*j)->Name() << "!" << std::endl;
 			}

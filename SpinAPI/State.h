@@ -33,10 +33,10 @@ namespace SpinAPI
 		// Data members
 		std::shared_ptr<MSDParser::ObjectParser> properties; // Use a pointer to the object to minimize compilation dependencies
 		std::vector<CompleteState> substates;				 // A list of complete states, i.e. see the alias definition above
-		std::vector<std::shared_ptr<Function>> Functions; 	 // A list of functions that act as factors before states, e.g. cos or sin
+		std::vector<std::shared_ptr<Function>> Functions;	 // A list of functions that act as factors before states, e.g. cos or sin
 		std::vector<int> BracketDepth;						 // A description of the state when it comes to how to apply factors
-		std::vector<arma::cx_double> InitialFactors; 				 // stores the initial factors (see UpdateFactors for reasoning)
-		std::unordered_map<std::string, double> Variables; 	// Variable name and function and it's value(stored as a void* for type casting)
+		std::vector<arma::cx_double> InitialFactors;		 // stores the initial factors (see UpdateFactors for reasoning)
+		std::unordered_map<std::string, double> Variables;	 // Variable name and function and it's value(stored as a void* for type casting)
 		bool isValid;
 
 		// Private methods
@@ -48,9 +48,9 @@ namespace SpinAPI
 																								// Sets the StateSeries pointer if the pointer-to-pointer is not nullptr
 
 		// Private methods to create ActionTargets
-		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &); 
+		std::vector<RunSection::NamedActionScalar> CreateActionScalars(const std::string &);
 
-		bool UpdateFactors();   
+		bool UpdateFactors();
 
 	public:
 		// Constructors / Destructors
@@ -87,22 +87,20 @@ namespace SpinAPI
 		// Public method for creating ActionTargets
 		void GetActionTargets(std::vector<RunSection::NamedActionScalar> &, std::vector<RunSection::NamedActionVector> &, const std::string &);
 
-		//returns a vector of functions
+		// returns a vector of functions
 		std::vector<std::shared_ptr<Function>> GetFunctions()
 		{
 			return Functions;
 		}
 
-		//Applies all the functions to the factors
+		// Applies all the functions to the factors
 		bool Update();
-	
 	};
 
 	// Define alias for state-pointers
 	using state_ptr = std::shared_ptr<State>;
 
 	bool CheckActionScalarVariable(const double &);
-
 
 }
 

@@ -4,7 +4,7 @@
 // This source file contains methods for managing pulses
 // and having rotating functions.
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards..
-// (c) 2024 Quantum Biology and Computational Physics Group.
+// (c) 2025 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 namespace SpinAPI
@@ -146,7 +146,7 @@ namespace SpinAPI
         return true;
     }
 
-    //Sparse version - must be modifed because its very slow like this
+    // Sparse version - must be modifed because its very slow like this
     bool SpinSpace::PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_out) const // Instant Pulse in SS
     {
         // Check whether we want a superspace result
@@ -549,7 +549,7 @@ namespace SpinAPI
         return true;
     }
 
-    //Sparse version - still too slow like this
+    // Sparse version - still too slow like this
     bool SpinSpace::PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_left, arma::sp_cx_mat &_right) const // Instant Pulse in HS
     {
         // Check whether we want a Hilbert space result
@@ -801,7 +801,6 @@ namespace SpinAPI
 
         return true;
     }
-
 
     // Create a rotational angle
     bool SpinSpace::CreateRotAngle(double _angle_deg, double &result) const

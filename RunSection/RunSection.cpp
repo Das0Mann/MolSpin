@@ -25,7 +25,7 @@
 #include "ActionFibonacciSphere.h"
 #include "ActionLogSpace.h"
 
-//object classes
+// object classes
 #include "State.h"
 
 namespace RunSection
@@ -89,26 +89,26 @@ namespace RunSection
 		{
 			std::string object;
 			(*j)->GetProperties()->Get("scalar", object);
-			if(object == "")
+			if (object == "")
 			{
 				continue;
 			}
 
-			//get the middle bit
+			// get the middle bit
 			std::string state;
 			std::string system;
 			bool start = false;
-			for(auto c = object.cbegin(); c != object.cend(); c++)
+			for (auto c = object.cbegin(); c != object.cend(); c++)
 			{
-				if((*c) == '.')
+				if ((*c) == '.')
 				{
 					start = !start;
-					if(!start)
+					if (!start)
 					{
 						break;
 					}
 				}
-				else if(start)
+				else if (start)
 				{
 					state = state + (*c);
 				}
@@ -116,34 +116,33 @@ namespace RunSection
 				{
 					system = system + (*c);
 				}
-
 			}
 
 			SpinAPI::state_ptr ActionState;
 			std::string system2 = "";
 			int SpinSystem = -1;
 			bool IsState = true;
-			while(system2 != system && IsState)
+			while (system2 != system && IsState)
 			{
 				SpinSystem++;
-				if((unsigned int)SpinSystem == this->systems.size())
+				if ((unsigned int)SpinSystem == this->systems.size())
 				{
 					IsState = false;
 				}
 				system2 = this->systems[SpinSystem]->Name();
 			}
-			if(!IsState)
+			if (!IsState)
 			{
 				continue;
-			} 
+			}
 			ActionState = this->systems[SpinSystem]->states_find(state);
-			if(ActionState == nullptr)
+			if (ActionState == nullptr)
 			{
 				continue;
 			}
 			ActionState->Update();
 		}
-		
+
 		return true;
 	}
 
@@ -199,7 +198,7 @@ namespace RunSection
 			{
 				action = std::make_shared<ActionRotateVector>(_obj, actionScalars, actionVectors);
 			}
-			else if(type.compare("fibonaccisphere") == 0)
+			else if (type.compare("fibonaccisphere") == 0)
 			{
 				action = std::make_shared<ActionFibonacciSphere>(_obj, actionScalars, actionVectors);
 			}

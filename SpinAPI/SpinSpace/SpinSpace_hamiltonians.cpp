@@ -363,7 +363,6 @@ namespace SpinAPI
 						tmp += S1x * S2x * A(0, 0) + S1x * S2y * A(0, 1) + S1x * S2z * A(0, 2);
 						tmp += S1y * S2x * A(1, 0) + S1y * S2y * A(1, 1) + S1y * S2z * A(1, 2);
 						tmp += S1z * S2x * A(2, 0) + S1z * S2y * A(2, 1) + S1z * S2z * A(2, 2);
-
 					}
 					else
 					{
@@ -695,7 +694,7 @@ namespace SpinAPI
 		_out = result;
 		return true;
 	}
-	
+
 	// Sets the dense matrix to the part of the Hamiltonian that is used in the thermal equilibrium (without Zeeman terms)
 	bool SpinSpace::ThermalHamiltonian(std::vector<std::string> thermalhamiltonian_list, arma::cx_mat &_out) const
 	{
@@ -712,8 +711,8 @@ namespace SpinAPI
 		{
 			// Skip any dynamic interactions (time-dependent or with a trajectory)
 			if (!IsStatic(*(*i)))
-				continue;	
-		
+				continue;
+
 			// Check if the interaction name is in the thermalhamiltonian_list
 			if (std::find(thermalhamiltonian_list.begin(), thermalhamiltonian_list.end(), (*i)->Name()) != thermalhamiltonian_list.end())
 			{

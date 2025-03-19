@@ -35,9 +35,9 @@
 #include "TaskStaticSSNakajimaZwanzigTimeEvo.h"
 #include "TaskMultiStaticSSNakajimaZwanzigTimeEvo.h"
 
-#include "TaskStaticSSSpectra.h" 
+#include "TaskStaticSSSpectra.h"
 #include "TaskStaticSSSpectraNakajimaZwanzig.h"
-#include "TaskStaticSSCIDNP.h" 
+#include "TaskStaticSSCIDNP.h"
 
 #include "TaskStaticHSStochYields.h"
 #include "TaskStaticHSStochTimeEvo.h"
@@ -52,14 +52,14 @@
 #include "TaskStaticHSDirectTimeEvoSymmUncoupled.h"
 #include "TaskStaticHSStochTimeEvoSymmUncoupled.h"
 #include "TaskStaticHSDirectSpectra.h"
-//#include "TaskDynamicHSDirectSpectra.h"
+// #include "TaskDynamicHSDirectSpectra.h"
 
 #include "TaskActionSpectrumHistogram.h"
 #include "TaskActionSpectrumHistogramRPOnlyDec.h"
 
 #include "TaskStaticSSPump.h"
 
-#include "TaskMultiRadicalPairSSTimeEvo.h" //added by Benji 
+#include "TaskMultiRadicalPairSSTimeEvo.h" //added by Benji
 
 /////////////////////////////////////////////////////////////////////////
 namespace RunSection
@@ -160,22 +160,22 @@ namespace RunSection
 		}
 
 		// NEW (Added by Irina Anisimova):Spectroscopy module
-		else if(_tasktype.compare("staticss-spectra") ==0 || _tasktype.compare("StaticSS-Spectra") == 0)
+		else if (_tasktype.compare("staticss-spectra") == 0 || _tasktype.compare("StaticSS-Spectra") == 0)
 		{
 			task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);
 		}
 
 		// NEW (Added by Luca Gerhards):Spectroscopy module with spin relaxation through Nakahima-Zwanzig equation
-		else if(_tasktype.compare("staticss-spectra-nakajimazwanzig") ==0 || _tasktype.compare("StaticSS-Spectra-Nakajimazwanzig") == 0)
+		else if (_tasktype.compare("staticss-spectra-nakajimazwanzig") == 0 || _tasktype.compare("StaticSS-Spectra-Nakajimazwanzig") == 0)
 		{
 			task = std::make_shared<TaskStaticSSSpectraNakajimaZwanzig>(_obj, *this);
 		}
 
 		// NEW (Added by Luca Gerhards): Including spectroscopy multi-spin system task
-    	else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
-        {
-         	task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
-        }	
+		else if (_tasktype.compare("multistaticss-timeevolution-spectra") == 0 || _tasktype.compare("staticss-multisystem-spectra") == 0)
+		{
+			task = std::make_shared<TaskMultiStaticSSTimeEvoSpectra>(_obj, *this);
+		}
 
 		// NEW (Added by Gediminas Pazera and Luca Gerhards): Including SSE theory as CreateTask member.
 		else if (_tasktype.compare("statichs-stoch-yields") == 0 || _tasktype.compare("StaticHS-Stoch-Yields") == 0)
@@ -229,9 +229,9 @@ namespace RunSection
 
 		// NEW (ADDED by Luca Gerhards): Spectroscopy task in Hilbert space
 		else if (_tasktype.compare("statichs-direct-spectra") == 0 || _tasktype.compare("StaticHS-Direct-Yields") == 0)
-        {
-            task = std::make_shared<TaskStaticHSDirectSpectra>(_obj, *this);
-        }
+		{
+			task = std::make_shared<TaskStaticHSDirectSpectra>(_obj, *this);
+		}
 
 		// NEW (ADDED by Luca Gerhards): Including Action Histrograms in the context of Hamish Hiscock
 		else if (_tasktype.compare("actionspectrumhistogram") == 0 || _tasktype.compare("ActionSpectrumHistogram") == 0)
@@ -250,16 +250,16 @@ namespace RunSection
 			task = std::make_shared<TaskStaticSSPump>(_obj, *this);
 		}
 
-		//NEW (ADDED by Benji Tigg)
-		else if(_tasktype.compare("multiradicalpairss-timeevolution") == 0)
+		// NEW (ADDED by Benji Tigg)
+		else if (_tasktype.compare("multiradicalpairss-timeevolution") == 0)
 		{
 			task = std::make_shared<TaskMultiRadicalPairSSTimeEvo>(_obj, *this);
 		}
-		//NEW (ADDED by Benji Tigg)
-		else if(_tasktype.compare("multiradicalpair-yields"))
+		// NEW (ADDED by Benji Tigg)
+		else if (_tasktype.compare("multiradicalpair-yields"))
 		{
-			//task = std::make_shared<TaskMutliRadicalPairSSYield>(_obj, *this);
-			//Task doesn't exist yet
+			// task = std::make_shared<TaskMutliRadicalPairSSYield>(_obj, *this);
+			// Task doesn't exist yet
 		}
 
 		// NOTE: To add a new task class, just add another "else if" here...

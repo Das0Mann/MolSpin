@@ -21,22 +21,22 @@ namespace RunSection
 		this->properties->Get("first", this->first);
 		this->properties->Get("last", this->last);
 		this->properties->Get("period", this->period);
-		
-		//std::string Parallelize = "";
-		//this->properties->Get("parallelize", Parallelize);
-		//if(Parallelize.compare("true") == 0)
+
+		// std::string Parallelize = "";
+		// this->properties->Get("parallelize", Parallelize);
+		// if(Parallelize.compare("true") == 0)
 		//{
 		//	this->m_Parallelize = true;
-		//}
-		//else
+		// }
+		// else
 		//{
 		//	this->m_Parallelize = false;
-		//}
-		
+		// }
+
 		std::string loop;
 		this->properties->Get("loop", loop);
-		
-		if(loop.compare("true") == 0)
+
+		if (loop.compare("true") == 0)
 		{
 			this->m_loop = true;
 		}
@@ -117,40 +117,40 @@ namespace RunSection
 		if (!this->isValid)
 			return;
 
-		///bool TopLevel = true;
-		///if(m_LoopLevel == -1 || m_steps == -1)
+		/// bool TopLevel = true;
+		/// if(m_LoopLevel == -1 || m_steps == -1)
 		///{
 		///	TopLevel = true;
-		///}
+		/// }
 
 		// Only use the action if we are at a step between "first" and "last", and take steps with the given periodicity
-		if(!m_loop)
+		if (!m_loop)
 		{
 			if (_currentStep < this->first || (_currentStep > this->last && this->last != 0) || ((_currentStep - this->first) % this->period) != 0)
 				return;
 
-			//std::cout << "updating" << std::endl;
+			// std::cout << "updating" << std::endl;
 		}
 
-		if(m_loop)
+		if (m_loop)
 		{
-			if(_currentStep == this->last + 1 && this->last != 0)
+			if (_currentStep == this->last + 1 && this->last != 0)
 			{
 				this->Reset();
-				//std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
-				int gap = this->last - (this->first - 1); //this-last - this-first //this-last - this-first
-				//std::cout << "resetting" << std::endl; //current code assumes starting from 1
-				this->first = _currentStep; //_currentStep
-				this->last = this->first + gap - 1; //this->first + gap 
+				// std::cout << "resetting" << std::endl; //current code assumes starting from 0, commented code assumes startitng from 1
+				int gap = this->last - (this->first - 1); // this-last - this-first //this-last - this-first
+				// std::cout << "resetting" << std::endl; //current code assumes starting from 1
+				this->first = _currentStep;			//_currentStep
+				this->last = this->first + gap - 1; // this->first + gap
 				return;
 			}
 
-			if(((_currentStep - this->first) % this->period) != 0)
+			if (((_currentStep - this->first) % this->period) != 0)
 			{
 				return;
 			}
 
-			if(_currentStep < this->first)
+			if (_currentStep < this->first)
 			{
 				return;
 			}
@@ -168,8 +168,8 @@ namespace RunSection
 		if (this->first > this->last && this->last != 0)
 			return false;
 
-		//sets this->first to 1 if set to 0
-		if(this->first == 0)
+		// sets this->first to 1 if set to 0
+		if (this->first == 0)
 		{
 			this->first = 1;
 			std::cout << "INFO: " << this->Name() << " first step initially set to zero, this has been changed to 1" << std::endl;

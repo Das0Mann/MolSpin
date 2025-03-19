@@ -22,10 +22,10 @@ namespace SpinAPI
 	// the spin groups are read in the method ParseSpinGroups instead.
 	Interaction::Interaction(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), couplingTensor(nullptr),
 																		 field({0, 0, 0}), dvalue(0.0), evalue(0.0), group1(), group2(), type(InteractionType::Undefined), fieldType(InteractionFieldType::Static), prefactor(1.0), addCommonPrefactor(true), ignoreTensors(false), isValid(true),
-																		 trjHasTime(false), trjHasField(false),  trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
-																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}),  tensorType(InteractionTensorType::Static), tdTimestep(0) ,
-																		 tdInitialTensor(3,3, arma::fill::zeros), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs(), tdAmps(), tdPhases(), tdComponents(0), tdRandOrients(false), tdThetas(), tdPhis(), tdCorrTime(0.0), 
-																		 tdPrintTensor(false), tdPrintField(false),tdSeed(0),tdAutoseed(false), tdGenerator(1)//, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
+																		 trjHasTime(false), trjHasField(false), trjHasTensor(false), trjHasPrefactor(false), trjTime(0), trjFieldX(0), trjFieldY(0), trjFieldZ(0), trjPrefactor(0),
+																		 tdFrequency(1.0), tdPhase(0.0), tdAxis("0 0 1"), tdPerpendicularOscillation(false), tdInitialField({0, 0, 0}), tensorType(InteractionTensorType::Static), tdTimestep(0),
+																		 tdInitialTensor(3, 3, arma::fill::zeros), tdMinFreq(0.0), tdMaxFreq(0.0), tdFreqs(), tdAmps(), tdPhases(), tdComponents(0), tdRandOrients(false), tdThetas(), tdPhis(), tdCorrTime(0.0),
+																		 tdPrintTensor(false), tdPrintField(false), tdSeed(0), tdAutoseed(false), tdGenerator(1) //, tdFreqs(3, 3, arma::fill::zeros)//, tdFreqs({0,0,0})
 	{
 		// Is a trajectory specified?
 		std::string str;
@@ -50,7 +50,6 @@ namespace SpinAPI
 					this->trjHasField = this->trajectory.HasColumn("field.x", trjFieldX);
 					this->trjHasField &= this->trajectory.HasColumn("field.y", trjFieldY);
 					this->trjHasField &= this->trajectory.HasColumn("field.z", trjFieldZ);
-
 				}
 			}
 			else
@@ -65,7 +64,7 @@ namespace SpinAPI
 
 			if (str.compare("onespin") == 0 || str.compare("singlespin") == 0 || str.compare("zeeman") == 0)
 			{
-				
+
 				// A onespin interaction should have a field attached, either directly or through a trajectory
 				arma::vec inField = arma::zeros<arma::vec>(3);
 
@@ -76,7 +75,6 @@ namespace SpinAPI
 					this->field = inField;
 					this->type = InteractionType::SingleSpin;
 				}
-
 			}
 			else if (str.compare("twospin") == 0 || str.compare("doublespin") == 0 || str.compare("hyperfine") == 0 || str.compare("dipole") == 0)
 			{
@@ -101,7 +99,7 @@ namespace SpinAPI
 
 		// If we have a valid interaction type, read the other parameters
 		if (this->type != InteractionType::Undefined)
-		{	
+		{
 
 			Tensor inTensor(0);
 			if (this->properties->Get("tensor", inTensor))
@@ -114,27 +112,27 @@ namespace SpinAPI
 			this->properties->Get("ignoretensors", this->ignoreTensors);
 		}
 
-
 		// One-spin interactions can have a time-dependent field
 		if (this->type == InteractionType::SingleSpin)
 		{
-			
+
 			// Do we have a trajectory entry for field? Note that the trajectory may not have a time column, in which case there will be no time dependence
 			if (this->trjHasField)
 			{
 				this->fieldType = InteractionFieldType::Trajectory;
 			}
-			//do we have a sepcified fieldtype?
+			// do we have a sepcified fieldtype?
 			if (this->properties->Get("fieldtype", str) || this->properties->Get("timedependence", str))
 			{
-				
-				//some fieldtypes require a seed to be specified for random number generation
-				if (str.compare("broadband") == 0 || str.compare("ougeneral") == 0 ){
-					
+
+				// some fieldtypes require a seed to be specified for random number generation
+				if (str.compare("broadband") == 0 || str.compare("ougeneral") == 0)
+				{
+
 					// Random Number Generator Preparation
-					std::random_device rand_dev;		// random number generator
-					this->tdGenerator.seed(rand_dev()); // automatic seed 
-					this->properties->Get("autoseed", this->tdAutoseed); //seed can also be specified by the user
+					std::random_device rand_dev;						 // random number generator
+					this->tdGenerator.seed(rand_dev());					 // automatic seed
+					this->properties->Get("autoseed", this->tdAutoseed); // seed can also be specified by the user
 					if (!this->tdAutoseed)
 					{
 						std::cout << "Autoseed is off." << std::endl;
@@ -146,12 +144,11 @@ namespace SpinAPI
 						}
 						else
 						{
-							std::cout << "# ERROR: undefined seed number in Interaction "<< this->Name() <<". Setting to default of 1." << std::endl;
+							std::cout << "# ERROR: undefined seed number in Interaction " << this->Name() << ". Setting to default of 1." << std::endl;
 							this->tdSeed = 1;
 						}
 					}
 				}
-				
 
 				if (this->trjHasField)
 				{
@@ -164,7 +161,6 @@ namespace SpinAPI
 					this->properties->Get("frequency", this->tdFrequency);
 					this->properties->Get("phase", this->tdPhase);
 					this->properties->Get("printfield", this->tdPrintField);
-
 				}
 				else if (str.compare("circularpolarized") == 0 || str.compare("circularpolarization") == 0)
 				{
@@ -174,17 +170,16 @@ namespace SpinAPI
 					this->properties->Get("axis", this->tdAxis);
 					this->properties->Get("perpendicularoscillations", this->tdPerpendicularOscillation);
 					this->properties->Get("printfield", this->tdPrintField);
-
 				}
 				else if (str.compare("broadband") == 0)
-				{	
+				{
 					this->fieldType = InteractionFieldType::Broadband;
 					this->properties->Get("minfreq", this->tdMinFreq);
 					this->properties->Get("maxfreq", this->tdMaxFreq);
 					this->properties->Get("components", this->tdComponents);
 					this->properties->Get("printfield", this->tdPrintField);
-					
-					//define all the distributions for broadband noise and fill out vectors 
+
+					// define all the distributions for broadband noise and fill out vectors
 					std::normal_distribution<double> amp_dist(0.0, 1.0);
 					std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
 					std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
@@ -193,28 +188,33 @@ namespace SpinAPI
 					this->tdFreqs.set_size(this->tdComponents, 3);
 					this->tdPhases.set_size(this->tdComponents, 3);
 
-					//generate all the required random numbers for the 6 unique tensor components
-					for(int j_tens=0; j_tens<3; j_tens++){
-						for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+					// generate all the required random numbers for the 6 unique tensor components
+					for (int j_tens = 0; j_tens < 3; j_tens++)
+					{
+						for (int i_comp = 0; i_comp < this->tdComponents; i_comp++)
+						{
 							double phase = phase_dist(this->tdGenerator);
 							double freq = freq_dist(this->tdGenerator);
 							double amp = amp_dist(this->tdGenerator);
-	
+
 							this->tdPhases(i_comp, j_tens) = phase;
 							this->tdFreqs(i_comp, j_tens) = freq;
 							this->tdAmps(i_comp, j_tens) = amp;
 						}
-					}	
-										
-					//generate random angles if required
-					if (this->tdRandOrients == true){
+					}
+
+					// generate random angles if required
+					if (this->tdRandOrients == true)
+					{
 
 						this->tdThetas.set_size(this->tdComponents, 3);
 						this->tdPhis.set_size(this->tdComponents, 3);
 						std::uniform_real_distribution<double> cos_theta_dist(-1.0, 1.0);
-    					std::uniform_real_distribution<double> phi_dist(0.0, 2 * M_PI);
-						for(int j_tens=0; j_tens<3; j_tens++){
-							for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+						std::uniform_real_distribution<double> phi_dist(0.0, 2 * M_PI);
+						for (int j_tens = 0; j_tens < 3; j_tens++)
+						{
+							for (int i_comp = 0; i_comp < this->tdComponents; i_comp++)
+							{
 								double theta_BB = std::acos(cos_theta_dist(this->tdGenerator));
 								double phi_BB = phi_dist(this->tdGenerator);
 
@@ -239,15 +239,18 @@ namespace SpinAPI
 			}
 
 			// Save the initial field - used only for time-dependent interactions where Actions cannot change the field
-			if(this->fieldType == InteractionFieldType::OUGeneral){
+			if (this->fieldType == InteractionFieldType::OUGeneral)
+			{
 				this->tdInitialField = this->field;
 				this->field = arma::zeros<arma::vec>(3);
 			}
-			else{
+			else
+			{
 				this->tdInitialField = this->field;
 			}
 			// Set the time to 0 by default
-			if (this->HasFieldTimeDependence()){
+			if (this->HasFieldTimeDependence())
+			{
 				this->SetTime(0.0);
 			}
 		}
@@ -257,13 +260,14 @@ namespace SpinAPI
 		{
 			// do we have a specified tensortype?
 			if (this->properties->Get("tensortype", str))
-			{	
+			{
 				// some tensortypes require a seed to be specified for random number generation
-				if (str.compare("broadband") == 0 || str.compare("ougeneral") == 0 ){
+				if (str.compare("broadband") == 0 || str.compare("ougeneral") == 0)
+				{
 					// Random Number Generator Preparation
-					std::random_device rand_dev;		// random number generator
-					this->tdGenerator.seed(rand_dev()); // automatic seed 
-					this->properties->Get("autoseed", this->tdAutoseed); //seed can also be specified by the user
+					std::random_device rand_dev;						 // random number generator
+					this->tdGenerator.seed(rand_dev());					 // automatic seed
+					this->properties->Get("autoseed", this->tdAutoseed); // seed can also be specified by the user
 
 					if (!this->tdAutoseed)
 					{
@@ -276,15 +280,15 @@ namespace SpinAPI
 						}
 						else
 						{
-							std::cout << "# ERROR: undefined seed number in Interaction "<< this->Name() <<". Setting to default of 1." << std::endl;
+							std::cout << "# ERROR: undefined seed number in Interaction " << this->Name() << ". Setting to default of 1." << std::endl;
 							this->tdSeed = 1;
 						}
 					}
 				}
-				
+
 				// Do we have a trajectory entry for tensor? Note that the trajectory may not have a time column, in which case there will be no time dependence
 				if (this->trjHasTensor)
-				{	
+				{
 					this->tensorType = InteractionTensorType::Trajectory;
 					std::cout << "Warning: Ignored tensortype for Interaction \"" << this->Name() << "\"! Using trajectory instead." << std::endl;
 				}
@@ -304,8 +308,8 @@ namespace SpinAPI
 					this->properties->Get("maxfreq", this->tdMaxFreq);
 					this->properties->Get("components", this->tdComponents);
 					this->properties->Get("printtensor", this->tdPrintTensor);
-					
-					//define all the distributions for broadband noise and fill out vectors 
+
+					// define all the distributions for broadband noise and fill out vectors
 					std::normal_distribution<double> amp_dist(0.0, 1.0);
 					std::uniform_real_distribution<double> phase_dist(0, 2.0 * M_PI);
 					std::uniform_real_distribution<double> freq_dist(this->tdMinFreq, this->tdMaxFreq);
@@ -313,14 +317,16 @@ namespace SpinAPI
 					this->tdAmps.set_size(this->tdComponents, 6);
 					this->tdFreqs.set_size(this->tdComponents, 6);
 					this->tdPhases.set_size(this->tdComponents, 6);
-					
-					//generate all the required random numbers for the 6 unique tensor components
-					for(int j_tens=0; j_tens<6; j_tens++){
-						for(int i_comp=0; i_comp<this->tdComponents; i_comp++){
+
+					// generate all the required random numbers for the 6 unique tensor components
+					for (int j_tens = 0; j_tens < 6; j_tens++)
+					{
+						for (int i_comp = 0; i_comp < this->tdComponents; i_comp++)
+						{
 							double phase = phase_dist(this->tdGenerator);
 							double freq = freq_dist(this->tdGenerator);
 							double amp = amp_dist(this->tdGenerator);
-	
+
 							this->tdPhases(i_comp, j_tens) = phase;
 							this->tdFreqs(i_comp, j_tens) = freq;
 							this->tdAmps(i_comp, j_tens) = amp;
@@ -335,23 +341,24 @@ namespace SpinAPI
 					this->properties->Get("timestep", this->tdTimestep);
 					this->properties->Get("printtensor", this->tdPrintTensor);
 				}
-				
+
 				else
 				{
 					std::cout << "Warning: Unknown tensortype for Interaction \"" << this->Name() << "\"! Assuming static field." << std::endl;
 				}
-			
 			}
 
-			//Set the time to 0 by default
+			// Set the time to 0 by default
 			if (this->HasTensorTimeDependence())
-			{	
-				if(this->tensorType==InteractionTensorType::OUGeneral){
+			{
+				if (this->tensorType == InteractionTensorType::OUGeneral)
+				{
 					this->tdInitialTensor = couplingTensor->LabFrame();
-					arma::mat zeros(3,3, arma::fill::zeros);
+					arma::mat zeros(3, 3, arma::fill::zeros);
 					this->couplingTensor->SetTensor(zeros);
 				}
-				else{
+				else
+				{
 					this->tdInitialTensor = couplingTensor->LabFrame();
 				}
 				this->SetTime(0.0);
@@ -362,15 +369,15 @@ namespace SpinAPI
 	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
 																group1(_interaction.group1), group2(_interaction.group2), type(_interaction.type), fieldType(_interaction.fieldType),
 																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors), isValid(_interaction.isValid),
-																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasTensor(_interaction.trjHasTensor), trjHasPrefactor(_interaction.trjHasPrefactor), 
+																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasTensor(_interaction.trjHasTensor), trjHasPrefactor(_interaction.trjHasPrefactor),
 																trjTime(_interaction.trjTime), trjFieldX(_interaction.trjFieldX), trjFieldY(_interaction.trjFieldY), trjFieldZ(_interaction.trjFieldZ),
-																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase),  tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation), 
-																tdInitialField(_interaction.tdInitialField),  tensorType(_interaction.tensorType), 
+																trjPrefactor(_interaction.trjPrefactor), tdFrequency(_interaction.tdFrequency), tdPhase(_interaction.tdPhase), tdAxis(_interaction.tdAxis), tdPerpendicularOscillation(_interaction.tdPerpendicularOscillation),
+																tdInitialField(_interaction.tdInitialField), tensorType(_interaction.tensorType),
 																tdTimestep(_interaction.tdTimestep), tdInitialTensor(_interaction.tdInitialTensor),
-																tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases), 
-																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis), tdCorrTime(_interaction.tdCorrTime), 
-																tdPrintTensor(_interaction.tdPrintTensor), tdPrintField(_interaction.tdPrintField),tdSeed(_interaction.tdSeed), tdAutoseed(_interaction.tdAutoseed), tdGenerator(_interaction.tdGenerator)
-															
+																tdMinFreq(_interaction.tdMinFreq), tdMaxFreq(_interaction.tdMaxFreq), tdFreqs(_interaction.tdFreqs), tdAmps(_interaction.tdAmps), tdPhases(_interaction.tdPhases),
+																tdComponents(_interaction.tdComponents), tdRandOrients(_interaction.tdRandOrients), tdThetas(_interaction.tdThetas), tdPhis(_interaction.tdPhis), tdCorrTime(_interaction.tdCorrTime),
+																tdPrintTensor(_interaction.tdPrintTensor), tdPrintField(_interaction.tdPrintField), tdSeed(_interaction.tdSeed), tdAutoseed(_interaction.tdAutoseed), tdGenerator(_interaction.tdGenerator)
+
 	{
 	}
 
@@ -381,7 +388,7 @@ namespace SpinAPI
 	// Operators
 	// -----------------------------------------------------
 	const Interaction &Interaction::operator=(const Interaction &_interaction)
-	{	
+	{
 		this->properties = std::make_shared<MSDParser::ObjectParser>(*(_interaction.properties));
 		this->couplingTensor = _interaction.couplingTensor;
 		this->field = _interaction.field;
@@ -402,7 +409,7 @@ namespace SpinAPI
 		this->trjFieldY = _interaction.trjFieldY;
 		this->trjFieldZ = _interaction.trjFieldZ;
 		this->trjPrefactor = _interaction.trjPrefactor;
-		//member variables added for time-dependent interactions
+		// member variables added for time-dependent interactions
 		this->tdFrequency = _interaction.tdFrequency;
 		this->tdPhase = _interaction.tdPhase;
 		this->tdAxis = _interaction.tdAxis;
@@ -426,7 +433,7 @@ namespace SpinAPI
 		this->tdSeed = _interaction.tdSeed;
 		this->tdAutoseed = _interaction.tdAutoseed;
 		this->tdGenerator = _interaction.tdGenerator;
-		
+
 		return (*this);
 	}
 	// -----------------------------------------------------
@@ -439,8 +446,11 @@ namespace SpinAPI
 
 	bool Interaction::IsValid() const
 	{
-		if(!isValid) { return false; } //by default this function should never return at this point; the only time it should ever return is if the interaction hasn't been assigned a subsystem in a task where subsystems are used 
-		
+		if (!isValid)
+		{
+			return false;
+		} // by default this function should never return at this point; the only time it should ever return is if the interaction hasn't been assigned a subsystem in a task where subsystems are used
+
 		if (this->type == InteractionType::SingleSpin && !this->group1.empty())
 			return true;
 		else if (this->type == InteractionType::DoubleSpin && !this->group1.empty() && !this->group2.empty())
@@ -489,7 +499,7 @@ namespace SpinAPI
 	}
 
 	// Checks whether the interaction tensor is time-dependent
-	bool  Interaction::HasTensorTimeDependence() const
+	bool Interaction::HasTensorTimeDependence() const
 	{
 		if (this->tensorType != InteractionTensorType::Static)
 			return true;
@@ -509,7 +519,7 @@ namespace SpinAPI
 		}
 
 		return false;
-	}	
+	}
 
 	// -----------------------------------------------------
 	// Trajectory-related methods
@@ -562,7 +572,7 @@ namespace SpinAPI
 	bool Interaction::SetTime(double _time)
 	{
 		// Set the time for the tensor; the tensor trajectory is independent of the trajectory/time dependence of the interaction object
-		if (this->couplingTensor != nullptr &&  this->trjHasTime)
+		if (this->couplingTensor != nullptr && this->trjHasTime)
 			this->couplingTensor->SetTime(_time);
 
 		// If we have a trajectory, which has a "time" column
@@ -604,10 +614,12 @@ namespace SpinAPI
 		}
 
 		std::string tdFilename = this->Name() + ".mst";
-		
-		//output the headings of the time-dependent field mst file if required
-		if(_time == 0){
-			if(this->tdPrintField){
+
+		// output the headings of the time-dependent field mst file if required
+		if (_time == 0)
+		{
+			if (this->tdPrintField)
+			{
 				std::ofstream file;
 				file.open(tdFilename);
 				file << "time, field.x, field.y, field.z" << std::endl;
@@ -621,37 +633,42 @@ namespace SpinAPI
 		else if (this->fieldType == InteractionFieldType::CircularPolarization)
 			this->field = FieldTimeDependenceCircularPolarization(this->tdInitialField, _time, this->tdFrequency, this->tdPhase, this->tdAxis, this->tdPerpendicularOscillation);
 		else if (this->fieldType == InteractionFieldType::Broadband)
-			this->field = FieldTimeDependenceBroadband(this->tdInitialField, _time, this->tdFreqs, this->tdAmps,  this->tdPhases, this->tdThetas, this->tdPhis, this->tdRandOrients, this->tdComponents);
+			this->field = FieldTimeDependenceBroadband(this->tdInitialField, _time, this->tdFreqs, this->tdAmps, this->tdPhases, this->tdThetas, this->tdPhis, this->tdRandOrients, this->tdComponents);
 		else if (this->fieldType == InteractionFieldType::OUGeneral)
-			this->field = FieldTimeDependenceOUGeneral(this->tdInitialField, this->field, _time, this->tdTimestep,  this->tdCorrTime, this->tdGenerator);
-		
-		
-		//output the value of the field at the specified time if required	
-		if(this->tdPrintField){
+			this->field = FieldTimeDependenceOUGeneral(this->tdInitialField, this->field, _time, this->tdTimestep, this->tdCorrTime, this->tdGenerator);
+
+		// output the value of the field at the specified time if required
+		if (this->tdPrintField)
+		{
 			std::ofstream file;
 			file.open(tdFilename, std::ofstream::app);
-			file << _time << " " << this->field(0) << " " << this->field(1) << " " << this->field(2) <<  std::endl;
+			file << _time << " " << this->field(0) << " " << this->field(1) << " " << this->field(2) << std::endl;
 			file.close();
 		}
 
-		//output the headings of the time-dependent tensor mst file if required
-		if(_time == 0){
-			if(this->tdPrintTensor){
+		// output the headings of the time-dependent tensor mst file if required
+		if (_time == 0)
+		{
+			if (this->tdPrintTensor)
+			{
 				std::ofstream file;
 				file.open(tdFilename);
-				file << "time "  << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
+				file << "time " << "mat.xx " << "mat.xy " << "mat.xz " << "mat.yx " << "mat.yy " << "mat.yz " << "mat.zx " << "mat.zy " << "mat.zz" << std::endl;
 				file.close();
 			}
 		}
-	
-		//TODO: IMPLEMENT TENSOR TIME-DEPENDENCE AND FIELD TIME-DEPENDENCE IN THE SAME WAY
-		if (this->tensorType == InteractionTensorType::Monochromatic){
+
+		// TODO: IMPLEMENT TENSOR TIME-DEPENDENCE AND FIELD TIME-DEPENDENCE IN THE SAME WAY
+		if (this->tensorType == InteractionTensorType::Monochromatic)
+		{
 			TensorTimeDependenceMonochromatic(this->tdInitialTensor, _time, this->tdFrequency, this->tdPhase);
 		}
-		else if(this->tensorType == InteractionTensorType::Broadband){
-			TensorTimeDependenceBroadband(this->tdInitialTensor, _time, this->tdFreqs, this->tdAmps,  this->tdPhases, this->tdComponents);
+		else if (this->tensorType == InteractionTensorType::Broadband)
+		{
+			TensorTimeDependenceBroadband(this->tdInitialTensor, _time, this->tdFreqs, this->tdAmps, this->tdPhases, this->tdComponents);
 		}
-		else if (this->tensorType == InteractionTensorType::OUGeneral){
+		else if (this->tensorType == InteractionTensorType::OUGeneral)
+		{
 			TensorTimeDependenceOUGeneral(this->tdInitialTensor, _time, this->tdTimestep, this->tdCorrTime);
 		}
 
@@ -923,84 +940,100 @@ namespace SpinAPI
 		return scalars;
 	}
 
-
-	//Applies monochromatic noise to each tensor component, scaled by the static value
+	// Applies monochromatic noise to each tensor component, scaled by the static value
 	void Interaction::TensorTimeDependenceMonochromatic(arma::mat _m, double _time, double _frequency, double _phase)
-	{	
-		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
-		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
-		
+	{
+		double A_xx = _m(0, 0);
+		double A_yy = _m(1, 1);
+		double A_zz = _m(2, 2);
+		double A_xy = _m(0, 1);
+		double A_xz = _m(0, 2);
+		double A_yz = _m(1, 2);
+
 		A_xx = A_xx * std::sin(_frequency * _time + _phase);
 		A_yy = A_yy * std::sin(_frequency * _time + _phase);
 		A_zz = A_zz * std::sin(_frequency * _time + _phase);
 		A_xy = A_xy * std::sin(_frequency * _time + _phase);
 		A_xz = A_xz * std::sin(_frequency * _time + _phase);
 		A_yz = A_yz * std::sin(_frequency * _time + _phase);
-		
-		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-								{A_xy, A_yy, A_yz},
-								{A_xz, A_yz, A_zz}};
-		//output the current tensor to file if required
-		if(this->tdPrintTensor == true){
+
+		arma::mat tdTensor = {{A_xx, A_xy, A_xz},
+							  {A_xy, A_yy, A_yz},
+							  {A_xz, A_yz, A_zz}};
+		// output the current tensor to file if required
+		if (this->tdPrintTensor == true)
+		{
 			std::ofstream file;
 			std::string tdFilename = this->Name() + ".mst";
 			file.open(tdFilename, std::ofstream::app);
-			file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+			file << _time << " " << A_xx << " " << A_xy << " " << A_xz << " " << A_xy << " " << A_yy << " " << A_yz << " " << A_xz << " " << A_yz << " " << A_zz << std::endl;
 			file.close();
 		}
-		//set the new diagonalised matrix within the Tensor object
+		// set the new diagonalised matrix within the Tensor object
 		this->couplingTensor->SetTensor(tdTensor);
-		
 	}
 
-	//Applies broadband noise to the specified tensor components
-	void Interaction::TensorTimeDependenceBroadband(arma::mat _m, double _time, arma::mat _freqs, arma::mat _amps, arma::mat _phases, int _comps){
+	// Applies broadband noise to the specified tensor components
+	void Interaction::TensorTimeDependenceBroadband(arma::mat _m, double _time, arma::mat _freqs, arma::mat _amps, arma::mat _phases, int _comps)
+	{
 
-		//components of initial tensor
-		double A_xx = _m(0,0); double A_yy = _m(1,1); double A_zz = _m(2,2);
-		double A_xy = _m(0,1); double A_xz = _m(0,2); double A_yz = _m(1,2);
+		// components of initial tensor
+		double A_xx = _m(0, 0);
+		double A_yy = _m(1, 1);
+		double A_zz = _m(2, 2);
+		double A_xy = _m(0, 1);
+		double A_xz = _m(0, 2);
+		double A_yz = _m(1, 2);
 
 		arma::vec A_j = {A_xx, A_xy, A_xz, A_yy, A_yz, A_zz};
 		arma::vec noise_j = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-		//loop through all of the noise components to generate independent noise for each tensor component
-		if(_comps > 0){
-			for(int j_tens=0; j_tens<6; j_tens++){
-				for(int comp=0; comp<_comps; comp++){ 
+		// loop through all of the noise components to generate independent noise for each tensor component
+		if (_comps > 0)
+		{
+			for (int j_tens = 0; j_tens < 6; j_tens++)
+			{
+				for (int comp = 0; comp < _comps; comp++)
+				{
 					double phase = _phases(comp, j_tens);
 					double freq = _freqs(comp, j_tens);
 					double amp = _amps(comp, j_tens);
 
-					noise_j(j_tens) += amp/sqrt(_comps) * std::sin(freq * _time + phase);
+					noise_j(j_tens) += amp / sqrt(_comps) * std::sin(freq * _time + phase);
 				}
 				A_j(j_tens) = noise_j(j_tens) * A_j(j_tens);
 			}
 		}
-		
-		//set the new tensor
-		A_xx = A_j(0); A_xy = A_j(1); A_xz = A_j(2); A_yy = A_j(3); A_yz = A_j(4); A_zz = A_j(5);
-		
-		//output the current tensor to file if required
-		if(this->tdPrintTensor == true){
+
+		// set the new tensor
+		A_xx = A_j(0);
+		A_xy = A_j(1);
+		A_xz = A_j(2);
+		A_yy = A_j(3);
+		A_yz = A_j(4);
+		A_zz = A_j(5);
+
+		// output the current tensor to file if required
+		if (this->tdPrintTensor == true)
+		{
 			std::ofstream file;
 			std::string tdFilename = this->Name() + ".mst";
 			file.open(tdFilename, std::ofstream::app);
-			file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+			file << _time << " " << A_xx << " " << A_xy << " " << A_xz << " " << A_xy << " " << A_yy << " " << A_yz << " " << A_xz << " " << A_yz << " " << A_zz << std::endl;
 			file.close();
 		}
 
-		arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-							{A_xy, A_yy, A_yz},
-							{A_xz, A_yz, A_zz}};
-		//set the new diagonalised matrix within the Tensor object
+		arma::mat tdTensor = {{A_xx, A_xy, A_xz},
+							  {A_xy, A_yy, A_yz},
+							  {A_xz, A_yz, A_zz}};
+		// set the new diagonalised matrix within the Tensor object
 		this->couplingTensor->SetTensor(tdTensor);
-
 	}
 
-	//Applies noise generated using the Ornstein-Uhlenbeck process to tensor components
+	// Applies noise generated using the Ornstein-Uhlenbeck process to tensor components
 	void Interaction::TensorTimeDependenceOUGeneral(arma::mat _m, double _time, double _timestep, double _corrtime)
-	{	
-		//get the interaction tensor in the lab frame
+	{
+		// get the interaction tensor in the lab frame
 		arma::mat labTensor = this->couplingTensor->GetTensor();
 
 		std::normal_distribution<double> dist(0.0, 1.0);
@@ -1012,54 +1045,62 @@ namespace SpinAPI
 		double noise_xz = dist(this->tdGenerator);
 		double noise_yz = dist(this->tdGenerator);
 
-		if(_time == 0){
-			//initial condition
-			double A_xx = noise_xx * _m(0,0);
-			double A_xy = noise_xy * _m(0,1);
-			double A_xz = noise_xz * _m(0,2);
-			double A_yy = noise_yy * _m(1,1);
-			double A_yz = noise_yz * _m(1,2);
-			double A_zz = noise_zz * _m(2,2);
+		if (_time == 0)
+		{
+			// initial condition
+			double A_xx = noise_xx * _m(0, 0);
+			double A_xy = noise_xy * _m(0, 1);
+			double A_xz = noise_xz * _m(0, 2);
+			double A_yy = noise_yy * _m(1, 1);
+			double A_yz = noise_yz * _m(1, 2);
+			double A_zz = noise_zz * _m(2, 2);
 
-			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-								{A_xy, A_yy, A_yz},
-								{A_xz, A_yz, A_zz}};
-			//set the new diagonalised matrix within the Tensor object
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz},
+								  {A_xy, A_yy, A_yz},
+								  {A_xz, A_yz, A_zz}};
+			// set the new diagonalised matrix within the Tensor object
 			this->couplingTensor->SetTensor(tdTensor);
 
-			//output the tensor at time=0 to file if required
-			if(this->tdPrintTensor == true){
+			// output the tensor at time=0 to file if required
+			if (this->tdPrintTensor == true)
+			{
 				std::ofstream file;
 				std::string tdFilename = this->Name() + ".mst";
 				file.open(tdFilename, std::ofstream::app);
-				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file << _time << " " << A_xx << " " << A_xy << " " << A_xz << " " << A_xy << " " << A_yy << " " << A_yz << " " << A_xz << " " << A_yz << " " << A_zz << std::endl;
 				file.close();
 			}
 		}
-		else{
-			double A_xx = labTensor(0,0); double A_yy = labTensor(1,1); double A_zz = labTensor(2,2);
-			double A_xy = labTensor(0,1); double A_xz = labTensor(0,2); double A_yz = labTensor(1,2);
+		else
+		{
+			double A_xx = labTensor(0, 0);
+			double A_yy = labTensor(1, 1);
+			double A_zz = labTensor(2, 2);
+			double A_xy = labTensor(0, 1);
+			double A_xz = labTensor(0, 2);
+			double A_yz = labTensor(1, 2);
 
-			A_xx = A_xx * (1 - _timestep/_corrtime) + _m(0,0) * std::sqrt(2.0 * _timestep/_corrtime) * noise_xx;
-			A_yy = A_yy * (1 - _timestep/_corrtime) + _m(1,1) * std::sqrt(2.0 * _timestep/_corrtime) * noise_yy;
-			A_zz = A_zz * (1 - _timestep/_corrtime) + _m(2,2) * std::sqrt(2.0 * _timestep/_corrtime) * noise_zz;
-			A_xy = A_xy * (1 - _timestep/_corrtime) + _m(0,1) * std::sqrt(2.0 * _timestep/_corrtime) * noise_xy;
-			A_xz = A_xz * (1 - _timestep/_corrtime) + _m(0,2) * std::sqrt(2.0 * _timestep/_corrtime) * noise_xz;
-			A_yz = A_yz * (1 - _timestep/_corrtime) + _m(1,2) * std::sqrt(2.0 * _timestep/_corrtime) * noise_yz;
+			A_xx = A_xx * (1 - _timestep / _corrtime) + _m(0, 0) * std::sqrt(2.0 * _timestep / _corrtime) * noise_xx;
+			A_yy = A_yy * (1 - _timestep / _corrtime) + _m(1, 1) * std::sqrt(2.0 * _timestep / _corrtime) * noise_yy;
+			A_zz = A_zz * (1 - _timestep / _corrtime) + _m(2, 2) * std::sqrt(2.0 * _timestep / _corrtime) * noise_zz;
+			A_xy = A_xy * (1 - _timestep / _corrtime) + _m(0, 1) * std::sqrt(2.0 * _timestep / _corrtime) * noise_xy;
+			A_xz = A_xz * (1 - _timestep / _corrtime) + _m(0, 2) * std::sqrt(2.0 * _timestep / _corrtime) * noise_xz;
+			A_yz = A_yz * (1 - _timestep / _corrtime) + _m(1, 2) * std::sqrt(2.0 * _timestep / _corrtime) * noise_yz;
 
-			arma::mat tdTensor = {{A_xx, A_xy, A_xz}, 
-									{A_xy, A_yy, A_yz},
-									{A_xz, A_yz, A_zz}};
-			//output the current tensor to file if required
-			if(this->tdPrintTensor == true){
+			arma::mat tdTensor = {{A_xx, A_xy, A_xz},
+								  {A_xy, A_yy, A_yz},
+								  {A_xz, A_yz, A_zz}};
+			// output the current tensor to file if required
+			if (this->tdPrintTensor == true)
+			{
 				std::ofstream file;
 				std::string tdFilename = this->Name() + ".mst";
 				file.open(tdFilename, std::ofstream::app);
-				file << _time << " " << A_xx<< " " << A_xy<< " " << A_xz<< " " <<A_xy<< " " << A_yy<< " " << A_yz << " " <<A_xz<< " " << A_yz<< " " << A_zz<< std::endl;
+				file << _time << " " << A_xx << " " << A_xy << " " << A_xz << " " << A_xy << " " << A_yy << " " << A_yz << " " << A_xz << " " << A_yz << " " << A_zz << std::endl;
 				file.close();
 			}
-			//set the new diagonalised matrix within the Tensor object
-			this->couplingTensor->SetTensor(tdTensor);			
+			// set the new diagonalised matrix within the Tensor object
+			this->couplingTensor->SetTensor(tdTensor);
 		}
 	}
 
@@ -1078,7 +1119,6 @@ namespace SpinAPI
 		if (this->couplingTensor != nullptr)
 			this->couplingTensor->GetActionTargets(_scalars, _vectors, _system + "." + this->Name());
 	}
-
 
 	// -----------------------------------------------------
 	// Non-member non-friend methods
@@ -1149,15 +1189,17 @@ namespace SpinAPI
 		return R * _v;
 	}
 
-	//Broadband field noise
-	arma::vec FieldTimeDependenceBroadband(const arma::vec &_v, double _time, arma::mat _freqs, arma::mat _amps,  arma::mat _phases, arma::mat _thetas, arma::mat _phis, bool _randorients,  int _comps)
+	// Broadband field noise
+	arma::vec FieldTimeDependenceBroadband(const arma::vec &_v, double _time, arma::mat _freqs, arma::mat _amps, arma::mat _phases, arma::mat _thetas, arma::mat _phis, bool _randorients, int _comps)
 	{
-		arma::vec new_field = arma::zeros<arma::vec>(3);	
-		//if we include random orientations - each component of the time-dependent field has independent broadband noise, and the specified field is ignored. 
-		//If not, a scalar function applies noise to the field terms defined in the interaction
-		if(_randorients == true){
+		arma::vec new_field = arma::zeros<arma::vec>(3);
+		// if we include random orientations - each component of the time-dependent field has independent broadband noise, and the specified field is ignored.
+		// If not, a scalar function applies noise to the field terms defined in the interaction
+		if (_randorients == true)
+		{
 			// generate broadband noise where each component has a random orientation
-			for(int comp=0; comp<_comps; comp++){ 
+			for (int comp = 0; comp < _comps; comp++)
+			{
 				double phase = _phases(comp, 0);
 				double freq = _freqs(comp, 0);
 				double amp = _amps(comp, 0);
@@ -1165,24 +1207,30 @@ namespace SpinAPI
 				double phi = _phis(comp, 0);
 
 				arma::vec orient = {std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)};
-				new_field += orient * amp/sqrt(_comps) * std::sin(freq * _time + phase);
-			}	
+				new_field += orient * amp / sqrt(_comps) * std::sin(freq * _time + phase);
+			}
 		}
 
-		else{
-			//components of initial tensor
-			double B_x = _v(0); double B_y = _v(1); double B_z = _v(2);
+		else
+		{
+			// components of initial tensor
+			double B_x = _v(0);
+			double B_y = _v(1);
+			double B_z = _v(2);
 			arma::vec B_j = {B_x, B_y, B_z};
 			arma::vec noise_j = {0.0, 0.0, 0.0};
 
-			//loop through all of the noise components to generate independent noise for each tensor component
-			if(_comps > 0){
-				for(int j_tens=0; j_tens<3; j_tens++){
-					for(int comp=0; comp<_comps; comp++){ 
+			// loop through all of the noise components to generate independent noise for each tensor component
+			if (_comps > 0)
+			{
+				for (int j_tens = 0; j_tens < 3; j_tens++)
+				{
+					for (int comp = 0; comp < _comps; comp++)
+					{
 						double phase = _phases(comp, j_tens);
 						double freq = _freqs(comp, j_tens);
 						double amp = _amps(comp, j_tens);
-						noise_j(j_tens) += amp/sqrt(_comps) * std::sin(freq * _time + phase);
+						noise_j(j_tens) += amp / sqrt(_comps) * std::sin(freq * _time + phase);
 					}
 					B_j(j_tens) = noise_j(j_tens) * B_j(j_tens);
 				}
@@ -1192,29 +1240,31 @@ namespace SpinAPI
 		return new_field;
 	}
 
-	//Applies noise generated using the Ornstein-Uhlenbeck process to field components
-	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &_v_init, arma::vec &_v_prev, double _time, double _timestep, double _corrtime, std::mt19937 &_generator){
+	// Applies noise generated using the Ornstein-Uhlenbeck process to field components
+	arma::vec FieldTimeDependenceOUGeneral(const arma::vec &_v_init, arma::vec &_v_prev, double _time, double _timestep, double _corrtime, std::mt19937 &_generator)
+	{
 
 		std::normal_distribution<double> dist(0.0, 1.0);
 		double noise_x = dist(_generator);
 		double noise_y = dist(_generator);
 		double noise_z = dist(_generator);
 
-		double field_x = _v_prev(0) * (1 - _timestep / _corrtime) + _v_init(0) * std::sqrt(2.0 * _timestep/_corrtime) * noise_x; 
-		double field_y = _v_prev(1) * (1 - _timestep / _corrtime) + _v_init(1) * std::sqrt(2.0 * _timestep/_corrtime) * noise_y; 
-		double field_z = _v_prev(2) * (1 - _timestep / _corrtime) + _v_init(2) * std::sqrt(2.0 * _timestep/_corrtime) * noise_z; 
-		
+		double field_x = _v_prev(0) * (1 - _timestep / _corrtime) + _v_init(0) * std::sqrt(2.0 * _timestep / _corrtime) * noise_x;
+		double field_y = _v_prev(1) * (1 - _timestep / _corrtime) + _v_init(1) * std::sqrt(2.0 * _timestep / _corrtime) * noise_y;
+		double field_z = _v_prev(2) * (1 - _timestep / _corrtime) + _v_init(2) * std::sqrt(2.0 * _timestep / _corrtime) * noise_z;
+
 		arma::vec newField;
-		if(_time == 0 ){
-			newField = {_v_init(0)*noise_x, _v_init(1)*noise_y, _v_init(2)*noise_z};
+		if (_time == 0)
+		{
+			newField = {_v_init(0) * noise_x, _v_init(1) * noise_y, _v_init(2) * noise_z};
 		}
-		else{
+		else
+		{
 			newField = {field_x, field_y, field_z};
 		}
 		return newField;
 	}
 
-	
 	// -----------------------------------------------------
 	// Non-member non-friend ActionTarget Check functions
 	// -----------------------------------------------------
