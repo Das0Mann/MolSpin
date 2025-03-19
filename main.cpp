@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	std::cout << "# Molecular Spin Dynamics " << MolSpin_version << std::endl;
 	std::cout << "# " << std::endl;
 	std::cout << "# Developed 2017-2019 by Claus Nielsen* and 2021-2025 by Luca Gerhards**." << std::endl;
-	std::cout << "# Other code contributor: Benji Tigg, Philip Benjamin, Gediminas Pazera, and Irina S. Anisiomva" << std::endl;
+	std::cout << "# Other code contributor: Benji Tigg, Philip Benjamin, Gediminas Pazera, and Irina S. Anisimova" << std::endl;
 	std::cout << "# (c) Quantum Biology and Computational Physics Group," << std::endl;
 	std::cout << "# *:  University of Southern Denmark." << std::endl;
 	std::cout << "# **: Carl von Ossietzky University of Oldenburg." << std::endl;
