@@ -2,7 +2,7 @@
 // MolSpin - Main program file
 //
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
-// (c) 2019 Quantum Biology and Computational Physics Group.
+// (c) 2025 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 //////////////////////////////////////////////////////////////////////////////
 // Adjust this number to fit your system
@@ -28,7 +28,7 @@ extern "C" void omp_set_num_threads(int);
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-	const std::string MolSpin_version = "v2.5";
+	const std::string MolSpin_version = "v2.3";
 	const std::string hline = "# ---------------------------------------------------------------------------------";
 
 	// Check for proper input

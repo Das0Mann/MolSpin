@@ -4,7 +4,7 @@
 // Class used to parse MSD input files.
 //
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
-// (c) 2019 Quantum Biology and Computational Physics Group.
+// (c) 2025 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #ifndef MOD_MSDParser_MSDParser
