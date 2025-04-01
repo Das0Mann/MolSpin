@@ -52,17 +52,9 @@ namespace RunSection
 			// Gyromagnetic constant
 			double gamma_e = 176.0859644; // gyromagnetic ratio of free electron spin in rad mT^-1 mus^-1
 
-			// Make sure we have an initial state
-			auto initial_states = (*i)->InitialState();
-			if (initial_states.size() > 1)
-			{
-				this->Log() << "SkippingSpin System \"" << (*i)->Name() << "\" as no initial state was specified." << std::endl;
-				std::cout << "# ERROR: no initial state was specified! Skipping Spin System." << std::endl;
-				return 1;
-			}
-
 			// Count the number of nuclear spins
 			int nucspins = 0;
+			std::vector<int> SpinNumbers;
 			for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
 			{
 				std::string spintype;
@@ -99,10 +91,178 @@ namespace RunSection
 			space.UseSuperoperatorSpace(false);
 			space.SetReactionOperatorType(this->reactionOperators);
 
-			// Size of the nuclear spin subspace
-			int Z = space.SpaceDimensions() / 4;
-			std::cout << "# Hilbert Space Size " << 4 * Z << " x " << 4 * Z << std::endl;
-			this->Log() << "Hilbert Space Size " << 4 * Z << " x " << 4 * Z << std::endl;
+			std::string InitialState;
+			arma::cx_mat InitialStateVector;
+			if(this->Properties()->Get("initialstate", InitialState))
+			{
+				// Set up states for time-propagation
+				arma::cx_mat TaskInitialStateVector(4, 1);
+				std::string InitialStateLower;
+
+				// Convert the string to lowercase for case-insensitive comparison
+				InitialStateLower.resize(InitialState.size());
+				std::transform(InitialState.begin(), InitialState.end(), InitialStateLower.begin(), ::tolower);
+
+				if (InitialStateLower == "singlet")
+				{
+					arma::cx_mat SingletState(4, 1);
+					SingletState(0) = 0.0;
+					SingletState(1) = 1.0 / sqrt(2);
+					SingletState(2) = -1.0 / sqrt(2);
+					SingletState(3) = 0.0;
+					TaskInitialStateVector = SingletState;
+					this->Log() << "Singlet initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletminus")
+				{
+					arma::cx_mat TripletMinusState(4, 1);
+					TripletMinusState(0) = 0.0;
+					TripletMinusState(1) = 0.0;
+					TripletMinusState(2) = 0.0;
+					TripletMinusState(3) = 1.0;
+					TaskInitialStateVector = TripletMinusState;
+					this->Log() << "Triplet minus initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletzero")
+				{
+					arma::cx_mat TripletZeroState(4, 1);
+					TripletZeroState(0) = 0.0;
+					TripletZeroState(1) = 1.0 / sqrt(2);
+					TripletZeroState(2) = 1.0 / sqrt(2);
+					TripletZeroState(3) = 0.0;
+					TaskInitialStateVector = TripletZeroState;
+					this->Log() << "Triplet zero initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletplus")
+				{
+					arma::cx_mat TripletPlusState(4, 1);
+					TripletPlusState(0) = 1.0;
+					TripletPlusState(1) = 0.0;
+					TripletPlusState(2) = 0.0;
+					TripletPlusState(3) = 0.0;
+					TaskInitialStateVector = TripletPlusState;
+					this->Log() << "Triplet plus initial state." << std::endl;
+				}
+				else
+				{
+					std::cout << "# ERROR: Invalid initial state value! It is set to a Singlet state." << std::endl;
+					this->Log() << "Initial state is undefined. Setting it to a Singlet state" << std::endl;
+					arma::cx_mat SingletState(4, 1);
+					SingletState(0) = 0.0;
+					SingletState(1) = 1.0 / sqrt(2);
+					SingletState(2) = -1.0 / sqrt(2);
+					SingletState(3) = 0.0;
+					TaskInitialStateVector = SingletState;
+				}
+				InitialStateVector = TaskInitialStateVector;
+			}
+			else
+			{
+				// Make sure we have an initial state
+				auto initial_states = (*i)->InitialState();
+				if (initial_states.size() < 1)
+				{
+					this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no initial state was specified." << std::endl;
+					continue;
+				}
+
+				arma::cx_vec tmp_InitialStateVector;
+
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				{
+					if (!space.GetStateSubSpace(*j, tmp_InitialStateVector))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+						continue;
+					}
+				}
+
+				InitialStateVector = arma::reshape(tmp_InitialStateVector, tmp_InitialStateVector.n_elem, 1);
+			}
+
+			int Z = space.SpaceDimensions() / InitialStateVector.n_rows; // Size of the nuclear spin subspace
+			std::cout << "# Hilbert Space Size " << InitialStateVector.n_rows * Z << " x " << InitialStateVector.n_rows * Z << std::endl;
+			this->Log() << "Hilbert Space Size " << InitialStateVector.n_rows * Z << " x " << InitialStateVector.n_rows * Z << std::endl;
+			this->Log() << "Size of Spin Subspace " << Z << std::endl;
+
+			// Random Number Generator Preparation
+			std::random_device rand_dev;		// random number generator
+			std::mt19937 generator(rand_dev()); // random number generator
+			bool autoseed;
+			this->Properties()->Get("autoseed", autoseed);
+
+			if (!autoseed)
+			{
+				this->Log() << "Autoseed is off." << std::endl;
+				double seednumber;
+				this->Properties()->Get("seed", seednumber);
+				if (seednumber != 0)
+				{
+					generator.seed(seednumber);
+					this->Log() << "Seed number is " << seednumber << "." << std::endl;
+				}
+				else
+				{
+					this->Log() << "Undefined seed number! Setting to default of 1." << std::endl;
+					std::cout << "# ERROR: undefined seed number! Setting to default of 1." << std::endl;
+					seednumber = 1;
+				}
+			}
+			else
+			{
+				this->Log() << "Autoseed is on." << std::endl;
+			}
+
+			// Defining the number of Monte Carlo samples
+			int mc_samples;
+			this->Properties()->Get("montecarlosamples", mc_samples);
+
+			if (mc_samples > 0)
+			{
+				this->Log() << "Number of Monte Carlo samples is " << mc_samples << "." << std::endl;
+			}
+			else
+			{
+				this->Log() << "Undefined number of Monte Carlo samples. Setting it to default of 1000." << std::endl;
+				std::cout << "# ERROR: undefined number of Monte Carlo samples! Setting the number to default of 1000." << std::endl;
+				mc_samples = 1000;
+			}
+
+			// Obtain the sampling method and set up states for time-propagation
+			arma::cx_mat B(InitialStateVector.n_rows * Z, mc_samples);
+			std::string samplingmethod;
+
+			this->Properties()->Get("samplingmethod", samplingmethod);
+			if (samplingmethod == "")
+			{
+				for (int it = 0; it < mc_samples; it++)
+				{
+					B.col(it) = arma::kron(InitialStateVector, space.SUZstate(Z, generator));
+				}
+				this->Log() << "No sampling method was defined. Using SU(Z) spin states for Monte Carlo sampling." << std::endl;
+			}
+			else if (samplingmethod == "SUZ")
+			{
+				for (int it = 0; it < mc_samples; it++)
+				{
+					B.col(it) = arma::kron(InitialStateVector, space.SUZstate(Z, generator));
+				}
+				this->Log() << "Using SU(Z) spin states for Monte Carlo sampling." << std::endl;
+			}
+			else if (samplingmethod == "Coherent")
+			{
+				for (int it = 0; it < mc_samples; it++)
+				{
+					B.col(it) = arma::kron(InitialStateVector, space.CoherentState(i, generator));
+				}
+				this->Log() << "Using Coherent spin states for Monte Carlo sampling." << std::endl;
+			}
+			else
+			{
+				this->Log() << "Undefined sampling method! Skipping SpinSystem!" << std::endl;
+				std::cout << "# ERROR: Undefined sampling method!" << std::endl;
+				return 1;
+			}
 
 			// Check whether Hamiltonian terms and/or transitions are time-dependent
 			bool time_dependent_hamiltonian;
@@ -138,117 +298,10 @@ namespace RunSection
 				return 1;
 			}
 
-			// Random Number Generator Preparation
-			std::random_device rand_dev;		// random number generator
-			std::mt19937 generator(rand_dev()); // random number generator
-			bool autoseed;
-			this->Properties()->Get("autoseed", autoseed);
-
-			if (!autoseed)
-			{
-				this->Log() << "Autoseed is off." << std::endl;
-				double seednumber;
-				this->Properties()->Get("seed", seednumber);
-				if (seednumber != 0)
-				{
-					generator.seed(seednumber);
-					this->Log() << "Seed number is " << seednumber << "." << std::endl;
-				}
-				else
-				{
-					this->Log() << "Undefined seed number! Setting to default of 1." << std::endl;
-					std::cout << "# ERROR: undefined seed number! Setting to default of 1." << std::endl;
-					seednumber = 1;
-				}
-			}
-			else
-			{
-				this->Log() << "Autoseed is on." << std::endl;
-			}
-
-			// Defining the number of Monte Carlo samples
-
-			int mc_samples;
-			this->Properties()->Get("montecarlosamples", mc_samples);
-
-			if (mc_samples > 0)
-			{
-				this->Log() << "Number of Monte Carlo samples is " << mc_samples << "." << std::endl;
-			}
-			else
-			{
-				this->Log() << "Undefined number of Monte Carlo samples. Setting it to default of 1000." << std::endl;
-				std::cout << "# ERROR: undefined number of Monte Carlo samples! Setting the number to default of 1000." << std::endl;
-				mc_samples = 1000;
-			}
-
-			// Set up states for time-propagation
-			arma::cx_mat InitialStateVector(4, 1);
-
-			std::string InitialState;
-			this->Properties()->Get("initialstate", InitialState);
-			std::string InitialStateLower;
-
-			// Convert the string to lowercase for case-insensitive comparison
-			InitialStateLower.resize(InitialState.size());
-			std::transform(InitialState.begin(), InitialState.end(), InitialStateLower.begin(), ::tolower);
-
-			if (InitialStateLower == "singlet")
-			{
-				arma::cx_mat SingletState(4, 1);
-				SingletState(0) = 0.0;
-				SingletState(1) = 1.0 / sqrt(2);
-				SingletState(2) = -1.0 / sqrt(2);
-				SingletState(3) = 0.0;
-				InitialStateVector = SingletState;
-				this->Log() << "Singlet initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletminus")
-			{
-				arma::cx_mat TripletMinusState(4, 1);
-				TripletMinusState(0) = 0.0;
-				TripletMinusState(1) = 0.0;
-				TripletMinusState(2) = 0.0;
-				TripletMinusState(3) = 1.0;
-				InitialStateVector = TripletMinusState;
-				this->Log() << "Triplet minus initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletzero")
-			{
-				arma::cx_mat TripletZeroState(4, 1);
-				TripletZeroState(0) = 0.0;
-				TripletZeroState(1) = 1.0 / sqrt(2);
-				TripletZeroState(2) = 1.0 / sqrt(2);
-				TripletZeroState(3) = 0.0;
-				InitialStateVector = TripletZeroState;
-				this->Log() << "Triplet zero initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletplus")
-			{
-				arma::cx_mat TripletPlusState(4, 1);
-				TripletPlusState(0) = 1.0;
-				TripletPlusState(1) = 0.0;
-				TripletPlusState(2) = 0.0;
-				TripletPlusState(3) = 0.0;
-				InitialStateVector = TripletPlusState;
-				this->Log() << "Triplet plus initial state." << std::endl;
-			}
-			else
-			{
-				std::cout << "# ERROR: Invalid initial state value! It is set to a Singlet state." << std::endl;
-				this->Log() << "Initial state is undefined. Setting it to a Singlet state" << std::endl;
-				arma::cx_mat SingletState(4, 1);
-				SingletState(0) = 0.0;
-				SingletState(1) = 1.0 / sqrt(2);
-				SingletState(2) = -1.0 / sqrt(2);
-				SingletState(3) = 0.0;
-				InitialStateVector = SingletState;
-			}
-
 			// Check transitions, rates and projection operators
 			auto transitions = (*i)->Transitions();
 			arma::sp_cx_mat P;
-			arma::sp_cx_mat Sum(4 * Z, 4 * Z);
+			arma::sp_cx_mat Sum(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 			int num_transitions = 0;
 
 			arma::vec rates(1, 1);
@@ -306,7 +359,7 @@ namespace RunSection
 
 			bool symmetric = false;
 			arma::sp_cx_mat K;
-			K.zeros(4 * Z, 4 * Z);
+			K.zeros(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 			// Do this check only when the transition rates are time-independent
 			if (!time_dependent_transitions)
 			{
@@ -350,42 +403,6 @@ namespace RunSection
 				{
 					this->Log() << "Warning: Failed to update matrix representation of transitions!" << std::endl;
 				}
-			}
-
-			// Obtain the sampling method and set up states for time-propagation
-			arma::cx_mat B;
-			B.zeros(Z * 4, mc_samples);
-			std::string samplingmethod;
-			this->Properties()->Get("samplingmethod", samplingmethod);
-			if (samplingmethod == "")
-			{
-				for (int it = 0; it < mc_samples; it++)
-				{
-					B.col(it) = arma::kron(InitialStateVector, space.SUZstate(Z, generator));
-				}
-				this->Log() << "No sampling method was defined. Using SU(Z) spin states for Monte Carlo sampling." << std::endl;
-			}
-			else if (samplingmethod == "SUZ")
-			{
-				for (int it = 0; it < mc_samples; it++)
-				{
-					B.col(it) = arma::kron(InitialStateVector, space.SUZstate(Z, generator));
-				}
-				this->Log() << "Using SU(Z) spin states for Monte Carlo sampling." << std::endl;
-			}
-			else if (samplingmethod == "Coherent")
-			{
-				for (int it = 0; it < mc_samples; it++)
-				{
-					B.col(it) = arma::kron(InitialStateVector, space.CoherentState(i, generator));
-				}
-				this->Log() << "Using Coherent spin states for Monte Carlo sampling." << std::endl;
-			}
-			else
-			{
-				this->Log() << "Undefined sampling method! Skipping SpinSystem!" << std::endl;
-				std::cout << "# ERROR: Undefined sampling method!" << std::endl;
-				return 1;
 			}
 
 			// Setting or calculating total time.
@@ -450,7 +467,7 @@ namespace RunSection
 			std::string precision;
 			this->Properties()->Get("precision", precision);
 
-			int krylovsize;
+			int krylovsize=0;
 			this->Properties()->Get("krylovsize", krylovsize);
 
 			if (propmethod == "autoexpm")
@@ -514,7 +531,7 @@ namespace RunSection
 			if (time_dependent_transitions && !time_dependent_hamiltonian)
 			{
 				// Case 1: time_dependent_transitions is true but time_dependent_hamiltonian is false
-				arma::sp_cx_mat dK(4 * Z, 4 * Z);
+				arma::sp_cx_mat dK(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 				if (propmethod == "autoexpm")
 				{
 					// Propagation using autoexpm for matrix exponential
@@ -595,7 +612,7 @@ namespace RunSection
 
 							// Update B using Krylov Subspace propagator
 							H = H + dK;
-							prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, 4 * Z);
+							prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, InitialStateVector.n_rows * Z);
 							H = H - dK;
 						}
 						B.col(itr) = prop_state;
@@ -606,7 +623,7 @@ namespace RunSection
 			else if (time_dependent_hamiltonian && !time_dependent_transitions)
 			{
 				// Case 2: time_dependent_hamiltonian is true but time_dependent_transitions is false
-				arma::sp_cx_mat dH = arma::sp_cx_mat(4 * Z, 4 * Z);
+				arma::sp_cx_mat dH = arma::sp_cx_mat(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 				if (propmethod == "autoexpm")
 				{
 					// Propagation using autoexpm for matrix exponential
@@ -710,7 +727,7 @@ namespace RunSection
 
 								// Update B using Krylov Subspace propagator
 								H = H + dH;
-								prop_state = space.KrylovExpmSymm(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, 4 * Z);
+								prop_state = space.KrylovExpmSymm(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, InitialStateVector.n_rows * Z);
 								H = H - dH;
 							}
 							B.col(itr) = prop_state;
@@ -748,7 +765,7 @@ namespace RunSection
 
 								// Update B using Krylov Subspace propagator
 								H = H + dH;
-								prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, 4 * Z);
+								prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, InitialStateVector.n_rows * Z);
 								H = H - dH;
 							}
 							B.col(itr) = prop_state;
@@ -760,8 +777,8 @@ namespace RunSection
 			else if (time_dependent_hamiltonian && time_dependent_transitions)
 			{
 				// Case 3: both time_dependent_hamiltonian and time_dependent_transitions are true
-				arma::sp_cx_mat dK(4 * Z, 4 * Z);
-				arma::sp_cx_mat dH(4 * Z, 4 * Z);
+				arma::sp_cx_mat dK(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
+				arma::sp_cx_mat dH(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 				if (propmethod == "autoexpm")
 				{
 					// Propagation using autoexpm for matrix exponential
@@ -852,7 +869,7 @@ namespace RunSection
 
 							// Update B using Krylov Subspace propagator
 							H = H + dK + dH;
-							prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, 4 * Z);
+							prop_state = space.KrylovExpmGeneral(H, prop_state, -arma::cx_double(0.0, 1.0) * dt, krylovsize, InitialStateVector.n_rows * Z);
 							H = H - dK - dH;
 						}
 						B.col(itr) = prop_state;
