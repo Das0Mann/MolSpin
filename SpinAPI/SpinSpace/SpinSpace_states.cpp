@@ -5,7 +5,7 @@
 // objects.
 //
 // Molecular Spin Dynamics Software - developed by Claus Nielsen and Luca Gerhards.
-// (c) 2025 Quantum Biology and Computational Physics Group.
+// (c) 2019 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 
@@ -77,6 +77,7 @@ namespace SpinAPI
 
 		// Get the norm square of the CompleteState
 
+
 		while (index < _cstate[0].second.size())
 		{
 			auto factor = _cstate[0].second[index++].second;
@@ -138,6 +139,70 @@ namespace SpinAPI
 		}
 
 		_out = sumresultvec;
+		return true;
+	}
+
+	// Sets the vector to a representation of the state within the given subspace of the whole spin system
+	bool SpinSpace::GetStateSubSpace(const state_ptr &_state, arma::cx_vec &_out) const
+	{
+		// Make sure that the state can be described on the spin space (i.e. not entangled with spins outside the space)
+		if (!_state->IsComplete(this->spins))
+			return false;
+
+		// Helper variables
+		auto spinlist = this->spins; // A list of spins that have yet to be checked for state information
+		CompleteState cstate;
+		arma::cx_vec result = arma::ones<arma::cx_vec>(1);
+		arma::cx_vec cstate_vec;
+		arma::cx_vec tmpvec;
+		spin_ptr tmpspin;
+
+		// We need to obtain the basis used for creating the state, such that it can be reordered later
+		std::vector<spin_ptr> basis;
+		basis.reserve(spinlist.size());
+
+		while (spinlist.size() > 0)
+		{
+			// Get the spin at the end of the list, and remove it from the list
+			tmpspin = *(spinlist.begin());
+			spinlist.erase(std::remove(spinlist.begin(), spinlist.end(), tmpspin), spinlist.end());
+
+			// Put the spin into the basis vector which tracks the ordering of the spins
+			basis.push_back(tmpspin);
+
+			// Check whether the State object has any information about the spin
+			// Also puts a CompleteState object into cstate if it returns true
+			if (_state->GetCompleteState(tmpspin, cstate))
+			{
+				// Remove the spins in the CompleteState from the spin list, as they are all handled here
+				for (auto i = cstate.cbegin(); i != cstate.cend(); i++)
+				{
+					spinlist.erase(std::remove(spinlist.begin(), spinlist.end(), i->first), spinlist.end());
+
+					// Also, construct the basis order of the spins
+					if (i->first != tmpspin)
+						basis.push_back(i->first);
+				}
+
+				// Get the state vector for the subset of spins (the CompleteState)
+				if (!this->GetState(cstate, cstate_vec, false))
+					return false;
+				
+				// Expand the vector using the direct product of subspaces
+				tmpvec = kron(result, cstate_vec);
+				result = tmpvec;
+			}
+			else
+			{
+				continue;
+			}
+		}
+
+		// Reorder the spins in the basis
+		//this->ReorderBasis(result, basis);
+
+		_out = result;
+
 		return true;
 	}
 
