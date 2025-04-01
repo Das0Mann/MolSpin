@@ -333,10 +333,10 @@ namespace RunSection
 			std::string precision;
 			this->Properties()->Get("precision", precision);
 
-			int krylovsize;
+			int krylovsize=0;
 			this->Properties()->Get("krylovsize", krylovsize);
 
-			double krylovtol;
+			double krylovtol=0;
 			this->Properties()->Get("krylovtol", krylovtol);
 			if (propmethod == "autoexpm")
 			{
@@ -593,7 +593,7 @@ namespace RunSection
 						arma::cx_mat Hessen; // Upper Hessenberg matrix
 						Hessen.zeros(krylovsize, krylovsize);
 
-						arma::cx_mat KryBasis(4 * Z, krylovsize, arma::fill::zeros); // Orthogonal krylov subspace
+						arma::cx_mat KryBasis(InitialStateVector.n_rows * Z, krylovsize, arma::fill::zeros); // Orthogonal krylov subspace
 
 						KryBasis.col(0) = prop_state / norm(prop_state);
 
