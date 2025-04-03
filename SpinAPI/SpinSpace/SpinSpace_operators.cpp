@@ -989,7 +989,8 @@ namespace SpinAPI
 		}
 		else
 		{
-			std::cout << "# ERROR: wrong tolerance. Choose between double, single or half precision." << std::endl;
+			std::cerr << "# ERROR: Unsupported precision. Defaulting to double precision." << std::endl;
+			tol = std::pow(2, -53);
 		}
 
 		// Select Taylor Degree Function

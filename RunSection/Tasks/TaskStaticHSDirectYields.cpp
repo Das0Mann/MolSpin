@@ -443,7 +443,7 @@ namespace RunSection
 
 						// Update B using the Higham propagator
 						arma::cx_mat temp(InitialStateVector.n_rows * Z, Z);
-						temp = space.HighamProp(H, B, dt, precision, M);
+						temp = space.HighamProp(H, B, -dt * arma::cx_double(0.0, 1.0), precision, M);
 						B = temp;;
 					}
 				}
