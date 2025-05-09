@@ -265,6 +265,8 @@ namespace SpinAPI
 		bool PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_left, arma::sp_cx_mat &_right) const;
 		bool PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_out) const;
 		bool PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_left, arma::cx_mat &_right) const;
+		bool PulseOperatorOnStatevector(const pulse_ptr &_pulse, arma::cx_mat &_out) const;
+		bool PulseOperatorOnStatevector(const pulse_ptr &_pulse, arma::sp_cx_mat &_out) const;
 		bool CreateRotAngle(double _angle_deg, double &result) const;
 
 		// ------------------------------------------------

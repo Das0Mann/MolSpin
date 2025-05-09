@@ -159,7 +159,7 @@ namespace RunSection
 			task = std::make_shared<TaskStaticSSCIDNP>(_obj, *this);
 		}
 
-		// NEW (Added by Irina Anisimova):Spectroscopy module
+		// NEW (Added by Irina Anisimova and Luca Gehards):Spectroscopy module
 		else if (_tasktype.compare("staticss-spectra") == 0 || _tasktype.compare("StaticSS-Spectra") == 0)
 		{
 			task = std::make_shared<TaskStaticSSSpectra>(_obj, *this);

@@ -16,6 +16,7 @@
 #include "ObjectParser.h"
 #include "Spin.h"
 #include "Interaction.h"
+#include "Pulse.h"
 #include <iomanip> // std::setprecision
 
 namespace RunSection
@@ -52,7 +53,6 @@ namespace RunSection
 			std::vector<int> SpinNumbers;
 			for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
 			{
-
 				std::string spintype;
 				(*l)->Properties()->Get("type", spintype);
 				if (spintype != "electron")
@@ -72,14 +72,6 @@ namespace RunSection
 				}
 			}
 
-			// Check if there are any nuclear spins
-			//if (nucspins == 0)
-			//{
-			//	this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no nuclear spins were specified." << std::endl;
-			//	std::cout << "# ERROR: no nuclear spins were specified, skipping the system" << std::endl;
-			//	return 1;
-			//}
-
 			this->Log() << "\nStarting with SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
 
 			// Obtain a SpinSpace to describe the system
@@ -87,24 +79,109 @@ namespace RunSection
 			space.UseSuperoperatorSpace(false);
 			space.SetReactionOperatorType(this->reactionOperators);
 
-			// Get the Hamiltonian
-			arma::sp_cx_mat H;
-			if (!space.Hamiltonian(H))
+			std::string InitialState;
+			arma::cx_mat InitialStateVector;
+			if(this->Properties()->Get("initialstate", InitialState))
 			{
-				this->Log() << "Failed to obtain the Hamiltonian in Hilbert Space." << std::endl;
-				std::cout << "# ERROR: Failed to obtain the Hamiltonian!" << std::endl;
-				return 1;
+				// Set up states for time-propagation
+				arma::cx_mat TaskInitialStateVector(4, 1);
+				std::string InitialStateLower;
+
+				// Convert the string to lowercase for case-insensitive comparison
+				InitialStateLower.resize(InitialState.size());
+				std::transform(InitialState.begin(), InitialState.end(), InitialStateLower.begin(), ::tolower);
+
+				if (InitialStateLower == "singlet")
+				{
+					arma::cx_mat SingletState(4, 1);
+					SingletState(0) = 0.0;
+					SingletState(1) = 1.0 / sqrt(2);
+					SingletState(2) = -1.0 / sqrt(2);
+					SingletState(3) = 0.0;
+					TaskInitialStateVector = SingletState;
+					this->Log() << "Singlet initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletminus")
+				{
+					arma::cx_mat TripletMinusState(4, 1);
+					TripletMinusState(0) = 0.0;
+					TripletMinusState(1) = 0.0;
+					TripletMinusState(2) = 0.0;
+					TripletMinusState(3) = 1.0;
+					TaskInitialStateVector = TripletMinusState;
+					this->Log() << "Triplet minus initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletzero")
+				{
+					arma::cx_mat TripletZeroState(4, 1);
+					TripletZeroState(0) = 0.0;
+					TripletZeroState(1) = 1.0 / sqrt(2);
+					TripletZeroState(2) = 1.0 / sqrt(2);
+					TripletZeroState(3) = 0.0;
+					TaskInitialStateVector = TripletZeroState;
+					this->Log() << "Triplet zero initial state." << std::endl;
+				}
+				else if (InitialStateLower == "tripletplus")
+				{
+					arma::cx_mat TripletPlusState(4, 1);
+					TripletPlusState(0) = 1.0;
+					TripletPlusState(1) = 0.0;
+					TripletPlusState(2) = 0.0;
+					TripletPlusState(3) = 0.0;
+					TaskInitialStateVector = TripletPlusState;
+					this->Log() << "Triplet plus initial state." << std::endl;
+				}
+				else
+				{
+					std::cout << "# ERROR: Invalid initial state value! It is set to a Singlet state." << std::endl;
+					this->Log() << "Initial state is undefined. Setting it to a Singlet state" << std::endl;
+					arma::cx_mat SingletState(4, 1);
+					SingletState(0) = 0.0;
+					SingletState(1) = 1.0 / sqrt(2);
+					SingletState(2) = -1.0 / sqrt(2);
+					SingletState(3) = 0.0;
+					TaskInitialStateVector = SingletState;
+				}
+				InitialStateVector = TaskInitialStateVector;
+			}
+			else
+			{
+				// Make sure we have an initial state
+				auto initial_states = (*i)->InitialState();
+				if (initial_states.size() < 1)
+				{
+					this->Log() << "Skipping SpinSystem \"" << (*i)->Name() << "\" as no initial state was specified." << std::endl;
+					continue;
+				}
+
+				arma::cx_vec tmp_InitialStateVector;
+
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				{
+					if (!space.GetStateSubSpace(*j, tmp_InitialStateVector))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+						continue;
+					}
+				}
+
+				InitialStateVector = arma::reshape(tmp_InitialStateVector, tmp_InitialStateVector.n_elem, 1);
 			}
 
-			int Z = space.SpaceDimensions() / 4; // Size of the nuclear spin subspace
-			std::cout << "# Hilbert Space Size " << 4 * Z << " x " << 4 * Z << std::endl;
-			this->Log() << "Hilbert Space Size " << 4 * Z << " x " << 4 * Z << std::endl;
+			int Z = space.SpaceDimensions() / InitialStateVector.n_rows; // Size of the nuclear spin subspace
+			std::cout << "# Hilbert Space Size " << InitialStateVector.n_rows * Z << " x " << InitialStateVector.n_rows * Z << std::endl;
+			this->Log() << "Hilbert Space Size " << InitialStateVector.n_rows * Z << " x " << InitialStateVector.n_rows * Z << std::endl;
 			this->Log() << "Size of Nuclear Spin Subspace " << Z << std::endl;
 
-			// Check transitions, rates and projection operators
-			auto transitions = (*i)->Transitions();
-			arma::sp_cx_mat P;
-			int num_transitions = 0;
+			arma::cx_mat B;
+			B.zeros(Z * InitialStateVector.n_rows, Z);
+
+			for (int it = 0; it < Z; it++)
+			{
+				arma::colvec temp(Z);
+				temp(it) = 1;
+				B.col(it) = arma::kron(InitialStateVector, temp);
+			}
 
 			// Get Information about the polarization of choice
 			bool CIDSP = false;
@@ -113,7 +190,7 @@ namespace RunSection
 				this->Log() << "Failed to obtain an input for a CIDSP" << std::endl;
 			}
 
-			// Get nuclei of interest for CIDNP spectrum
+			// Get projectors of interest of the spectrum
 			arma::sp_cx_mat Iprojx;
 			arma::sp_cx_mat Iprojy;
 			arma::sp_cx_mat Iprojz;
@@ -121,10 +198,16 @@ namespace RunSection
 			std::vector<std::string> spinList;
 			int m;
 
+			// Check transitions, rates and projection operators
+			auto transitions = (*i)->Transitions();
+			arma::sp_cx_mat P;
+			int num_transitions = 0;
+
 			int projection_counter = 0;
 			std::map<int, arma::sp_cx_mat> Operators;
 			arma::vec rates(1, 1);
 
+			// Getting the projection operators
 			if (this->Properties()->GetList("spinlist", spinList, ','))
 			{
 				for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
@@ -204,8 +287,41 @@ namespace RunSection
 				}
 			}
 
+			// Get the Hamiltonian
+			arma::sp_cx_mat H;
+			if (!space.Hamiltonian(H))
+			{
+				this->Log() << "Failed to obtain the Hamiltonian in Hilbert Space." << std::endl;
+				std::cout << "# ERROR: Failed to obtain the Hamiltonian!" << std::endl;
+				return 1;
+			}
+
+			arma::cx_mat eigen_vec; // To hold eigenvectors
+			arma::vec eigen_val; // To hold eigenvalues
+			arma::cx_mat eig_val_mat;
+			arma::cx_mat H_cx = arma::conv_to<arma::cx_mat>::from(H);
+			// ----------------------------------------------------------------
+			// DIAGONALIZATION OF H0// We need all of these operators
+			// ----------------------------------------------------------------
+			this->Log() << "Starting diagonalization..." << std::endl;
+			arma::eig_sym(eigen_val, eigen_vec, H_cx);
+			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
+
+			H = (eigen_vec.t() * H * eigen_vec);
+
+			for (int k = 0; k < projection_counter; k++)
+			{
+				Operators[k] = (eigen_vec.t() * Operators[k] * eigen_vec);
+			}
+
+			for (int i = 0; i < int(B.n_cols); i++) {
+				B.col(i) = eigen_vec.t() * B.col(i);
+			}
+
+			std::cout << "KEK" << std::endl;
+
 			arma::sp_cx_mat K;
-			K.zeros(4 * Z, 4 * Z);
+			K.zeros(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 
 			for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
 			{
@@ -215,79 +331,143 @@ namespace RunSection
 				K += (*j)->Rate() / 2 * P;
 			}
 
-			// Set up states for time-propagation
-			arma::cx_mat InitialStateVector(4, 1);
-			std::string InitialState;
-			this->Properties()->Get("initialstate", InitialState);
-			std::string InitialStateLower;
+			K = (eigen_vec.t() * K * eigen_vec);
 
-			// Convert the string to lowercase for case-insensitive comparison
-			InitialStateLower.resize(InitialState.size());
-			std::transform(InitialState.begin(), InitialState.end(), InitialStateLower.begin(), ::tolower);
+			// Get pulses and pulse the system
+			arma::sp_cx_mat A = arma::cx_double(0.0, -1.0) * H - K;
 
-			if (InitialStateLower == "singlet")
-			{
-				arma::cx_mat SingletState(4, 1);
-				SingletState(0) = 0.0;
-				SingletState(1) = 1.0 / sqrt(2);
-				SingletState(2) = -1.0 / sqrt(2);
-				SingletState(3) = 0.0;
-				InitialStateVector = SingletState;
-				this->Log() << "Singlet initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletminus")
-			{
-				arma::cx_mat TripletMinusState(4, 1);
-				TripletMinusState(0) = 0.0;
-				TripletMinusState(1) = 0.0;
-				TripletMinusState(2) = 0.0;
-				TripletMinusState(3) = 1.0;
-				InitialStateVector = TripletMinusState;
-				this->Log() << "Triplet minus initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletzero")
-			{
-				arma::cx_mat TripletZeroState(4, 1);
-				TripletZeroState(0) = 0.0;
-				TripletZeroState(1) = 1.0 / sqrt(2);
-				TripletZeroState(2) = 1.0 / sqrt(2);
-				TripletZeroState(3) = 0.0;
-				InitialStateVector = TripletZeroState;
-				this->Log() << "Triplet zero initial state." << std::endl;
-			}
-			else if (InitialStateLower == "tripletplus")
-			{
-				arma::cx_mat TripletPlusState(4, 1);
-				TripletPlusState(0) = 1.0;
-				TripletPlusState(1) = 0.0;
-				TripletPlusState(2) = 0.0;
-				TripletPlusState(3) = 0.0;
-				InitialStateVector = TripletPlusState;
-				this->Log() << "Triplet plus initial state." << std::endl;
-			}
-			else
-			{
-				std::cout << "# ERROR: Invalid initial state value! It is set to a Singlet state." << std::endl;
-				this->Log() << "Initial state is undefined. Setting it to a Singlet state" << std::endl;
-				arma::cx_mat SingletState(4, 1);
-				SingletState(0) = 0.0;
-				SingletState(1) = 1.0 / sqrt(2);
-				SingletState(2) = -1.0 / sqrt(2);
-				SingletState(3) = 0.0;
-				InitialStateVector = SingletState;
-			}
+			// Read a pulse sequence from the input
+			std::vector<std::tuple<std::string, double>> Pulsesequence;
 
-			arma::cx_mat B;
-			B.zeros(Z * 4, Z);
-
-			for (int it = 0; it < Z; it++)
+			if (this->Properties()->GetPulseSequence("pulsesequence", Pulsesequence))
 			{
-				arma::colvec temp(Z);
-				temp(it) = 1;
-				B.col(it) = arma::kron(InitialStateVector, temp);
-			}
+				this->Log() << "Pulsesequence" << std::endl;
 
-			std::cout << (B * B.t())/Z << std::endl;
+				// Loop through all pulse sequences
+				for (const auto &seq : Pulsesequence)
+				{
+					// Write which pulse in pulsesequence is calculating now
+					this->Log() << std::get<0>(seq) << ", " << std::get<1>(seq) << std::endl;
+
+					// Save the parameters from the input as variables
+					std::string pulse_name = std::get<0>(seq);
+					double timerelaxation = std::get<1>(seq);
+
+					for (auto pulse = (*i)->pulses_cbegin(); pulse < (*i)->pulses_cend(); pulse++)
+					{
+						if ((*pulse)->Name().compare(pulse_name) == 0)
+						{
+
+							// Apply a pulse to our density vector
+							if ((*pulse)->Type() == SpinAPI::PulseType::InstantPulse)
+							{
+								// Create a Pulse operator in HS; only one side of exponentials as we only propagate wavevectors
+								arma::sp_cx_mat pulse_operator;
+								if (!space.PulseOperatorOnStatevector((*pulse), pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+								
+								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
+
+								// Take a step, "first" is propagator and "second" is current state
+								for (int i = 0; i < int(B.n_cols); i++) 
+								{
+									B.col(i) = pulse_operator * B.col(i);
+								}
+							}
+							else if ((*pulse)->Type() == SpinAPI::PulseType::LongPulseStaticField)
+							{
+
+								// Create a Pulse operator in HS; only one side of exponentials as we only propagate wavevectors
+								arma::sp_cx_mat pulse_operator;
+								if (!space.PulseOperatorOnStatevector((*pulse), pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
+
+								// Create array containing a propagator and the current state of each system
+								std::pair<arma::sp_cx_mat, arma::cx_mat> G;
+								
+								// Get the propagator and put it into the array together with the initial state
+								arma::sp_cx_mat A_sp = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from((A + (arma::cx_double(0.0, -1.0) * pulse_operator)) * (*pulse)->Timestep())));
+								G = std::pair<arma::sp_cx_mat, arma::cx_mat>(A_sp, B);
+
+								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
+								for (unsigned int n = 1; n <= steps; n++)
+								{
+									// Take a step, "first" is propagator and "second" is current state
+									for (int i = 0; i < int(B.n_cols); i++) 
+									{
+										B.col(i) = G.first * G.second.col(i);
+									}
+
+									// Get the new current state vector matrix
+									G.second = B;
+								}
+							}
+							else if ((*pulse)->Type() == SpinAPI::PulseType::LongPulse)
+							{
+								// Create a Pulse operator in SS
+								arma::sp_cx_mat pulse_operator;
+								if (!space.PulseOperatorOnStatevector((*pulse), pulse_operator))
+								{
+									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
+									continue;
+								}
+								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
+								// Create array containing a propagator and the current state of each system
+								std::pair<arma::sp_cx_mat, arma::cx_mat> G;
+
+								// Get the propagator and put it into the array together with the initial state
+								arma::sp_cx_mat A_sp = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from((A + (arma::cx_double(0.0, -1.0) * pulse_operator * std::cos((*pulse)->Frequency() * (*pulse)->Timestep()))) * (*pulse)->Timestep())));
+								G = std::pair<arma::sp_cx_mat, arma::cx_mat>(A_sp, B);
+
+								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
+								for (unsigned int n = 1; n <= steps; n++)
+								{
+									// Take a step, "first" is propagator and "second" is current state
+									for (int i = 0; i < int(B.n_cols); i++) 
+									{
+										B.col(i) = G.first * G.second.col(i);
+									}
+
+									// Get the new current state density vector
+									G.second = B;
+								}
+							}
+							else
+							{
+								this->Log() << "Not implemented yet, sorry." << std::endl;
+							}
+
+							// Get the system relax during the time
+
+							// Create array containing a propagator and the current state of each system
+							std::pair<arma::sp_cx_mat, arma::cx_mat> G;
+							arma::sp_cx_mat A_sp = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from(A * (*pulse)->Timestep())));
+							// Get the propagator and put it into the array together with the initial state
+							G = std::pair<arma::sp_cx_mat, arma::cx_mat>(A_sp, B);
+
+							unsigned int steps = static_cast<unsigned int>(std::abs(timerelaxation / (*pulse)->Timestep()));
+							for (unsigned int n = 1; n <= steps; n++)
+							{
+								// Take a step, "first" is propagator and "second" is current state
+								for (int i = 0; i < int(B.n_cols); i++) 
+								{
+									B.col(i) = G.first * G.second.col(i);
+								}
+
+								// Get the new current state density vector
+								G.second = B;
+							}
+						}
+					}
+				}
+			}
 
 			// Setting or calculating total time.
 			double totaltime;
@@ -314,7 +494,11 @@ namespace RunSection
 			// Number of time propagation steps
 			int num_steps = std::ceil(totaltime / dt);
 			this->Log() << "Number of time propagation steps: " << num_steps << "." << std::endl;
-
+			if(num_steps == 0)
+			{
+				num_steps = 1;
+				this->Log() << "change Number of propagation steps to: " << num_steps << " in order to propagate one step." << std::endl;
+			}
 			// Choose Propagation Method and other parameters
 			std::string propmethod;
 			this->Properties()->Get("propagationmethod", propmethod);
@@ -327,6 +511,7 @@ namespace RunSection
 
 			double krylovtol;
 			this->Properties()->Get("krylovtol", krylovtol);
+
 			if (propmethod == "autoexpm")
 			{
 				this->Log() << "Autoexpm is chosen as the propagation method." << std::endl;
@@ -384,8 +569,9 @@ namespace RunSection
 			}
 			else
 			{
-				std::cout << "# ERROR: undefined propagation method, using simple propagation!" << std::endl;
-				this->Log() << "Undefined propagation method,  using simple propagation." << std::endl;
+				std::cout << "# WARNING: Undefined propagation method, using normal exponential method."<< std::endl;  // autoexpm with single accuracy!" << std::endl;
+				this->Log() << "WARNING: Undefined propagation method, using normal exponential method."<< std::endl;  // autoexpm with single accuracy." << std::endl;
+				propmethod = "normal";
 			}
 
 			// Initialize time propagation placeholders
@@ -458,7 +644,7 @@ namespace RunSection
 					arma::cx_mat Hessen; // Upper Hessenberg matrix
 					Hessen.zeros(krylovsize, krylovsize);
 
-					arma::cx_mat KryBasis(4 * Z, krylovsize, arma::fill::zeros); // Orthogonal krylov subspace
+					arma::cx_mat KryBasis(InitialStateVector.n_rows * Z, krylovsize, arma::fill::zeros); // Orthogonal krylov subspace
 
 					KryBasis.col(0) = prop_state / norm(prop_state);
 
@@ -492,7 +678,7 @@ namespace RunSection
 						}
 
 						Hessen.zeros(krylovsize, krylovsize);
-						KryBasis.zeros(4 * Z, krylovsize);
+						KryBasis.zeros(InitialStateVector.n_rows * Z, krylovsize);
 
 						KryBasis.col(0) = prop_state / norm(prop_state);
 
@@ -521,7 +707,7 @@ namespace RunSection
 					this->Data() << std::endl;
 				}
 			}
-			else 
+			else if (propmethod == "normal")
 			{
 				this->Log() << "Using robust matrix exponential propagator for time-independent Hamiltonian." << std::endl;
 
