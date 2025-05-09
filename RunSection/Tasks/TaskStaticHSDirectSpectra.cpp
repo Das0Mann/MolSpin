@@ -296,30 +296,6 @@ namespace RunSection
 				return 1;
 			}
 
-			arma::cx_mat eigen_vec; // To hold eigenvectors
-			arma::vec eigen_val; // To hold eigenvalues
-			arma::cx_mat eig_val_mat;
-			arma::cx_mat H_cx = arma::conv_to<arma::cx_mat>::from(H);
-			// ----------------------------------------------------------------
-			// DIAGONALIZATION OF H0// We need all of these operators
-			// ----------------------------------------------------------------
-			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H_cx);
-			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
-
-			H = (eigen_vec.t() * H * eigen_vec);
-
-			for (int k = 0; k < projection_counter; k++)
-			{
-				Operators[k] = (eigen_vec.t() * Operators[k] * eigen_vec);
-			}
-
-			for (int i = 0; i < int(B.n_cols); i++) {
-				B.col(i) = eigen_vec.t() * B.col(i);
-			}
-
-			std::cout << "KEK" << std::endl;
-
 			arma::sp_cx_mat K;
 			K.zeros(InitialStateVector.n_rows * Z, InitialStateVector.n_rows * Z);
 
@@ -330,8 +306,6 @@ namespace RunSection
 				space.GetState((*j)->SourceState(), P);
 				K += (*j)->Rate() / 2 * P;
 			}
-
-			K = (eigen_vec.t() * K * eigen_vec);
 
 			// Get pulses and pulse the system
 			arma::sp_cx_mat A = arma::cx_double(0.0, -1.0) * H - K;
@@ -368,8 +342,6 @@ namespace RunSection
 									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
 									continue;
 								}
-								
-								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
 
 								// Take a step, "first" is propagator and "second" is current state
 								for (int i = 0; i < int(B.n_cols); i++) 
@@ -387,7 +359,6 @@ namespace RunSection
 									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
 									continue;
 								}
-								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
 
 								// Create array containing a propagator and the current state of each system
 								std::pair<arma::sp_cx_mat, arma::cx_mat> G;
@@ -418,7 +389,7 @@ namespace RunSection
 									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
 									continue;
 								}
-								pulse_operator = (eigen_vec.t() * pulse_operator * eigen_vec);
+
 								// Create array containing a propagator and the current state of each system
 								std::pair<arma::sp_cx_mat, arma::cx_mat> G;
 
