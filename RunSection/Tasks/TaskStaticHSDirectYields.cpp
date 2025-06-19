@@ -91,7 +91,7 @@ namespace RunSection
 
 			std::string InitialState;
 			arma::cx_mat InitialStateVector;
-			if(this->Properties()->Get("initialstate", InitialState))
+			if (this->Properties()->Get("initialstate", InitialState))
 			{
 				// Set up states for time-propagation
 				arma::cx_mat TaskInitialStateVector(4, 1);
@@ -346,10 +346,10 @@ namespace RunSection
 			std::string precision;
 			this->Properties()->Get("precision", precision);
 
-			int krylovsize=0;
+			int krylovsize = 0;
 			this->Properties()->Get("krylovsize", krylovsize);
 
-			double krylovtol=0;
+			double krylovtol = 0;
 			this->Properties()->Get("krylovtol", krylovtol);
 			if (propmethod == "autoexpm")
 			{
@@ -408,8 +408,8 @@ namespace RunSection
 			}
 			else
 			{
-				std::cout << "# WARNING: Undefined propagation method, using normal exponential method."<< std::endl;  // autoexpm with single accuracy!" << std::endl;
-				this->Log() << "WARNING: Undefined propagation method, using normal exponential method."<< std::endl;  // autoexpm with single accuracy." << std::endl;
+				std::cout << "# WARNING: Undefined propagation method, using normal exponential method." << std::endl; // autoexpm with single accuracy!" << std::endl;
+				this->Log() << "WARNING: Undefined propagation method, using normal exponential method." << std::endl; // autoexpm with single accuracy." << std::endl;
 				propmethod = "normal";
 			}
 
@@ -444,7 +444,8 @@ namespace RunSection
 						// Update B using the Higham propagator
 						arma::cx_mat temp(InitialStateVector.n_rows * Z, Z);
 						temp = space.HighamProp(H, B, -dt * arma::cx_double(0.0, 1.0), precision, M);
-						B = temp;;
+						B = temp;
+						;
 					}
 				}
 				// Non-symmetric matrix in the exponential
@@ -640,32 +641,64 @@ namespace RunSection
 			{
 				this->Log() << "Using robust matrix exponential propagator for time-independent Hamiltonian." << std::endl;
 				// Initialize time propagation placeholders
-				arma::mat ExptValues;
-				ExptValues.zeros(num_steps, num_transitions);
-				arma::vec time(num_steps);
 
-				// Include the recombination operator K
-				arma::sp_cx_mat H_total = arma::cx_double(0.0, -1.0) * H - K;
+				if (symmetric)
+				{
 
-				// Precompute the matrix exponential for the entire time step
-				arma::cx_mat exp_H = arma::expmat(arma::cx_mat(H_total) * dt);
+					arma::sp_cx_mat H_total = arma::cx_double(0.0, -1.0) * H;
 
-				// Propagate B
-				for (int k = 0; k < num_steps; ++k) {
+					// Precompute the matrix exponential for the entire time step
+					arma::cx_mat exp_H = arma::expmat(arma::cx_mat(H_total) * dt);
+
+					// Propagate B
+					for (int k = 0; k < num_steps; ++k)
+					{
 						// Set the current time
 						double current_time = k * dt;
 						time(k) = current_time;
 
 						// Calculate the expected values for each transition operator
-						for (int idx = 0; idx < num_transitions; ++idx) {
-								double abs_trace = std::real(arma::trace(B.t() * arma::cx_mat(Operators[idx]) * B));
-								double expected_value = abs_trace / Z;
-								ExptValues(k, idx) = expected_value;
+						for (int idx = 0; idx < num_transitions; idx++)
+						{
+							double abs_trace = std::abs(arma::trace(B.t() * Operators[idx] * B));
+							double expected_value = std::exp(-kmin * current_time) * abs_trace / Z;
+							ExptValues(k, idx) = expected_value;
 						}
 
-						for (int i = 0; i < int(B.n_cols); ++i) {
-								B.col(i) = exp_H * B.col(i);
+						for (int i = 0; i < int(B.n_cols); ++i)
+						{
+							B.col(i) = exp_H * B.col(i);
 						}
+					}
+				}
+				else
+				{
+					// Include the recombination operator K
+					arma::sp_cx_mat H_total = arma::cx_double(0.0, -1.0) * H - K;
+
+					// Precompute the matrix exponential for the entire time step
+					arma::cx_mat exp_H = arma::expmat(arma::cx_mat(H_total) * dt);
+
+					// Propagate B
+					for (int k = 0; k < num_steps; ++k)
+					{
+						// Set the current time
+						double current_time = k * dt;
+						time(k) = current_time;
+
+						// Calculate the expected values for each transition operator
+						for (int idx = 0; idx < num_transitions; ++idx)
+						{
+							double abs_trace = std::abs(arma::trace(B.t() * arma::cx_mat(Operators[idx]) * B));
+							double expected_value = abs_trace / Z;
+							ExptValues(k, idx) = expected_value;
+						}
+
+						for (int i = 0; i < int(B.n_cols); ++i)
+						{
+							B.col(i) = exp_H * B.col(i);
+						}
+					}
 				}
 			}
 
