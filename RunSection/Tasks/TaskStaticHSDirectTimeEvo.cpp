@@ -399,6 +399,11 @@ namespace RunSection
 				propmethod = "normal";
 			}
 
+			// Initialize time propagation placeholders
+			arma::mat ExptValues;
+			ExptValues.zeros(num_steps, num_transitions);
+			arma::vec time(num_steps);
+
 			// Propagate the system in time using the specified method
 			// Propagation using autoexpm for matrix exponential
 			if (propmethod == "autoexpm")
