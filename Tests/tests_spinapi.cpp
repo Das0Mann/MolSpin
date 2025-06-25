@@ -296,7 +296,7 @@ bool test_spinapi_state()
 	std::string spin4_name = "spin4";
 	std::string spin4_contents = "spin=1/2;";
 	auto spin4 = std::make_shared<SpinAPI::Spin>(spin4_name, spin4_contents);
-    
+
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
 	spinsys.Add(spin2);
@@ -776,7 +776,7 @@ bool test_spinapi_spinspace_sparsevsdense_hamiltonian()
 
 	bool isCorrect = true;
 
-	//Perform the test
+	// Perform the test
 	isCorrect &= space.Hamiltonian(denseM);
 	isCorrect &= space.Hamiltonian(sparseM);
 	isCorrect &= equal_matrices(denseM, sparseM);
@@ -1429,25 +1429,25 @@ bool test_function_finding()
 
 	SpinAPI::SpinSystem spinsys("System");
 	spinsys.Add(spin1);
-//
+	//
 	std::string state_name = "TestState";
 	std::string state_contents = "x=3.14159265;spins(spin1)=cos(0.5x)|1/2>;";
 	SpinAPI::State state(state_name, state_contents);
 
 	bool isCorrect = true;
-	
+
 	// Perform the test
 	isCorrect &= state.ParseFromSystem(spinsys);
-	//auto func = state.GetFunctions()[0];
-	//auto str = func->GetFunctionString();
+	// auto func = state.GetFunctions()[0];
+	// auto str = func->GetFunctionString();
 
-	//if(str.compare("cos(0.5x)") == 0)
+	// if(str.compare("cos(0.5x)") == 0)
 	//{
 	//	isCorrect &= true;
-	//}
+	// }
 
 	return isCorrect;
-	//return true;
+	// return true;
 }
 //////////////////////////////////////////////////////////////////////////////
 bool test_function_evaluation()
@@ -1457,28 +1457,28 @@ bool test_function_evaluation()
 	std::string contents = "0.5x*x+y*y+c";
 	auto TestFunc = SpinAPI::FunctionParser(function, contents);
 
-	arma::cx_double val1 = {-0.1634667676,0};
-	arma::cx_double val2 = {0.1403316058,0};
-	arma::cx_double val3 = {0.3010526538,0};
+	arma::cx_double val1 = {-0.1634667676, 0};
+	arma::cx_double val2 = {0.1403316058, 0};
+	arma::cx_double val3 = {0.3010526538, 0};
 	double tolerance = 1e-5;
 
 	bool isCorrect = true;
 
-	double d1 = 0.5; 
-	double d2 = 1.1; 
+	double d1 = 0.5;
+	double d2 = 1.1;
 	double d3 = 0.4;
-	void* v1 = (void*)&d1;
-	void* v2 = (void*)&d2; 
-	void* v3 = (void*)&d3;
+	void *v1 = (void *)&d1;
+	void *v2 = (void *)&d2;
+	void *v3 = (void *)&d3;
 
-	arma::cx_double val = TestFunc->operator()({v1,v2,v3});
+	arma::cx_double val = TestFunc->operator()({v1, v2, v3});
 	std::cout << val << std::endl;
 	isCorrect &= (std::abs(val.real() - val1.real()) < tolerance);
-	val = TestFunc->operator()({v3,v1,v2});
+	val = TestFunc->operator()({v3, v1, v2});
 	isCorrect &= (std::abs(val.real() - val2.real()) < tolerance);
 	val = TestFunc->operator()({v2, v3, v1});
 	isCorrect &= (std::abs(val.real() - val3.real()) < tolerance);
-	
+
 	return isCorrect;
 }
 
@@ -1491,7 +1491,7 @@ bool test_spinapi_instantpulse()
 	std::string contents = "type=instantpulse;group=RPElectron1;rotationaxis=1 1 1;angle=42.24;";
 	SpinAPI::Pulse P(name, contents);
 
-	auto rotationaxis = arma::vec("1 1 1")/arma::norm(arma::vec("1 1 1"));
+	auto rotationaxis = arma::vec("1 1 1") / arma::norm(arma::vec("1 1 1"));
 	double angle = 42.24;
 
 	bool isCorrect = true;
@@ -1517,10 +1517,9 @@ bool test_spinapi_longpulsestaticfield()
 	auto field = arma::vec("0.0 7.1 14.2");
 	double pulsetime = 42.24;
 	auto prefactorlist = arma::vec("-176.085");
-	std::vector<bool> commonprefactorlist {0};
-	std::vector<bool> ignortensorslist {1};
+	std::vector<bool> commonprefactorlist{0};
+	std::vector<bool> ignortensorslist{1};
 	double timestep = 0.42;
-	
 
 	bool isCorrect = true;
 
@@ -1555,8 +1554,8 @@ bool test_spinapi_longpulse()
 	auto field = arma::vec("0.0 7.1 14.2");
 	double pulsetime = 42.24;
 	auto prefactorlist = arma::vec("-176.085");
-	std::vector<bool> commonprefactorlist {0};
-	std::vector<bool> ignortensorslist {1};
+	std::vector<bool> commonprefactorlist{0};
+	std::vector<bool> ignortensorslist{1};
 	double timestep = 0.42;
 	double frequency = 0.0004224;
 
@@ -1650,8 +1649,8 @@ bool test_spinapi_interaction_tensor_monochromatic()
 
 	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
-	double frequency=1e6;
-	//pefrom the test
+	double frequency = 1e6;
+	// pefrom the test
 	bool isCorrect = true;
 	isCorrect &= equal_double(I.GetTDFrequency(), frequency);
 	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
@@ -1681,7 +1680,7 @@ bool test_spinapi_interaction_tensor_broadband()
 	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
 
-	//pefrom the test
+	// pefrom the test
 	bool isCorrect = true;
 	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
 	isCorrect &= equal_matrices(testTensor1.LabFrame(), testmatrix);
@@ -1710,7 +1709,7 @@ bool test_spinapi_interaction_tensor_ornsteinuhlenbeck()
 	auto testmatrix = arma::mat("0 0 0; 0 0 0; 0 0 0");
 	double testtime = 1.0;
 
-	//pefrom the test
+	// pefrom the test
 	bool isCorrect = true;
 	SpinAPI::Tensor testTensor1 = *I.CouplingTensor();
 	isCorrect &= equal_matrices(testTensor1.LabFrame(), testmatrix);

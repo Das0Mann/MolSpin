@@ -2116,6 +2116,12 @@ namespace RunSection
 								S = eigvec_j.t() * S;
 							}
 
+							size_t i_index = std::distance(spaces.cbegin(), i);
+							if (i_index < eigveclist.size())
+							{
+								T = eigveclist[i_index].t() * T;
+							}
+
 							// Obtain the creation operator
 							C = arma::conv_to<arma::sp_cx_mat>::from(T * S.t());
 

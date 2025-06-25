@@ -174,7 +174,7 @@ namespace SpinAPI
 	{
 		for (auto i = spins.cbegin(); i != spins.cend(); i++)
 		{
-			if(i->get()->Properties()->Name() == SpinObject)
+			if (i->get()->Properties()->Name() == SpinObject)
 			{
 				return true;
 			}
@@ -301,13 +301,13 @@ namespace SpinAPI
 	bool SpinSpace::Add(const std::vector<pulse_ptr> &_list)
 	{
 		// Merge the two lists without keeping any duplicates
-		std::vector<pulse_ptr> tmpvec;												 // Make a temporary list...
-		tmpvec.reserve(this->pulses.size() + _list.size());							 // ...and reserve memory to hold the following three inserts
-		tmpvec.insert(tmpvec.end(), _list.cbegin(), _list.cend());							 // Insert all new elements from the list
+		std::vector<pulse_ptr> tmpvec;											 // Make a temporary list...
+		tmpvec.reserve(this->pulses.size() + _list.size());						 // ...and reserve memory to hold the following three inserts
+		tmpvec.insert(tmpvec.end(), _list.cbegin(), _list.cend());				 // Insert all new elements from the list
 		tmpvec.insert(tmpvec.end(), this->pulses.cbegin(), this->pulses.cend()); // Insert all previous elements
-		std::sort(tmpvec.begin(), tmpvec.end());											 // Sort the elements
-		auto newEnd = std::unique(tmpvec.begin(), tmpvec.end());							 // Remove duplicates (requires list to be sorted)
-		tmpvec.resize(std::distance(tmpvec.begin(), newEnd));								 // Shrink vector size to get rid of removed objects (std::unique cannot do that)
+		std::sort(tmpvec.begin(), tmpvec.end());								 // Sort the elements
+		auto newEnd = std::unique(tmpvec.begin(), tmpvec.end());				 // Remove duplicates (requires list to be sorted)
+		tmpvec.resize(std::distance(tmpvec.begin(), newEnd));					 // Shrink vector size to get rid of removed objects (std::unique cannot do that)
 
 		// Check if any pulses were added (if the new collection contains more elements than the old)
 		if (tmpvec.size() > this->pulses.size())

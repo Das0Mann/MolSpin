@@ -159,11 +159,15 @@ namespace SpinAPI
 	}
 
 	// The spin is valid if the spin quantum number has an allowed value
-	// A spin-0 is not allowed as it would not make sense (it has no spin-space dynamics)
+	// WRONG STATEMENT: A spin-0 is not allowed as it would not make sense (it has no spin-space dynamics)
+	// We have included spin-0 as it is still correct and also helpful when dealing with multispin systems of electronic levels
 	bool Spin::IsValid()
 	{
-		if (s == 0)
-			return false;
+		// Commented out as we are now beyond this restriction
+		// if (s == 0)
+		//	return false;
+
+		// Please include incoming validation steps in this function here.
 
 		return true;
 	}

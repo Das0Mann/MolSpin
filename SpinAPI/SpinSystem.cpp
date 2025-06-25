@@ -229,10 +229,10 @@ namespace SpinAPI
 				return true;
 		return false;
 	}
-	//Checks whether a SubSystem object is contained by the SpinSystem
-	bool SpinSystem::Contains(const subsystem_ptr& _sub) const
+	// Checks whether a SubSystem object is contained by the SpinSystem
+	bool SpinSystem::Contains(const subsystem_ptr &_sub) const
 	{
-		for(auto i = this->subsystems.cbegin(); i != subsystems.cend(); i++)
+		for (auto i = this->subsystems.cbegin(); i != subsystems.cend(); i++)
 		{
 			if ((*i) == _sub)
 			{
@@ -310,10 +310,10 @@ namespace SpinAPI
 		return true;
 	}
 
-	//Adds a SubSystem to the SpinSystem. The SubSystem will not be valid until SpinSystem::ValidateSubSystem has been called
-	bool SpinSystem::Add(const subsystem_ptr& _sub)
+	// Adds a SubSystem to the SpinSystem. The SubSystem will not be valid until SpinSystem::ValidateSubSystem has been called
+	bool SpinSystem::Add(const subsystem_ptr &_sub)
 	{
-		if(this->Contains(_sub))
+		if (this->Contains(_sub))
 			return false;
 		this->subsystems.push_back(_sub);
 		return true;
@@ -463,9 +463,9 @@ namespace SpinAPI
 	std::vector<subsystem_ptr> SpinSystem::ValidateSubSystems()
 	{
 		std::vector<subsystem_ptr> failedSubSystems;
-		for(auto i = this->subsystems.cbegin(); i != this->subsystems.cend(); i++)
+		for (auto i = this->subsystems.cbegin(); i != this->subsystems.cend(); i++)
 		{
-			if(!((*i)->Validate()))
+			if (!((*i)->Validate()))
 			{
 				failedSubSystems.push_back(*i);
 			}
@@ -581,7 +581,7 @@ namespace SpinAPI
 			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
 
 		// Get ActionTargets from all state objects, adding the name of the SpinSystem
-		for(auto i = this->states.cbegin(); i != this->states.cend(); i++)
+		for (auto i = this->states.cbegin(); i != this->states.cend(); i++)
 			(*i)->GetActionTargets(tmpVecScalars, tmpVecVectors, this->Name());
 
 		// Insert all the ActionScalars in the associated container

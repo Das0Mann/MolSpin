@@ -29,7 +29,7 @@ namespace RunSection
 	// TaskMultiStaticSSNakajimaZwanzigTimeEvo Constructors and Destructor
 	// -----------------------------------------------------
 	TaskMultiStaticSSNakajimaZwanzigTimeEvo::TaskMultiStaticSSNakajimaZwanzigTimeEvo(const MSDParser::ObjectParser &_parser, const RunSection &_runsection) : BasicTask(_parser, _runsection), timestep(1.0), totaltime(1.0e+4),
-																																				reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn)
+																																							  reactionOperators(SpinAPI::ReactionOperatorType::Haberkorn)
 	{
 	}
 
@@ -116,6 +116,8 @@ namespace RunSection
 			R.set_size(size(kron(H, H)));
 			R.zeros();
 
+			// || i->first->interactions_size() < 1
+
 			if (i->first->Name() == "products")
 			{
 				// Now put the initial state into the superspace vector
@@ -168,174 +170,863 @@ namespace RunSection
 			}
 			else
 			{
-		
-			arma::cx_mat eigen_vec; // To hold eigenvectors
-			arma::vec eigen_val;	// To hold eigenvalues
-			arma::cx_mat eig_val_mat;
-		
-			// ----------------------------------------------------------------
-			// DIAGONALIZATION OF H0// We need all of these operators
-			// ----------------------------------------------------------------
-			this->Log() << "Starting diagonalization..." << std::endl;
-			arma::eig_sym(eigen_val, eigen_vec, H);
-			this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
-			eigveclist.push_back(eigen_vec);
+				arma::cx_mat eigen_vec; // To hold eigenvectors
+				arma::vec eigen_val;	// To hold eigenvalues
+				arma::cx_mat eig_val_mat;
 
-			// Rotate density operator in eigenbasis of H0
-			rho0HS = (eigen_vec.t() * rho0HS * eigen_vec);
+				// ----------------------------------------------------------------
+				// DIAGONALIZATION OF H0// We need all of these operators
+				// ----------------------------------------------------------------
+				this->Log() << "Starting diagonalization..." << std::endl;
+				arma::eig_sym(eigen_val, eigen_vec, H);
+				this->Log() << "Diagonalization done! Eigenvalues: " << eigen_val.n_elem << ", eigenvectors: " << eigen_vec.n_cols << std::endl;
 
-			// Now put the initial state into the superspace vector
-			arma::cx_vec rho0vec;
-			if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
-			{
-				this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
-				return false;
-			}
+				eigveclist.push_back(eigen_vec);
 
-			rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
+				// Rotate density operator in eigenbasis of H0
+				rho0HS = (eigen_vec.t() * rho0HS * eigen_vec);
 
-			// ----------------------------------------------------------------
-			// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
-			// ----------------------------------------------------------------
+				// Now put the initial state into the superspace vector
+				arma::cx_vec rho0vec;
+				if (!i->second->OperatorToSuperspace(rho0HS, rho0vec))
+				{
+					this->Log() << "ERROR: Failed convert initial state to superspace for spin system \"" << i->first->Name() << "\"!" << std::endl;
+					return false;
+				}
 
-			// Constructing diagonal matrix with eigenvalues of H0
-			eig_val_mat = arma::diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
+				rho0.rows(nextDimension, nextDimension + (i->second->SpaceDimensions() * i->second->SpaceDimensions()) - 1) = rho0vec;
 
-			// Unit matrix
-			arma::cx_mat one;
-			one.set_size(arma::size(H));
-			one.eye();
+				// ----------------------------------------------------------------
+				// CONSTRUCTING TRANSITION MATRIX "lambda" OUT OF EIGENVALUES OF H0 FOR SPECTRAL DENSITIES
+				// ----------------------------------------------------------------
 
-			arma::cx_mat lambda;
-			lambda = (arma::kron(eig_val_mat, one) - arma::kron(one, eig_val_mat.st()));
+				// Constructing diagonal matrix with eigenvalues of H0
+				eig_val_mat = arma::diagmat(arma::conv_to<arma::cx_mat>::from(eigen_val));
 
-			// ---------------------------------------------------------------
-			// SETUP RELAXATION OPERATOR
-			// ---------------------------------------------------------------
+				// Unit matrix
+				arma::cx_mat one;
+				one.set_size(arma::size(H));
+				one.eye();
 
-			// Temporary NakajimaZwanzig tensor
-			arma::cx_mat tmp_R;
-			tmp_R.set_size(size(kron(H, H)));
-			tmp_R.zeros();
+				arma::cx_mat lambda;
+				lambda = (arma::kron(eig_val_mat, one) - arma::kron(one, eig_val_mat.st()));
 
-			// R Tensor array pointer for parallelization
-			arma::cx_mat **ptr_R = NULL;
-			int threads = 1;
+				// ---------------------------------------------------------------
+				// SETUP RELAXATION OPERATOR
+				// ---------------------------------------------------------------
+
+				// Temporary NakajimaZwanzig tensor
+				arma::cx_mat tmp_R;
+				tmp_R.set_size(size(kron(H, H)));
+				tmp_R.zeros();
+
+				// R Tensor array pointer for parallelization
+				arma::cx_mat **ptr_R = NULL;
+				int threads = 1;
 
 // Get number of threads for tensor pointer arrays
 #pragma omp parallel
-			{
-				threads = omp_get_num_threads();
-			}
-
-			this->Log() << "Setting up threads. " << threads << " CPU are used." << std::endl;
-
-			ptr_R = new arma::cx_mat *[threads];
-
-			for (int l = 0; l < threads; l++)
-			{
-				ptr_R[l] = new arma::cx_mat(tmp_R);
-				*ptr_R[l] *= 0.0;
-			}
-
-			// Spectral density matrix
-			arma::cx_mat SpecDens;
-			SpecDens.set_size(arma::size(H));
-			SpecDens.zeros();
-
-			// Correlation function set ups
-			std::vector<double> tau_c_list;
-			std::vector<double> ampl_list;
-			arma::cx_double ampl_combined = 0.0;
-
-			// Defining variables for parameter of user
-			int terms = 0;
-			int def_g = 0;
-			int def_multexpo = 0;
-			int ops = 0;
-			int coeff = 0;
-
-			this->Log() << "Contructing all required pre-matrices." << std::endl;
-
-			// Defining varibales for loops and storage of operators
-			int num_op = 0;
-			int num_element = 0;
-			arma::cx_mat **ptr_Tensors = NULL;
-
-			// Spin-Operators
-			arma::cx_mat *Sz1 = new arma::cx_mat;
-			arma::cx_mat *Sx1 = new arma::cx_mat;
-			arma::cx_mat *Sy1 = new arma::cx_mat;
-			arma::cx_mat *Sz2 = new arma::cx_mat;
-			arma::cx_mat *Sx2 = new arma::cx_mat;
-			arma::cx_mat *Sy2 = new arma::cx_mat;
-
-			// Double-Spin operators
-			arma::cx_mat *Sx1Sx2 = new arma::cx_mat;
-			arma::cx_mat *Sx1Sy2 = new arma::cx_mat;
-			arma::cx_mat *Sx1Sz2 = new arma::cx_mat;
-			arma::cx_mat *Sy1Sx2 = new arma::cx_mat;
-			arma::cx_mat *Sy1Sy2 = new arma::cx_mat;
-			arma::cx_mat *Sy1Sz2 = new arma::cx_mat;
-			arma::cx_mat *Sz1Sx2 = new arma::cx_mat;
-			arma::cx_mat *Sz1Sy2 = new arma::cx_mat;
-			arma::cx_mat *Sz1Sz2 = new arma::cx_mat;
-
-			// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-			arma::cx_mat *T0_rank_0 = new arma::cx_mat;
-			arma::cx_mat *T0_rank_2 = new arma::cx_mat;
-
-			// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
-			arma::cx_mat *Tp1 = new arma::cx_mat;
-			arma::cx_mat *Tm1 = new arma::cx_mat;
-
-			// Tp2 & Tp2 for rank 2
-			arma::cx_mat *Tp2 = new arma::cx_mat;
-			arma::cx_mat *Tm2 = new arma::cx_mat;
-
-			// arma::cx_mat ** Tensors_rotating = NULL;
-			int k;
-			int s;
-			int l;
-
-			// ------------------------------------------------------------------
-			// STARTING WITH RELAXATION MATRIX CONSTRUCTION - GOOD LUCK
-			// ------------------------------------------------------------------
-
-			this->Log() << "Starting with construction of relaxation matrix." << std::endl;
-			for (auto interaction = i->first->interactions_cbegin(); interaction < i->first->interactions_cend(); interaction++)
-			{
-				// Chosen parameter in input file
-				this->Log() << "------------------------------------------" << std::endl;
-				this->Log() << "Chosen input parameter for interaction:  " << (*interaction)->Name() << std::endl;
-				this->Log() << "------------------------------------------" << std::endl;
-				(*interaction)->Properties()->Get("terms", terms);
-				this->Log() << "terms == " << terms << std::endl;
-				(*interaction)->Properties()->Get("def_g", def_g);
-				this->Log() << "def_g == " << def_g << std::endl;
-				(*interaction)->Properties()->Get("def_multexpo", def_multexpo);
-				this->Log() << "def_multexpo == " << def_multexpo << std::endl;
-				(*interaction)->Properties()->Get("ops", ops);
-				this->Log() << "ops == " << ops << std::endl;
-				(*interaction)->Properties()->Get("coeff", coeff);
-				this->Log() << "coeff == " << coeff << std::endl;
-				this->Log() << "------------------------------------------" << std::endl;
-
-				// Check if def_multexpo keyword is used
-				if ((*interaction)->Properties()->Get("def_multexpo", def_multexpo) && def_multexpo == 1)
 				{
-					this->Log() << "Multiple exponential fits found for different operators" << std::endl;
-					arma::cx_mat **ptr_SpecDens = NULL;
-					arma::mat tau_c_mat;
-					arma::mat ampl_mat;
+					threads = omp_get_num_threads();
+				}
 
-					// Check if tau_c and g lists are available and get the lists in matrix form (tau_c_mat(m,n) - m -> different correlaton function, n -> element in correlation function)
-					if ((*interaction)->Properties()->GetMatrix("tau_c", tau_c_mat))
+				this->Log() << "Setting up threads. " << threads << " CPU are used." << std::endl;
+
+				ptr_R = new arma::cx_mat *[threads];
+
+				for (int l = 0; l < threads; l++)
+				{
+					ptr_R[l] = new arma::cx_mat(tmp_R);
+					*ptr_R[l] *= 0.0;
+				}
+
+				// Spectral density matrix
+				arma::cx_mat SpecDens;
+				SpecDens.set_size(arma::size(H));
+				SpecDens.zeros();
+
+				// Correlation function set ups
+				std::vector<double> tau_c_list;
+				std::vector<double> ampl_list;
+				arma::cx_double ampl_combined = 0.0;
+
+				// Defining variables for parameter of user
+				int terms = 0;
+				int def_g = 0;
+				int def_multexpo = 0;
+				int ops = 0;
+				int coeff = 0;
+
+				this->Log() << "Contructing all required pre-matrices." << std::endl;
+
+				// Defining varibales for loops and storage of operators
+				int num_op = 0;
+				int num_element = 0;
+				arma::cx_mat **ptr_Tensors = NULL;
+
+				// Spin-Operators
+				arma::cx_mat *Sz1 = new arma::cx_mat;
+				arma::cx_mat *Sx1 = new arma::cx_mat;
+				arma::cx_mat *Sy1 = new arma::cx_mat;
+				arma::cx_mat *Sz2 = new arma::cx_mat;
+				arma::cx_mat *Sx2 = new arma::cx_mat;
+				arma::cx_mat *Sy2 = new arma::cx_mat;
+
+				// Double-Spin operators
+				arma::cx_mat *Sx1Sx2 = new arma::cx_mat;
+				arma::cx_mat *Sx1Sy2 = new arma::cx_mat;
+				arma::cx_mat *Sx1Sz2 = new arma::cx_mat;
+				arma::cx_mat *Sy1Sx2 = new arma::cx_mat;
+				arma::cx_mat *Sy1Sy2 = new arma::cx_mat;
+				arma::cx_mat *Sy1Sz2 = new arma::cx_mat;
+				arma::cx_mat *Sz1Sx2 = new arma::cx_mat;
+				arma::cx_mat *Sz1Sy2 = new arma::cx_mat;
+				arma::cx_mat *Sz1Sz2 = new arma::cx_mat;
+
+				// T0 for rank 0 & 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+				arma::cx_mat *T0_rank_0 = new arma::cx_mat;
+				arma::cx_mat *T0_rank_2 = new arma::cx_mat;
+
+				// Tp1 & T1m for rank 2 (rank 1 neglected but can be added - see SpinSpace_operators.cpp - space.Rk1SphericalTensorXXX)
+				arma::cx_mat *Tp1 = new arma::cx_mat;
+				arma::cx_mat *Tm1 = new arma::cx_mat;
+
+				// Tp2 & Tp2 for rank 2
+				arma::cx_mat *Tp2 = new arma::cx_mat;
+				arma::cx_mat *Tm2 = new arma::cx_mat;
+
+				// arma::cx_mat ** Tensors_rotating = NULL;
+				int k;
+				int s;
+				int l;
+
+				// ------------------------------------------------------------------
+				// STARTING WITH RELAXATION MATRIX CONSTRUCTION - GOOD LUCK
+				// ------------------------------------------------------------------
+
+				this->Log() << "Starting with construction of relaxation matrix." << std::endl;
+				for (auto interaction = i->first->interactions_cbegin(); interaction < i->first->interactions_cend(); interaction++)
+				{
+					// Chosen parameter in input file
+					this->Log() << "------------------------------------------" << std::endl;
+					this->Log() << "Chosen input parameter for interaction:  " << (*interaction)->Name() << std::endl;
+					this->Log() << "------------------------------------------" << std::endl;
+					(*interaction)->Properties()->Get("terms", terms);
+					this->Log() << "terms == " << terms << std::endl;
+					(*interaction)->Properties()->Get("def_g", def_g);
+					this->Log() << "def_g == " << def_g << std::endl;
+					(*interaction)->Properties()->Get("def_multexpo", def_multexpo);
+					this->Log() << "def_multexpo == " << def_multexpo << std::endl;
+					(*interaction)->Properties()->Get("ops", ops);
+					this->Log() << "ops == " << ops << std::endl;
+					(*interaction)->Properties()->Get("coeff", coeff);
+					this->Log() << "coeff == " << coeff << std::endl;
+					this->Log() << "------------------------------------------" << std::endl;
+
+					// Check if def_multexpo keyword is used
+					if ((*interaction)->Properties()->Get("def_multexpo", def_multexpo) && def_multexpo == 1)
 					{
-						if ((*interaction)->Properties()->GetMatrix("g", ampl_mat))
+						this->Log() << "Multiple exponential fits found for different operators" << std::endl;
+						arma::cx_mat **ptr_SpecDens = NULL;
+						arma::mat tau_c_mat;
+						arma::mat ampl_mat;
+
+						// Check if tau_c and g lists are available and get the lists in matrix form (tau_c_mat(m,n) - m -> different correlaton function, n -> element in correlation function)
+						if ((*interaction)->Properties()->GetMatrix("tau_c", tau_c_mat))
 						{
-							// Check if SingleSpin or DoubleSpin interaction
+							if ((*interaction)->Properties()->GetMatrix("g", ampl_mat))
+							{
+								// Check if SingleSpin or DoubleSpin interaction
+								if ((*interaction)->Type() == SpinAPI::InteractionType::SingleSpin)
+								{
+									// ------------------------------------------------------------------
+									// Relaxation Matrix Construction for Interactions of Type::SingleSpin
+									// ------------------------------------------------------------------
+
+									// Get groups with respect to interaction
+									auto group1 = (*interaction)->Group1();
+									// Loop through groups to get all interaction type
+									for (auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
+									{
+										// Which operator basis was chosen:
+										if ((*interaction)->Properties()->Get("ops", ops) && ops == 1)
+										{
+											// --------------------------------------------------------
+											// CREATION OF SPIN OPERATORS (Sz, Sx, Sy)
+											// --------------------------------------------------------
+
+											this->Log() << "Sx, Sy and Sz operator basis was chosen - ops == 1" << std::endl;
+
+											if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sz()), *s1, *Sz1))
+											{
+												return false;
+											}
+
+											if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sx()), *s1, *Sx1))
+											{
+												return false;
+											}
+
+											if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sy()), *s1, *Sy1))
+											{
+												return false;
+											}
+
+											// Build double-spin operators
+											*Sx1Sx2 = (*Sx1); // * Bx
+											*Sx1Sy2 = (*Sx1); // * By
+											*Sx1Sz2 = (*Sx1); // * Bz
+											*Sy1Sx2 = (*Sy1); // * Bx
+											*Sy1Sy2 = (*Sy1); // * By
+											*Sy1Sz2 = (*Sy1); // * Bz
+											*Sz1Sx2 = (*Sz1); // * Bx
+											*Sz1Sy2 = (*Sz1); // * By
+											*Sz1Sz2 = (*Sz1); // * Bz
+
+											// Put all tensors on pointer array
+											num_op = 9;
+											delete[] ptr_Tensors;
+											ptr_Tensors = new arma::cx_mat *[num_op];
+
+											ptr_Tensors[0] = Sx1Sx2;
+											ptr_Tensors[1] = Sx1Sy2;
+											ptr_Tensors[2] = Sx1Sz2;
+											ptr_Tensors[3] = Sy1Sx2;
+											ptr_Tensors[4] = Sy1Sy2;
+											ptr_Tensors[5] = Sy1Sz2;
+											ptr_Tensors[6] = Sz1Sx2;
+											ptr_Tensors[7] = Sz1Sy2;
+											ptr_Tensors[8] = Sz1Sz2;
+
+											// Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
+										}
+										else
+										{
+											// ----------------------------------------------------------------
+											// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
+											// ----------------------------------------------------------------
+
+											this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
+											this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
+
+											arma::vec static_field = (*interaction)->Field();
+											arma::cx_vec complex_field;
+
+											// Make field complex
+											complex_field = arma::conv_to<arma::cx_vec>::from(static_field);
+
+											// Rank 0 tensor with m=0
+											if (!i->second->LRk0TensorT0((*s1), complex_field, *T0_rank_0))
+											{
+												this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Rank 2 tensor with m=0
+											if (!i->second->LRk2SphericalTensorT0((*s1), complex_field, *T0_rank_2))
+											{
+												this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Rank 2 tensor with m=1
+											if (!i->second->LRk2SphericalTensorTp1((*s1), complex_field, *Tp1))
+											{
+												this->Log() << "Failed to produce Tp1 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Rank 2 tensor with m=-1
+											if (!i->second->LRk2SphericalTensorTm1((*s1), complex_field, *Tm1))
+											{
+												this->Log() << "Failed to produce Tm1 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Rank 2 tensor with m=2
+											if (!i->second->LRk2SphericalTensorTp2((*s1), complex_field, *Tp2))
+											{
+												this->Log() << "Failed to produce Tp2 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Rank 2 tensor with m=-2
+											if (!i->second->LRk2SphericalTensorTm2((*s1), complex_field, *Tm2))
+											{
+												this->Log() << "Failed to produce Tm2 spherical tensor between spin " << (*s1)->Name() << " and Field"
+															<< "! Skipping." << std::endl;
+												continue;
+											}
+
+											// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
+											num_op = 6;
+											delete[] ptr_Tensors;
+											ptr_Tensors = new arma::cx_mat *[num_op];
+											ptr_Tensors[0] = T0_rank_0;
+											ptr_Tensors[1] = T0_rank_2;
+											ptr_Tensors[2] = Tm1;
+											ptr_Tensors[3] = Tp1;
+											ptr_Tensors[4] = Tm2;
+											ptr_Tensors[5] = Tp2;
+
+											// Construct spatial spherical Tensors
+											SpinAPI::Tensor inTensor(0);
+											if ((*interaction)->Properties()->Get("tensor", inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
+											{
+												this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
+												auto ATensor = (*interaction)->CouplingTensor();
+												arma::cx_mat A(3, 3);
+												arma::cx_vec Am(9);
+
+												A.zeros();
+												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+
+												Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
+												Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
+												Am(2) = 0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+												Am(3) = -0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+												Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
+												Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
+
+												// Rank 0
+												*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
+												// Rank 2
+												*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
+												*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
+												*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+												*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
+												*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
+											}
+											else
+											{
+												// Norm
+												*ptr_Tensors[0] = (*ptr_Tensors[0]);
+												*ptr_Tensors[1] = (*ptr_Tensors[1]);
+												*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+												*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+												*ptr_Tensors[4] = (*ptr_Tensors[4]);
+												*ptr_Tensors[5] = (*ptr_Tensors[5]);
+											}
+										}
+
+// Rotate tensors in eigenbasis of H0
+#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+										for (k = 0; k < num_op; k++)
+										{
+											*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
+										}
+
+										// Number of elments for SpecDens. Important for delete statemant later
+										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+										{
+											num_element = num_op * num_op;
+										}
+										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+										{
+											num_element = num_op;
+										}
+
+										// Contructing dimension of ptr_SpecDens
+										delete[] ptr_SpecDens;
+										ptr_SpecDens = new arma::cx_mat *[num_element];
+
+										for (int l = 0; l < num_element; l++)
+										{
+											ptr_SpecDens[l] = new arma::cx_mat(lambda);
+											*ptr_SpecDens[l] *= 0.0;
+										}
+
+										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
+
+										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
+										{
+											this->Log() << "Setting up NakajimaZwanzig tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...) " << std::endl;
+
+											// Counter for inner loop
+											int m = 0;
+											// Counter to check if some rows are 0 and must not be computed
+											double max_row_value;
+											// Do the autocorrelation terms for each of the 9 terms in the tensor
+											for (k = 0; k < num_op; k++)
+											{
+												for (s = 0; s < num_op; s++)
+												{
+													max_row_value = max(ampl_mat.row(m));
+
+													// Check if the maximum value is zero
+													if (max_row_value == 0.0)
+													{
+														this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+													}
+													else
+													{
+														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+														{
+
+															// ----------------------------------------------------------------
+															// CONSTRUCTING SPECTRAL DENSITY MATRIX
+															// ----------------------------------------------------------------
+
+															SpecDens *= 0.0;
+
+															if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+															{
+																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																continue;
+															}
+
+															*ptr_SpecDens[m] += SpecDens;
+														}
+
+														// -----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// -----------------------------------------------------------------
+
+														tmp_R *= 0.0;
+
+														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														R += tmp_R;
+													}
+
+													m = m + 1;
+												}
+											}
+										}
+										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
+										{
+											this->Log() << "Setting up NakajimaZwanzig tensor just for each operator seperartely. No cross-correlation." << std::endl;
+
+											// Counter for inner loop
+											int m = 0;
+											// Counter to check if some rows are 0 and must not be computed
+											double max_row_value;
+
+											// Do the autocorrelation terms for each of the 3 terms
+											for (k = 0; k < num_op; k++)
+											{
+												max_row_value = max(ampl_mat.row(m));
+
+												// Check if the maximum value is zero
+												if (max_row_value == 0.0)
+												{
+													this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+												}
+												else
+												{
+													for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+													{
+														// ----------------------------------------------------------------
+														// CONSTRUCTING SPECTRAL DENSITY MATRIX
+														// ----------------------------------------------------------------
+
+														SpecDens *= 0.0;
+
+														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+														{
+															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+															continue;
+														}
+
+														*ptr_SpecDens[m] += SpecDens;
+													}
+
+													// -----------------------------------------------------------------
+													// CONSTRUCTING R MATRIX
+													// -----------------------------------------------------------------
+
+													tmp_R *= 0.0;
+
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
+													{
+														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+														continue;
+													}
+
+													R += tmp_R;
+												}
+
+												m = m + 1;
+											}
+										}
+										else
+										{
+											this->Log() << "Your current options are not implemented yet. Please ensure that you use Cartesian operators (ops = 1)." << std::endl;
+										}
+									}
+								}
+								else
+								{
+									// Get groups with respect to interaction
+									auto group1 = (*interaction)->Group1();
+									auto group2 = (*interaction)->Group2();
+
+									// Loop through groups to get all interaction [group1 = electrons, group2 = particles electrons interact with, commonly nuclei]
+									for (auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
+									{
+										for (auto s2 = group2.cbegin(); s2 < group2.cend(); s2++)
+										{
+											if ((*interaction)->Properties()->Get("ops", ops) && ops == 1)
+											{
+
+												// --------------------------------------------------------
+												// CREATION OF SPIN OPERATORS (Sz, Sx, Sy)
+												// --------------------------------------------------------
+
+												this->Log() << "Sx, Sy and Sz operator basis was chosen - ops == 1" << std::endl;
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sz()), *s1, *Sz1))
+												{
+													return false;
+												}
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sx()), *s1, *Sx1))
+												{
+													return false;
+												}
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sy()), *s1, *Sy1))
+												{
+													return false;
+												}
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sz()), *s2, *Sz2))
+												{
+													return false;
+												}
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sx()), *s2, *Sx2))
+												{
+													return false;
+												}
+
+												if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sy()), *s2, *Sy2))
+												{
+													return false;
+												}
+
+												// Build double-spin operators
+												*Sx1Sx2 = (*Sx1) * (*Sx2);
+												*Sx1Sy2 = (*Sx1) * (*Sy2);
+												*Sx1Sz2 = (*Sx1) * (*Sz2);
+												*Sy1Sx2 = (*Sy1) * (*Sx2);
+												*Sy1Sy2 = (*Sy1) * (*Sy2);
+												*Sy1Sz2 = (*Sy1) * (*Sz2);
+												*Sz1Sx2 = (*Sz1) * (*Sx2);
+												*Sz1Sy2 = (*Sz1) * (*Sy2);
+												*Sz1Sz2 = (*Sz1) * (*Sz2);
+
+												// Put all tensors on pointer array
+												num_op = 9;
+												delete[] ptr_Tensors;
+												ptr_Tensors = new arma::cx_mat *[num_op];
+
+												ptr_Tensors[0] = Sx1Sx2;
+												ptr_Tensors[1] = Sx1Sy2;
+												ptr_Tensors[2] = Sx1Sz2;
+												ptr_Tensors[3] = Sy1Sx2;
+												ptr_Tensors[4] = Sy1Sy2;
+												ptr_Tensors[5] = Sy1Sz2;
+												ptr_Tensors[6] = Sz1Sx2;
+												ptr_Tensors[7] = Sz1Sy2;
+												ptr_Tensors[8] = Sz1Sz2;
+											}
+											else
+											{
+												// -------------------------------------------------------------------
+												// Relaxation Matrix Construction for Interactions of Type::DoubleSpin
+												// -------------------------------------------------------------------
+
+												this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
+
+												// ----------------------------------------------------------------
+												// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
+												// ----------------------------------------------------------------
+
+												if (!i->second->BlRk0TensorT0(*s1, *s2, *T0_rank_0))
+												{
+													this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Rank 2 tensor with m=0
+												if (!i->second->BlRk2SphericalTensorT0(*s1, *s2, *T0_rank_2))
+												{
+													this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Rank 2 tensor with m=1
+												if (!i->second->BlRk2SphericalTensorTp1(*s1, *s2, *Tp1))
+												{
+													this->Log() << "Failed to produce Tp1 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Rank 2 tensor with m=-1
+												if (!i->second->BlRk2SphericalTensorTm1(*s1, *s2, *Tm1))
+												{
+													this->Log() << "Failed to produce Tm1 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Rank 2 tensor with m=2
+												if (!i->second->BlRk2SphericalTensorTp2(*s1, *s2, *Tp2))
+												{
+													this->Log() << "Failed to produce Tp2 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Rank 2 tensor with m=-2
+												if (!i->second->BlRk2SphericalTensorTm2(*s1, *s2, *Tm2))
+												{
+													this->Log() << "Failed to produce Tm2 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
+													continue;
+												}
+
+												// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
+												num_op = 6;
+												delete[] ptr_Tensors;
+												ptr_Tensors = new arma::cx_mat *[num_op];
+												ptr_Tensors[0] = T0_rank_0;
+												ptr_Tensors[1] = T0_rank_2;
+												ptr_Tensors[2] = Tm1;
+												ptr_Tensors[3] = Tp1;
+												ptr_Tensors[4] = Tm2;
+												ptr_Tensors[5] = Tp2;
+
+												// Construct spatial spherical Tensors
+												SpinAPI::Tensor inTensor(0);
+												if ((*interaction)->Properties()->Get("tensor", inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
+												{
+													this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
+													auto ATensor = (*interaction)->CouplingTensor();
+													arma::cx_mat A(3, 3);
+													arma::cx_vec Am(6);
+
+													A.zeros();
+													A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
+
+													Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
+													Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
+													Am(2) = 0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+													Am(3) = -0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+													Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
+													Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
+
+													// Rank 0
+													*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
+													// Rank 2
+													*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
+													*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
+													*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+													*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
+													*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
+												}
+												else
+												{
+													// Norm
+													*ptr_Tensors[0] = (*ptr_Tensors[0]);
+													*ptr_Tensors[1] = (*ptr_Tensors[1]);
+													*ptr_Tensors[2] = -(*ptr_Tensors[2]);
+													*ptr_Tensors[3] = -(*ptr_Tensors[3]);
+													*ptr_Tensors[4] = (*ptr_Tensors[4]);
+													*ptr_Tensors[5] = (*ptr_Tensors[5]);
+												}
+											}
+
+// Rotate tensors in eigenbasis of H0
+#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
+											for (k = 0; k < num_op; k++)
+											{
+												*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+											}
+
+											// Number of elments for SpecDens. Important for delete statemant later
+											if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+											{
+												num_element = num_op * num_op;
+											}
+											else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
+											{
+												num_element = num_op;
+											}
+
+											// Contructing dimension of ptr_SpecDens
+											delete[] ptr_SpecDens;
+											ptr_SpecDens = new arma::cx_mat *[num_element];
+
+											for (int l = 0; l < num_element; l++)
+											{
+												ptr_SpecDens[l] = new arma::cx_mat(lambda);
+												*ptr_SpecDens[l] *= 0.0;
+											}
+
+											this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
+
+											if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
+											{
+												this->Log() << "Setting up NakajimaZwanzig tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
+
+												// Counter for inner loop
+												int m = 0;
+												// Counter to check if some rows are 0 and must not be computed
+												double max_row_value;
+												// Do the autocorrelation terms for each of the 9 terms in the tensor
+												for (k = 0; k < num_op; k++)
+												{
+													for (s = 0; s < num_op; s++)
+													{
+														max_row_value = max(ampl_mat.row(m));
+
+														// Check if the maximum value is zero
+														if (max_row_value == 0.0)
+														{
+															this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+														}
+														else
+														{
+															for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+															{
+																// ----------------------------------------------------------------
+																// CONSTRUCTING SPECTRAL DENSITY MATRIX
+																// ----------------------------------------------------------------
+
+																SpecDens *= 0.0;
+
+																if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+																{
+																	this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																	continue;
+																}
+
+																*ptr_SpecDens[m] += SpecDens;
+															}
+
+															// -----------------------------------------------------------------
+															// CONSTRUCTING R MATRIX
+															// -----------------------------------------------------------------
+
+															tmp_R *= 0.0;
+
+															if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
+															{
+																this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+																continue;
+															}
+
+															R += tmp_R;
+														}
+
+														m = m + 1;
+													}
+												}
+											}
+											else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
+											{
+												this->Log() << "Setting up NakajimaZwanzig tensor just for each operator seperartely. No cross-correlation." << std::endl;
+
+												// Counter for inner loop
+												int m = 0;
+												// Counter to check if some rows are 0 and must not be computed
+												double max_row_value;
+
+												// Do the autocorrelation terms for each of the 3 terms
+												for (k = 0; k < num_op; k++)
+												{
+													max_row_value = max(ampl_mat.row(m));
+
+													// Check if the maximum value is zero
+													if (max_row_value == 0.0)
+													{
+														this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
+													}
+													else
+													{
+														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+														{
+															// ----------------------------------------------------------------
+															// CONSTRUCTING SPECTRAL DENSITY MATRIX
+															// ----------------------------------------------------------------
+
+															SpecDens *= 0.0;
+
+															if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
+															{
+																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+																continue;
+															}
+
+															*ptr_SpecDens[m] += SpecDens;
+														}
+
+														// -----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// -----------------------------------------------------------------
+
+														tmp_R *= 0.0;
+
+														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														R += tmp_R;
+													}
+
+													m = m + 1;
+												}
+											}
+											else
+											{
+												this->Log() << "Your current options are not implemented yet. Please ensure that you use Cartesian operators (ops = 1)." << std::endl;
+											}
+
+											this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
+										}
+									}
+								}
+							}
+						}
+
+						if (num_element == num_op * num_op)
+						{
+							for (int i = 0; i < num_op * num_op; i++)
+							{
+								delete ptr_SpecDens[i]; // Delete individual arma::cx_mat objects
+							}
+							delete[] ptr_SpecDens; // Delete the array of arma::cx_mat pointers
+						}
+						else if (num_element == num_op)
+						{
+							for (int i = 0; i < num_element; i++)
+							{
+								delete ptr_SpecDens[i]; // Delete individual arma::cx_mat objects
+							}
+							delete[] ptr_SpecDens; // Delete the array of arma::cx_mat pointers
+						}
+						else
+						{
+							// Handle the case when neither l is 9 nor 3, or provide appropriate error handling
+							// ...
+						}
+					}
+					// Normal loops without multiple multiexponential lists
+					else if ((*interaction)->Properties()->GetList("tau_c", tau_c_list))
+					{
+						if ((*interaction)->Properties()->GetList("g", ampl_list))
+						{
 							if ((*interaction)->Type() == SpinAPI::InteractionType::SingleSpin)
 							{
 								// ------------------------------------------------------------------
@@ -344,6 +1035,7 @@ namespace RunSection
 
 								// Get groups with respect to interaction
 								auto group1 = (*interaction)->Group1();
+
 								// Loop through groups to get all interaction type
 								for (auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
 								{
@@ -496,8 +1188,8 @@ namespace RunSection
 											*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 											// Rank 2
 											*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-											*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+											*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+											*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 										}
@@ -513,130 +1205,44 @@ namespace RunSection
 										}
 									}
 
-// Rotate tensors in eigenbasis of H0
+									// Rotate tensors in eigenbasis of H0
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 									for (k = 0; k < num_op; k++)
 									{
 										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 									}
 
-									// Number of elments for SpecDens. Important for delete statemant later
-									if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
-									{
-										num_element = num_op * num_op;
-									}
-									else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
-									{
-										num_element = num_op;
-									}
-
-									// Contructing dimension of ptr_SpecDens
-									delete[] ptr_SpecDens;
-									ptr_SpecDens = new arma::cx_mat *[num_element];
-
-									for (int l = 0; l < num_element; l++)
-									{
-										ptr_SpecDens[l] = new arma::cx_mat(H);
-										*ptr_SpecDens[l] *= 0.0;
-									}
-
 									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
 
-									if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
+									if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
 									{
-										this->Log() << "Setting up NakajimaZwanzig tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...) " << std::endl;
+										this->Log() << "No cross-relaxation terms are requested" << std::endl;
 
-										// Counter for inner loop
-										int m = 0;
-										// Counter to check if some rows are 0 and must not be computed
-										double max_row_value;
-										// Do the autocorrelation terms for each of the 9 terms in the tensor
-										for (k = 0; k < num_op; k++)
+										if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
 										{
-											for (s = 0; s < num_op; s++)
+											this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
+
+// loop through all operators and construct R tensor in Liouville space
+#pragma omp parallel for num_threads(threads)
+											for (int l = 0; l < threads; l++)
 											{
-												max_row_value = max(ampl_mat.row(m));
-
-												// Check if the maximum value is zero
-												if (max_row_value == 0.0)
-												{
-													this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
-												}
-												else
-												{
-													for (int n = 0; n < (int)ampl_mat.n_cols; n++)
-													{
-
-														// ----------------------------------------------------------------
-														// CONSTRUCTING SPECTRAL DENSITY MATRIX
-														// ----------------------------------------------------------------
-
-														SpecDens *= 0.0;
-
-														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														*ptr_SpecDens[m] += SpecDens;
-													}
-
-													// -----------------------------------------------------------------
-													// CONSTRUCTING R MATRIX
-													// -----------------------------------------------------------------
-
-													tmp_R *= 0.0;
-
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
-													{
-														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-														continue;
-													}
-
-													R += tmp_R;
-												}
-
-												m = m + 1;
+												*ptr_R[l] *= 0.0;
 											}
-										}
-									}
-									else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
-									{
-										this->Log() << "Setting up NakajimaZwanzig tensor just for each operator seperartely. No cross-correlation." << std::endl;
 
-										// Counter for inner loop
-										int m = 0;
-										// Counter to check if some rows are 0 and must not be computed
-										double max_row_value;
-
-										// Do the autocorrelation terms for each of the 3 terms
-										for (k = 0; k < num_op; k++)
-										{
-											max_row_value = max(ampl_mat.row(m));
-
-											// Check if the maximum value is zero
-											if (max_row_value == 0.0)
+#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, lambda, interaction) num_threads(threads)
+											for (k = 0; k < num_op; k++)
 											{
-												this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
-											}
-											else
-											{
-												for (int n = 0; n < (int)ampl_mat.n_cols; n++)
+												// ----------------------------------------------------------------
+												// CONSTRUCTING SPECTRAL DENSITY MATRIX
+												// ----------------------------------------------------------------
+												ampl_combined = ampl_list[k] * ampl_list[k];
+
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 												{
-													// ----------------------------------------------------------------
-													// CONSTRUCTING SPECTRAL DENSITY MATRIX
-													// ----------------------------------------------------------------
-
-													SpecDens *= 0.0;
-
-													if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
-													{
-														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-														continue;
-													}
-
-													*ptr_SpecDens[m] += SpecDens;
+													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+													continue;
 												}
 
 												// -----------------------------------------------------------------
@@ -645,22 +1251,153 @@ namespace RunSection
 
 												tmp_R *= 0.0;
 
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 												{
 													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 													continue;
 												}
 
-												R += tmp_R;
+												*ptr_R[omp_get_thread_num()] += tmp_R;
+											}
+										}
+										else
+										{
+											this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
+
+											// ----------------------------------------------------------------
+											// CONSTRUCTING SPECTRAL DENSITY MATRIX
+											// ----------------------------------------------------------------
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+											{
+												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+												continue;
 											}
 
-											m = m + 1;
+#pragma omp parallel for num_threads(threads)
+											for (l = 0; l < threads; l++)
+											{
+												*ptr_R[l] *= 0.0;
+											}
+
+#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors, eigen_vec) num_threads(threads)
+											for (k = 0; k < num_op; k++)
+											{
+												// -----------------------------------------------------------------
+												// CONSTRUCTING R MATRIX
+												// -----------------------------------------------------------------
+
+												tmp_R *= 0.0;
+
+												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
+												{
+													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+													continue;
+												}
+
+												*ptr_R[omp_get_thread_num()] += tmp_R;
+											}
 										}
 									}
 									else
 									{
-										this->Log() << "Your current options are not implemented yet. Please ensure that you use Cartesian operators (ops = 1)." << std::endl;
+										if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
+										{
+											this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
+
+#pragma omp parallel for num_threads(threads)
+											for (l = 0; l < threads; l++)
+											{
+												*ptr_R[l] *= 0.0;
+											}
+
+// loop through all operators and construct R tensor in Liouville space
+#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
+											for (k = 0; k < num_op; k++)
+											{
+												for (s = 0; s < num_op; s++)
+												{
+													// ----------------------------------------------------------------
+													// CONSTRUCTING SPECTRAL DENSITY MATRIX
+													// ----------------------------------------------------------------
+
+													ampl_combined = ampl_list[k] * ampl_list[s];
+
+													SpecDens *= 0.0;
+													if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+													{
+														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+														continue;
+													}
+
+													// ----------------------------------------------------------------
+													// CONSTRUCTING R MATRIX
+													// ----------------------------------------------------------------
+
+													tmp_R *= 0.0;
+
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+													{
+														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+														continue;
+													}
+
+													*ptr_R[omp_get_thread_num()] += tmp_R;
+												}
+											}
+										}
+										else
+										{
+											// loop through all operators and construct R tensor in Liouville space
+											// ----------------------------------------------------------------
+											// CONSTRUCTING SPECTRAL DENSITY MATRIX
+											// ----------------------------------------------------------------
+
+											this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
+											SpecDens *= 0.0;
+
+											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+											{
+												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+												continue;
+											}
+
+#pragma omp parallel for num_threads(threads)
+											for (l = 0; l < threads; l++)
+											{
+												*ptr_R[l] *= 0.0;
+											}
+
+#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
+											for (k = 0; k < num_op; k++)
+											{
+												for (s = 0; s < num_op; s++)
+												{
+													// ----------------------------------------------------------------
+													// CONSTRUCTING R MATRIX
+													// ----------------------------------------------------------------
+
+													tmp_R *= 0.0;
+
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+													{
+														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+														continue;
+													}
+
+													*ptr_R[omp_get_thread_num()] += tmp_R;
+												}
+											}
+										}
 									}
+
+									for (l = 0; l < threads; l++)
+									{
+										R += *ptr_R[l];
+									}
+
+									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
 								}
 							}
 							else
@@ -714,15 +1451,15 @@ namespace RunSection
 											}
 
 											// Build double-spin operators
-											*Sx1Sx2 = (*Sx1) * (*Sx2);
-											*Sx1Sy2 = (*Sx1) * (*Sy2);
-											*Sx1Sz2 = (*Sx1) * (*Sz2);
-											*Sy1Sx2 = (*Sy1) * (*Sx2);
-											*Sy1Sy2 = (*Sy1) * (*Sy2);
-											*Sy1Sz2 = (*Sy1) * (*Sz2);
-											*Sz1Sx2 = (*Sz1) * (*Sx2);
-											*Sz1Sy2 = (*Sz1) * (*Sy2);
-											*Sz1Sz2 = (*Sz1) * (*Sz2);
+											*Sx1Sx2 = ((*Sx1) * (*Sx2));
+											*Sx1Sy2 = ((*Sx1) * (*Sy2));
+											*Sx1Sz2 = ((*Sx1) * (*Sz2));
+											*Sy1Sx2 = ((*Sy1) * (*Sx2));
+											*Sy1Sy2 = ((*Sy1) * (*Sy2));
+											*Sy1Sz2 = ((*Sy1) * (*Sz2));
+											*Sz1Sx2 = ((*Sz1) * (*Sx2));
+											*Sz1Sy2 = ((*Sz1) * (*Sy2));
+											*Sz1Sz2 = ((*Sz1) * (*Sz2));
 
 											// Put all tensors on pointer array
 											num_op = 9;
@@ -810,15 +1547,15 @@ namespace RunSection
 												this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
 												auto ATensor = (*interaction)->CouplingTensor();
 												arma::cx_mat A(3, 3);
-												arma::cx_vec Am(6);
+												arma::cx_vec Am(9);
 
 												A.zeros();
 												A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
 
 												Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
 												Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
-												Am(2) = 0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-												Am(3) = -0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+												Am(2) = 0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
+												Am(3) = -0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
 												Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
 												Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
 
@@ -826,8 +1563,8 @@ namespace RunSection
 												*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
 												// Rank 2
 												*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-												*ptr_Tensors[2] = -Am(3) * (*ptr_Tensors[2]);
-												*ptr_Tensors[3] = -Am(2) * (*ptr_Tensors[3]);
+												*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
+												*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
 												*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
 												*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
 											}
@@ -843,876 +1580,93 @@ namespace RunSection
 											}
 										}
 
-// Rotate tensors in eigenbasis of H0
+										// Rotate tensors in eigenbasis of H0
 #pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
 										for (k = 0; k < num_op; k++)
 										{
-											*ptr_Tensors[k] = eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec;
+											*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
 										}
 
-										// Number of elments for SpecDens. Important for delete statemant later
-										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0)
+										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
+
+										if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
 										{
-											num_element = num_op * num_op;
-										}
-										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
-										{
-											num_element = num_op;
-										}
+											this->Log() << "No cross-relaxation terms are requested" << std::endl;
 
-										// Contructing dimension of ptr_SpecDens
-										delete[] ptr_SpecDens;
-										ptr_SpecDens = new arma::cx_mat *[num_element];
-
-										for (int l = 0; l < num_element; l++)
-										{
-											ptr_SpecDens[l] = new arma::cx_mat(H);
-											*ptr_SpecDens[l] *= 0.0;
-										}
-
-										this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << " and spin " << (*s2)->Name() << std::endl;
-
-										if ((*interaction)->Properties()->Get("terms", terms) && terms == 0 && ops == 1)
-										{
-											this->Log() << "Setting up NakajimaZwanzig tensor for each component (Axxxx, Axxxy, Axxxz, Axxyx, ...)" << std::endl;
-
-											// Counter for inner loop
-											int m = 0;
-											// Counter to check if some rows are 0 and must not be computed
-											double max_row_value;
-											// Do the autocorrelation terms for each of the 9 terms in the tensor
-											for (k = 0; k < num_op; k++)
+											if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
 											{
-												for (s = 0; s < num_op; s++)
-												{
-													max_row_value = max(ampl_mat.row(m));
-
-													// Check if the maximum value is zero
-													if (max_row_value == 0.0)
-													{
-														this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
-													}
-													else
-													{
-														for (int n = 0; n < (int)ampl_mat.n_cols; n++)
-														{
-															// ----------------------------------------------------------------
-															// CONSTRUCTING SPECTRAL DENSITY MATRIX
-															// ----------------------------------------------------------------
-
-															SpecDens *= 0.0;
-
-															if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
-															{
-																this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-																continue;
-															}
-
-															*ptr_SpecDens[m] += SpecDens;
-														}
-
-														// -----------------------------------------------------------------
-														// CONSTRUCTING R MATRIX
-														// -----------------------------------------------------------------
-
-														tmp_R *= 0.0;
-
-														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), *ptr_SpecDens[m], tmp_R))
-														{
-															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-															continue;
-														}
-
-														R += tmp_R;
-													}
-
-													m = m + 1;
-												}
-											}
-										}
-										else if ((*interaction)->Properties()->Get("terms", terms) && terms == 1 && ops == 1)
-										{
-											this->Log() << "Setting up NakajimaZwanzig tensor just for each operator seperartely. No cross-correlation." << std::endl;
-
-											// Counter for inner loop
-											int m = 0;
-											// Counter to check if some rows are 0 and must not be computed
-											double max_row_value;
-
-											// Do the autocorrelation terms for each of the 3 terms
-											for (k = 0; k < num_op; k++)
-											{
-												max_row_value = max(ampl_mat.row(m));
-
-												// Check if the maximum value is zero
-												if (max_row_value == 0.0)
-												{
-													this->Log() << "The maximum value of row (correlation function) " << m << " is zero." << std::endl;
-												}
-												else
-												{
-													for (int n = 0; n < (int)ampl_mat.n_cols; n++)
-													{
-														// ----------------------------------------------------------------
-														// CONSTRUCTING SPECTRAL DENSITY MATRIX
-														// ----------------------------------------------------------------
-
-														SpecDens *= 0.0;
-
-														if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_mat(m, n)), static_cast<std::complex<double>>(tau_c_mat(m, n)), lambda, SpecDens))
-														{
-															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-															continue;
-														}
-
-														*ptr_SpecDens[m] += SpecDens;
-													}
-
-													// -----------------------------------------------------------------
-													// CONSTRUCTING R MATRIX
-													// -----------------------------------------------------------------
-
-													tmp_R *= 0.0;
-
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), *ptr_SpecDens[m], tmp_R))
-													{
-														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-														continue;
-													}
-
-													R += tmp_R;
-												}
-
-												m = m + 1;
-											}
-										}
-										else
-										{
-											this->Log() << "Your current options are not implemented yet. Please ensure that you use Cartesian operators (ops = 1)." << std::endl;
-										}
-
-										this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " between spins " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
-									}
-								}
-							}
-						}
-					}
-
-					if (num_element == num_op * num_op)
-					{
-						for (int i = 0; i < num_op * num_op; i++)
-						{
-							delete ptr_SpecDens[i]; // Delete individual arma::cx_mat objects
-						}
-						delete[] ptr_SpecDens; // Delete the array of arma::cx_mat pointers
-					}
-					else if (num_element == num_op)
-					{
-						for (int i = 0; i < num_element; i++)
-						{
-							delete ptr_SpecDens[i]; // Delete individual arma::cx_mat objects
-						}
-						delete[] ptr_SpecDens; // Delete the array of arma::cx_mat pointers
-					}
-					else
-					{
-						// Handle the case when neither l is 9 nor 3, or provide appropriate error handling
-						// ...
-					}
-				}
-				// Normal loops without multiple multiexponential lists
-				else if ((*interaction)->Properties()->GetList("tau_c", tau_c_list))
-				{
-					if ((*interaction)->Properties()->GetList("g", ampl_list))
-					{
-						if ((*interaction)->Type() == SpinAPI::InteractionType::SingleSpin)
-						{
-							// ------------------------------------------------------------------
-							// Relaxation Matrix Construction for Interactions of Type::SingleSpin
-							// ------------------------------------------------------------------
-
-							// Get groups with respect to interaction
-							auto group1 = (*interaction)->Group1();
-
-							// Loop through groups to get all interaction type
-							for (auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
-							{
-								// Which operator basis was chosen:
-								if ((*interaction)->Properties()->Get("ops", ops) && ops == 1)
-								{
-									// --------------------------------------------------------
-									// CREATION OF SPIN OPERATORS (Sz, Sx, Sy)
-									// --------------------------------------------------------
-
-									this->Log() << "Sx, Sy and Sz operator basis was chosen - ops == 1" << std::endl;
-
-									if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sz()), *s1, *Sz1))
-									{
-										return false;
-									}
-
-									if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sx()), *s1, *Sx1))
-									{
-										return false;
-									}
-
-									if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sy()), *s1, *Sy1))
-									{
-										return false;
-									}
-
-									// Build double-spin operators
-									*Sx1Sx2 = (*Sx1); // * Bx
-									*Sx1Sy2 = (*Sx1); // * By
-									*Sx1Sz2 = (*Sx1); // * Bz
-									*Sy1Sx2 = (*Sy1); // * Bx
-									*Sy1Sy2 = (*Sy1); // * By
-									*Sy1Sz2 = (*Sy1); // * Bz
-									*Sz1Sx2 = (*Sz1); // * Bx
-									*Sz1Sy2 = (*Sz1); // * By
-									*Sz1Sz2 = (*Sz1); // * Bz
-
-									// Put all tensors on pointer array
-									num_op = 9;
-									delete[] ptr_Tensors;
-									ptr_Tensors = new arma::cx_mat *[num_op];
-
-									ptr_Tensors[0] = Sx1Sx2;
-									ptr_Tensors[1] = Sx1Sy2;
-									ptr_Tensors[2] = Sx1Sz2;
-									ptr_Tensors[3] = Sy1Sx2;
-									ptr_Tensors[4] = Sy1Sy2;
-									ptr_Tensors[5] = Sy1Sz2;
-									ptr_Tensors[6] = Sz1Sx2;
-									ptr_Tensors[7] = Sz1Sy2;
-									ptr_Tensors[8] = Sz1Sz2;
-
-									// Bx,Bx (Sx1); Bx,By (Sx1); Bx,Bz (Sx1);By, Bz (Sx1);...; Bx,Bx (Sy1)
-								}
-								else
-								{
-									// ----------------------------------------------------------------
-									// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
-									// ----------------------------------------------------------------
-
-									this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-									this->Log() << "Using magentic field to construct SingleSpin irreducible tensors." << std::endl;
-
-									arma::vec static_field = (*interaction)->Field();
-									arma::cx_vec complex_field;
-
-									// Make field complex
-									complex_field = arma::conv_to<arma::cx_vec>::from(static_field);
-
-									// Rank 0 tensor with m=0
-									if (!i->second->LRk0TensorT0((*s1), complex_field, *T0_rank_0))
-									{
-										this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Rank 2 tensor with m=0
-									if (!i->second->LRk2SphericalTensorT0((*s1), complex_field, *T0_rank_2))
-									{
-										this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Rank 2 tensor with m=1
-									if (!i->second->LRk2SphericalTensorTp1((*s1), complex_field, *Tp1))
-									{
-										this->Log() << "Failed to produce Tp1 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Rank 2 tensor with m=-1
-									if (!i->second->LRk2SphericalTensorTm1((*s1), complex_field, *Tm1))
-									{
-										this->Log() << "Failed to produce Tm1 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Rank 2 tensor with m=2
-									if (!i->second->LRk2SphericalTensorTp2((*s1), complex_field, *Tp2))
-									{
-										this->Log() << "Failed to produce Tp2 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Rank 2 tensor with m=-2
-									if (!i->second->LRk2SphericalTensorTm2((*s1), complex_field, *Tm2))
-									{
-										this->Log() << "Failed to produce Tm2 spherical tensor between spin " << (*s1)->Name() << " and Field"
-													<< "! Skipping." << std::endl;
-										continue;
-									}
-
-									// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
-									num_op = 6;
-									delete[] ptr_Tensors;
-									ptr_Tensors = new arma::cx_mat *[num_op];
-									ptr_Tensors[0] = T0_rank_0;
-									ptr_Tensors[1] = T0_rank_2;
-									ptr_Tensors[2] = Tm1;
-									ptr_Tensors[3] = Tp1;
-									ptr_Tensors[4] = Tm2;
-									ptr_Tensors[5] = Tp2;
-
-									// Construct spatial spherical Tensors
-									SpinAPI::Tensor inTensor(0);
-									if ((*interaction)->Properties()->Get("tensor", inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
-									{
-										this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
-										auto ATensor = (*interaction)->CouplingTensor();
-										arma::cx_mat A(3, 3);
-										arma::cx_vec Am(9);
-
-										A.zeros();
-										A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-
-										Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
-										Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
-										Am(2) = 0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-										Am(3) = -0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-										Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
-										Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
-
-										// Rank 0
-										*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
-										// Rank 2
-										*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
-										*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
-										*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-									}
-									else
-									{
-										// Norm
-										*ptr_Tensors[0] = (*ptr_Tensors[0]);
-										*ptr_Tensors[1] = (*ptr_Tensors[1]);
-										*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-										*ptr_Tensors[3] = -(*ptr_Tensors[3]);
-										*ptr_Tensors[4] = (*ptr_Tensors[4]);
-										*ptr_Tensors[5] = (*ptr_Tensors[5]);
-									}
-								}
-
-								// Rotate tensors in eigenbasis of H0
-#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
-								for (k = 0; k < num_op; k++)
-								{
-									*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
-								}
-
-								this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
-
-								if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
-								{
-									this->Log() << "No cross-relaxation terms are requested" << std::endl;
-
-									if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
-									{
-										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
+												this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
 
 // loop through all operators and construct R tensor in Liouville space
 #pragma omp parallel for num_threads(threads)
-										for (int l = 0; l < threads; l++)
-										{
-											*ptr_R[l] *= 0.0;
-										}
-
-#pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, lambda, eigen_vec) num_threads(threads)
-										for (k = 0; k < num_op; k++)
-										{
-											// ----------------------------------------------------------------
-											// CONSTRUCTING SPECTRAL DENSITY MATRIX
-											// ----------------------------------------------------------------
-											ampl_combined = ampl_list[k] * ampl_list[k];
-
-											SpecDens *= 0.0;
-
-											if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-												continue;
-											}
-
-											// -----------------------------------------------------------------
-											// CONSTRUCTING R MATRIX
-											// -----------------------------------------------------------------
-
-											tmp_R *= 0.0;
-
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											*ptr_R[omp_get_thread_num()] += tmp_R;
-										}
-									}
-									else
-									{
-										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-
-										// ----------------------------------------------------------------
-										// CONSTRUCTING SPECTRAL DENSITY MATRIX
-										// ----------------------------------------------------------------
-										SpecDens *= 0.0;
-
-										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
-										{
-											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-											continue;
-										}
-
-#pragma omp parallel for num_threads(threads)
-										for (l = 0; l < threads; l++)
-										{
-											*ptr_R[l] *= 0.0;
-										}
-
-#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors, eigen_vec) num_threads(threads)
-										for (k = 0; k < num_op; k++)
-										{
-											// -----------------------------------------------------------------
-											// CONSTRUCTING R MATRIX
-											// -----------------------------------------------------------------
-
-											tmp_R *= 0.0;
-
-											if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-											*ptr_R[omp_get_thread_num()] += tmp_R;
-										}
-									}
-								}
-								else
-								{
-									if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
-									{
-										this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
-
-#pragma omp parallel for num_threads(threads)
-										for (l = 0; l < threads; l++)
-										{
-											*ptr_R[l] *= 0.0;
-										}
-
-// loop through all operators and construct R tensor in Liouville space
-#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
-										for (k = 0; k < num_op; k++)
-										{
-											for (s = 0; s < num_op; s++)
-											{
-												// ----------------------------------------------------------------
-												// CONSTRUCTING SPECTRAL DENSITY MATRIX
-												// ----------------------------------------------------------------
-
-												ampl_combined = ampl_list[k] * ampl_list[s];
-
-												SpecDens *= 0.0;
-												if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+												for (int l = 0; l < threads; l++)
 												{
-													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-													continue;
+													*ptr_R[l] *= 0.0;
 												}
-
-												// ----------------------------------------------------------------
-												// CONSTRUCTING R MATRIX
-												// ----------------------------------------------------------------
-
-												tmp_R *= 0.0;
-
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												*ptr_R[omp_get_thread_num()] += tmp_R;
-											}
-										}
-									}
-									else
-									{
-										// loop through all operators and construct R tensor in Liouville space
-										// ----------------------------------------------------------------
-										// CONSTRUCTING SPECTRAL DENSITY MATRIX
-										// ----------------------------------------------------------------
-
-										this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-										SpecDens *= 0.0;
-
-										if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
-										{
-											this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-											continue;
-										}
-
-#pragma omp parallel for num_threads(threads)
-										for (l = 0; l < threads; l++)
-										{
-											*ptr_R[l] *= 0.0;
-										}
-
-#pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
-										for (k = 0; k < num_op; k++)
-										{
-											for (s = 0; s < num_op; s++)
-											{
-												// ----------------------------------------------------------------
-												// CONSTRUCTING R MATRIX
-												// ----------------------------------------------------------------
-
-												tmp_R *= 0.0;
-
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												*ptr_R[omp_get_thread_num()] += tmp_R;
-											}
-										}
-									}
-								}
-
-								for (l = 0; l < threads; l++)
-								{
-									R += *ptr_R[l];
-								}
-
-								this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << "." << std::endl;
-							}
-						}
-						else
-						{
-							// Get groups with respect to interaction
-							auto group1 = (*interaction)->Group1();
-							auto group2 = (*interaction)->Group2();
-
-							// Loop through groups to get all interaction [group1 = electrons, group2 = particles electrons interact with, commonly nuclei]
-							for (auto s1 = group1.cbegin(); s1 < group1.cend(); s1++)
-							{
-								for (auto s2 = group2.cbegin(); s2 < group2.cend(); s2++)
-								{
-									if ((*interaction)->Properties()->Get("ops", ops) && ops == 1)
-									{
-
-										// --------------------------------------------------------
-										// CREATION OF SPIN OPERATORS (Sz, Sx, Sy)
-										// --------------------------------------------------------
-
-										this->Log() << "Sx, Sy and Sz operator basis was chosen - ops == 1" << std::endl;
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sz()), *s1, *Sz1))
-										{
-											return false;
-										}
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sx()), *s1, *Sx1))
-										{
-											return false;
-										}
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s1)->Sy()), *s1, *Sy1))
-										{
-											return false;
-										}
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sz()), *s2, *Sz2))
-										{
-											return false;
-										}
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sx()), *s2, *Sx2))
-										{
-											return false;
-										}
-
-										if (!i->second->CreateOperator(arma::conv_to<arma::cx_mat>::from((*s2)->Sy()), *s2, *Sy2))
-										{
-											return false;
-										}
-
-										// Build double-spin operators
-										*Sx1Sx2 = ((*Sx1) * (*Sx2));
-										*Sx1Sy2 = ((*Sx1) * (*Sy2));
-										*Sx1Sz2 = ((*Sx1) * (*Sz2));
-										*Sy1Sx2 = ((*Sy1) * (*Sx2));
-										*Sy1Sy2 = ((*Sy1) * (*Sy2));
-										*Sy1Sz2 = ((*Sy1) * (*Sz2));
-										*Sz1Sx2 = ((*Sz1) * (*Sx2));
-										*Sz1Sy2 = ((*Sz1) * (*Sy2));
-										*Sz1Sz2 = ((*Sz1) * (*Sz2));
-
-										// Put all tensors on pointer array
-										num_op = 9;
-										delete[] ptr_Tensors;
-										ptr_Tensors = new arma::cx_mat *[num_op];
-
-										ptr_Tensors[0] = Sx1Sx2;
-										ptr_Tensors[1] = Sx1Sy2;
-										ptr_Tensors[2] = Sx1Sz2;
-										ptr_Tensors[3] = Sy1Sx2;
-										ptr_Tensors[4] = Sy1Sy2;
-										ptr_Tensors[5] = Sy1Sz2;
-										ptr_Tensors[6] = Sz1Sx2;
-										ptr_Tensors[7] = Sz1Sy2;
-										ptr_Tensors[8] = Sz1Sz2;
-									}
-									else
-									{
-										// -------------------------------------------------------------------
-										// Relaxation Matrix Construction for Interactions of Type::DoubleSpin
-										// -------------------------------------------------------------------
-
-										this->Log() << "Irreducible spherical tensor operator basis (Rank 0 & Rank 2) was chosen - ops == 0" << std::endl;
-
-										// ----------------------------------------------------------------
-										// CREATION OF IRREDUCIBLE SPHERICAL TENSORS
-										// ----------------------------------------------------------------
-
-										if (!i->second->BlRk0TensorT0(*s1, *s2, *T0_rank_0))
-										{
-											this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Rank 2 tensor with m=0
-										if (!i->second->BlRk2SphericalTensorT0(*s1, *s2, *T0_rank_2))
-										{
-											this->Log() << "Failed to produce T0 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Rank 2 tensor with m=1
-										if (!i->second->BlRk2SphericalTensorTp1(*s1, *s2, *Tp1))
-										{
-											this->Log() << "Failed to produce Tp1 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Rank 2 tensor with m=-1
-										if (!i->second->BlRk2SphericalTensorTm1(*s1, *s2, *Tm1))
-										{
-											this->Log() << "Failed to produce Tm1 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Rank 2 tensor with m=2
-										if (!i->second->BlRk2SphericalTensorTp2(*s1, *s2, *Tp2))
-										{
-											this->Log() << "Failed to produce Tp2 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Rank 2 tensor with m=-2
-										if (!i->second->BlRk2SphericalTensorTm2(*s1, *s2, *Tm2))
-										{
-											this->Log() << "Failed to produce Tm2 spherical tensor between spin " << (*s1)->Name() << " and " << (*s2)->Name() << "! Skipping." << std::endl;
-											continue;
-										}
-
-										// Put all tensors on pointer array and get the number of indicies for subsequent loops	- adjust number when including rank 1 tensors
-										num_op = 6;
-										delete[] ptr_Tensors;
-										ptr_Tensors = new arma::cx_mat *[num_op];
-										ptr_Tensors[0] = T0_rank_0;
-										ptr_Tensors[1] = T0_rank_2;
-										ptr_Tensors[2] = Tm1;
-										ptr_Tensors[3] = Tp1;
-										ptr_Tensors[4] = Tm2;
-										ptr_Tensors[5] = Tp2;
-
-										// Construct spatial spherical Tensors
-										SpinAPI::Tensor inTensor(0);
-										if ((*interaction)->Properties()->Get("tensor", inTensor) && (*interaction)->Properties()->Get("coeff", coeff) && coeff == 1)
-										{
-											this->Log() << "Producing spatial shperical tensors with coupling tensor..." << std::endl;
-											auto ATensor = (*interaction)->CouplingTensor();
-											arma::cx_mat A(3, 3);
-											arma::cx_vec Am(9);
-
-											A.zeros();
-											A = arma::conv_to<arma::cx_mat>::from((ATensor->LabFrame()));
-
-											Am(0) = (1.0 / sqrt(3.0)) * (A(0, 0) + A(1, 1) + A(2, 2));
-											Am(1) = (1.0 / sqrt(6.0)) * (3.0 * A(2, 2) - (A(0, 0) + A(1, 1) + A(2, 2)));
-											Am(2) = 0.5 * (A(0, 2) + A(2, 0) + ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-											Am(3) = -0.5 * (A(0, 2) + A(2, 0) - ((arma::cx_double(0.0, 1.0)) * (A(1, 2) + A(2, 1))));
-											Am(4) = 0.5 * (A(0, 0) - A(1, 1) - ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
-											Am(5) = 0.5 * (A(0, 0) - A(1, 1) + ((arma::cx_double(0.0, 1.0)) * (A(0, 1) + A(1, 0))));
-
-											// Rank 0
-											*ptr_Tensors[0] = Am(0) * (*ptr_Tensors[0]);
-											// Rank 2
-											*ptr_Tensors[1] = Am(1) * (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = Am(3) * (*ptr_Tensors[2]);
-											*ptr_Tensors[3] = Am(2) * (*ptr_Tensors[3]);
-											*ptr_Tensors[4] = Am(4) * (*ptr_Tensors[4]);
-											*ptr_Tensors[5] = Am(5) * (*ptr_Tensors[5]);
-										}
-										else
-										{
-											// Norm
-											*ptr_Tensors[0] = (*ptr_Tensors[0]);
-											*ptr_Tensors[1] = (*ptr_Tensors[1]);
-											*ptr_Tensors[2] = -(*ptr_Tensors[2]);
-											*ptr_Tensors[3] = -(*ptr_Tensors[3]);
-											*ptr_Tensors[4] = (*ptr_Tensors[4]);
-											*ptr_Tensors[5] = (*ptr_Tensors[5]);
-										}
-									}
-
-									// Rotate tensors in eigenbasis of H0
-#pragma omp parallel for firstprivate(ptr_Tensors) shared(eigen_vec) num_threads(threads)
-									for (k = 0; k < num_op; k++)
-									{
-										*ptr_Tensors[k] = (eigen_vec.t() * (*ptr_Tensors[k]) * eigen_vec);
-									}
-
-									this->Log() << "Calculating R tensor for:" << (*interaction)->Name() << " for spin " << (*s1)->Name() << std::endl;
-
-									if ((*interaction)->Properties()->Get("terms", terms) && terms == 1)
-									{
-										this->Log() << "No cross-relaxation terms are requested" << std::endl;
-
-										if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
-										{
-											this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
-
-// loop through all operators and construct R tensor in Liouville space
-#pragma omp parallel for num_threads(threads)
-											for (int l = 0; l < threads; l++)
-											{
-												*ptr_R[l] *= 0.0;
-											}
 
 #pragma omp parallel for firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
-											for (k = 0; k < num_op; k++)
-											{
-												// ----------------------------------------------------------------
-												// CONSTRUCTING SPECTRAL DENSITY MATRIX
-												// ----------------------------------------------------------------
-												ampl_combined = ampl_list[k] * ampl_list[k];
-
-												SpecDens *= 0.0;
-
-												if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
-												{
-													this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
-													continue;
-												}
-
-												// -----------------------------------------------------------------
-												// CONSTRUCTING R MATRIX
-												// -----------------------------------------------------------------
-
-												tmp_R *= 0.0;
-
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												*ptr_R[omp_get_thread_num()] += tmp_R;
-											}
-										}
-										else
-										{
-											this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-
-											// ----------------------------------------------------------------
-											// CONSTRUCTING SPECTRAL DENSITY MATRIX
-											// ----------------------------------------------------------------
-
-											SpecDens *= 0.0;
-
-											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
-											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
-
-#pragma omp parallel for num_threads(threads)
-											for (l = 0; l < threads; l++)
-											{
-												*ptr_R[l] *= 0.0;
-											}
-
-#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
-											for (k = 0; k < num_op; k++)
-											{
-												// -----------------------------------------------------------------
-												// CONSTRUCTING R MATRIX
-												// -----------------------------------------------------------------
-
-												tmp_R *= 0.0;
-
-												if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
-												{
-													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-													continue;
-												}
-
-												*ptr_R[omp_get_thread_num()] += tmp_R;
-											}
-										}
-									}
-									else
-									{
-										if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
-										{
-											this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
-
-#pragma omp parallel for num_threads(threads)
-											for (l = 0; l < threads; l++)
-											{
-												*ptr_R[l] *= 0.0;
-											}
-
-// loop through all operators and construct R tensor in Liouville space
-#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
-											for (k = 0; k < num_op; k++)
-											{
-												for (s = 0; s < num_op; s++)
+												for (k = 0; k < num_op; k++)
 												{
 													// ----------------------------------------------------------------
 													// CONSTRUCTING SPECTRAL DENSITY MATRIX
 													// ----------------------------------------------------------------
-
-													ampl_combined = ampl_list[k] * ampl_list[s];
+													ampl_combined = ampl_list[k] * ampl_list[k];
 
 													SpecDens *= 0.0;
 
-													if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+													if (!ConstructSpecDensSpecificTimeEvo(static_cast<std::complex<double>>(ampl_combined), static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
 													{
 														this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
 														continue;
 													}
 
-													// ----------------------------------------------------------------
+													// -----------------------------------------------------------------
 													// CONSTRUCTING R MATRIX
-													// ----------------------------------------------------------------
+													// -----------------------------------------------------------------
 
 													tmp_R *= 0.0;
 
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
+													{
+														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+														continue;
+													}
+
+													*ptr_R[omp_get_thread_num()] += tmp_R;
+												}
+											}
+											else
+											{
+												this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
+
+												// ----------------------------------------------------------------
+												// CONSTRUCTING SPECTRAL DENSITY MATRIX
+												// ----------------------------------------------------------------
+
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+												{
+													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+													continue;
+												}
+
+#pragma omp parallel for num_threads(threads)
+												for (l = 0; l < threads; l++)
+												{
+													*ptr_R[l] *= 0.0;
+												}
+
+#pragma omp parallel for firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
+												for (k = 0; k < num_op; k++)
+												{
+													// -----------------------------------------------------------------
+													// CONSTRUCTING R MATRIX
+													// -----------------------------------------------------------------
+
+													tmp_R *= 0.0;
+
+													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[k]), SpecDens, tmp_R))
 													{
 														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
 														continue;
@@ -1724,83 +1678,131 @@ namespace RunSection
 										}
 										else
 										{
-											// loop through all operators and construct R tensor in Liouville space
-											// ----------------------------------------------------------------
-											// CONSTRUCTING SPECTRAL DENSITY MATRIX
-											// ----------------------------------------------------------------
-
-											this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
-
-											SpecDens *= 0.0;
-
-											if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+											if ((*interaction)->Properties()->Get("def_g", def_g) && def_g == 1)
 											{
-												this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-												continue;
-											}
+												this->Log() << "Setting J up for each operator separatly - def_g == 1 " << std::endl;
 
 #pragma omp parallel for num_threads(threads)
-											for (l = 0; l < threads; l++)
-											{
-												*ptr_R[l] *= 0.0;
+												for (l = 0; l < threads; l++)
+												{
+													*ptr_R[l] *= 0.0;
+												}
+
+// loop through all operators and construct R tensor in Liouville space
+#pragma omp parallel for collapse(2) firstprivate(tmp_R, SpecDens, ampl_combined) shared(ampl_list, tau_c_list, num_op, ptr_Tensors, ptr_R, interaction) num_threads(threads)
+												for (k = 0; k < num_op; k++)
+												{
+													for (s = 0; s < num_op; s++)
+													{
+														// ----------------------------------------------------------------
+														// CONSTRUCTING SPECTRAL DENSITY MATRIX
+														// ----------------------------------------------------------------
+
+														ampl_combined = ampl_list[k] * ampl_list[s];
+
+														SpecDens *= 0.0;
+
+														if (!ConstructSpecDensSpecificTimeEvo(ampl_combined, static_cast<std::complex<double>>(tau_c_list[0]), lambda, SpecDens))
+														{
+															this->Log() << "There are problems with the construction of the spectral density matrix - Please check your input." << std::endl;
+															continue;
+														}
+
+														// ----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// ----------------------------------------------------------------
+
+														tmp_R *= 0.0;
+
+														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														*ptr_R[omp_get_thread_num()] += tmp_R;
+													}
+												}
 											}
+											else
+											{
+												// loop through all operators and construct R tensor in Liouville space
+												// ----------------------------------------------------------------
+												// CONSTRUCTING SPECTRAL DENSITY MATRIX
+												// ----------------------------------------------------------------
+
+												this->Log() << "J is generally constructed for all operators - def_g == 0 " << std::endl;
+
+												SpecDens *= 0.0;
+
+												if (!ConstructSpecDensGeneralTimeEvo(ampl_list, tau_c_list, lambda, SpecDens))
+												{
+													this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+													continue;
+												}
+
+#pragma omp parallel for num_threads(threads)
+												for (l = 0; l < threads; l++)
+												{
+													*ptr_R[l] *= 0.0;
+												}
 
 #pragma omp parallel for collapse(2) firstprivate(tmp_R) shared(ampl_list, tau_c_list, SpecDens, num_op, ptr_R, ptr_Tensors) num_threads(threads)
-											for (k = 0; k < num_op; k++)
-											{
-												for (s = 0; s < num_op; s++)
+												for (k = 0; k < num_op; k++)
 												{
-													// ----------------------------------------------------------------
-													// CONSTRUCTING R MATRIX
-													// ----------------------------------------------------------------
-
-													tmp_R *= 0.0;
-
-													if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+													for (s = 0; s < num_op; s++)
 													{
-														this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
-														continue;
-													}
+														// ----------------------------------------------------------------
+														// CONSTRUCTING R MATRIX
+														// ----------------------------------------------------------------
 
-													*ptr_R[omp_get_thread_num()] += tmp_R;
+														tmp_R *= 0.0;
+
+														if (!NakajimaZwanzigtensorTimeEvo((*ptr_Tensors[k]), (*ptr_Tensors[s]), SpecDens, tmp_R))
+														{
+															this->Log() << "There are problems with the construction of the NakajimaZwanzig tensor - Please check your input." << std::endl;
+															continue;
+														}
+
+														*ptr_R[omp_get_thread_num()] += tmp_R;
+													}
 												}
 											}
 										}
-									}
 
-									for (l = 0; l < threads; l++)
-									{
-										R += *ptr_R[l];
-									}
+										for (l = 0; l < threads; l++)
+										{
+											R += *ptr_R[l];
+										}
 
-									this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
+										this->Log() << "Added relaxation matrix term for interaction " << (*interaction)->Name() << " of spin " << (*s1)->Name() << " and " << (*s2)->Name() << "." << std::endl;
+									}
 								}
 							}
 						}
 					}
+					else
+					{
+						this->Log() << "No relaxation matrix term requested for interaction " << (*interaction)->Name() << "." << std::endl;
+					}
+
+					std::fill(ampl_list.begin(), ampl_list.end(), 0);
+					std::fill(tau_c_list.begin(), tau_c_list.end(), 0);
+					terms *= 0.0;
+					SpecDens *= 0.0;
 				}
-				else
+
+				for (int l = 0; l < threads; l++)
 				{
-					this->Log() << "No relaxation matrix term requested for interaction " << (*interaction)->Name() << "." << std::endl;
+					delete ptr_R[l];
 				}
+				delete[] ptr_R;
 
-				std::fill(ampl_list.begin(), ampl_list.end(), 0);
-				std::fill(tau_c_list.begin(), tau_c_list.end(), 0);
-				terms *= 0.0;
-				SpecDens *= 0.0;
-			}
-
-			for (int l = 0; l < threads; l++)
-			{
-				delete ptr_R[l];
-			}
-			delete[] ptr_R;
-
-			for (int l = 0; l < num_op; l++)
-			{
-				delete ptr_Tensors[l];
-			}
-			delete[] ptr_Tensors;
+				for (int l = 0; l < num_op; l++)
+				{
+					delete ptr_Tensors[l];
+				}
+				delete[] ptr_Tensors;
 
 				// ---------------------------------------------------------------
 				// SETUP COMPLETE HAMILTONIAN
@@ -1905,6 +1907,12 @@ namespace RunSection
 								S = eigvec_j.t() * S;
 							}
 
+							size_t i_index = std::distance(spaces.cbegin(), i);
+							if (i_index < eigveclist.size())
+							{
+								T = eigveclist[i_index].t() * T;
+							}
+
 							// Obtain the creation operator
 							C = arma::conv_to<arma::sp_cx_mat>::from(T * S.t());
 
@@ -1958,7 +1966,7 @@ namespace RunSection
 				// Calculate the index for the j'th element
 				size_t i_index = std::distance(spaces.cbegin(), i);
 
-				// Rotate NakajimaZwanzig influenced subspace creaction operator into correct frame
+				// Rotate NakajimaZwanzig influenced subspace creation operator into correct frame
 				if (i_index < eigveclist.size())
 				{
 					arma::cx_mat &eigvec_i = eigveclist[i_index];
@@ -2022,7 +2030,7 @@ namespace RunSection
 					// Calculate the index for the j'th element
 					size_t i_index = std::distance(spaces.cbegin(), i);
 
-					// Rotate NakajimaZwanzig influenced subspace creaction operator into correct frame
+					// Rotate NakajimaZwanzig influenced subspace creation operator into correct frame
 					if (i_index < eigveclist.size())
 					{
 						arma::cx_mat &eigvec_i = eigveclist[i_index];
@@ -2122,7 +2130,7 @@ namespace RunSection
 		return true;
 	}
 
-		// Construction NZ tensor
+	// Construction NZ tensor
 	bool TaskMultiStaticSSNakajimaZwanzigTimeEvo::NakajimaZwanzigtensorTimeEvo(const arma::cx_mat &_op1, const arma::cx_mat &_op2, const arma::cx_mat &_specdens, arma::cx_mat &_NakajimaZwanzigtensor)
 	{
 		_NakajimaZwanzigtensor *= 0.0;
@@ -2151,7 +2159,7 @@ namespace RunSection
 		for (auto ii = 0; ii < (int)_omega.n_cols; ii++)
 		{
 			for (auto jj = 0; jj < (int)_tau_c_list.size(); jj++)
-			{ 
+			{
 				spectral_entries(ii) += (static_cast<std::complex<double>>(_ampl_list[jj])) / ((1.00 / (static_cast<std::complex<double>>(_tau_c_list[jj]))) + arma::cx_double(0.0, -1.00) * _omega(ii, ii));
 			}
 		}

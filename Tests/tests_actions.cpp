@@ -249,9 +249,9 @@ bool test_action_rotatevector()
 bool test_action_fibonaccisphere()
 {
 	arma::vec value1("0 1 0");
-	arma::vec value2("0.707203326 0.4974874372 0.5023641165"); //i = 50;
-	arma::vec value3("0.3292513656 -0.005025125628 0.9442289375"); //i = 100
-	arma::vec value4("-0.09728003857 -0.9899497487 -0.1026454532"); //i = 198
+	arma::vec value2("0.707203326 0.4974874372 0.5023641165");		// i = 50;
+	arma::vec value3("0.3292513656 -0.005025125628 0.9442289375");	// i = 100
+	arma::vec value4("-0.09728003857 -0.9899497487 -0.1026454532"); // i = 198
 	arma::vec v = value1;
 	RunSection::ActionVector av = RunSection::ActionVector(v, nullptr);
 	std::map<std::string, RunSection::ActionScalar> asMap;
@@ -265,20 +265,20 @@ bool test_action_fibonaccisphere()
 
 	bool isCorrect = true;
 
-	//perform the test
+	// perform the test
 	isCorrect &= action_ptr->Validate();
 	isCorrect &= equal_vec(v, value1, 1e-4);
-	for(int i = 1; i <= 50; i++ )
+	for (int i = 1; i <= 50; i++)
 	{
 		action.Step(i);
 	}
 	isCorrect &= equal_vec(v, value2, 1e-4);
-	for(int i = 51; i <= 100; i++)
+	for (int i = 51; i <= 100; i++)
 	{
 		action_ptr->Step(i);
 	}
 	isCorrect &= equal_vec(av.Get(), value3, 1e-4);
-	for(int i = 101; i <= 198; i++)
+	for (int i = 101; i <= 198; i++)
 	{
 		action.Step(i);
 	}
@@ -286,13 +286,12 @@ bool test_action_fibonaccisphere()
 
 	// Return the result
 	return isCorrect;
-
 }
 //////////////////////////////////////////////////////////////////////////////
 // Tests the Logspace action
 bool test_action_LogSpace()
 {
-	arma::rowvec logspace = arma::logspace<arma::rowvec>(0,6,50);
+	arma::rowvec logspace = arma::logspace<arma::rowvec>(0, 6, 50);
 	double d = logspace[0];
 	RunSection::ActionScalar as = RunSection::ActionScalar(d, nullptr); // The ActionScalar (without check function)
 	std::map<std::string, RunSection::ActionScalar> asMap;				// ActionScalar map
@@ -306,29 +305,27 @@ bool test_action_LogSpace()
 
 	bool isCorrect = true;
 
-	//perform the test
+	// perform the test
 	isCorrect &= action_ptr->Validate();
-	isCorrect &= equal_double(d,logspace[0]);
-	for(int i = 1; i <= 10; i++ )
+	isCorrect &= equal_double(d, logspace[0]);
+	for (int i = 1; i <= 10; i++)
 	{
 		action.Step(i);
 	}
 	isCorrect &= equal_double(d, logspace[10]);
-	for(int i = 11; i <= 20; i++)
+	for (int i = 11; i <= 20; i++)
 	{
 		action_ptr->Step(i);
 	}
 	isCorrect &= equal_double(d, logspace[20]);
-	for(int i = 21; i < 50; i++)
+	for (int i = 21; i < 50; i++)
 	{
 		action.Step(i);
 	}
 	isCorrect &= equal_double(d, logspace[49]);
 
-
 	// Return the result
 	return isCorrect;
-
 }
 
 // Add all the Action classes test cases
