@@ -1,0 +1,19 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: dependencies
+      run: sudo apt update && sudo apt install liblapack-dev libblas-dev libboost-dev libarmadillo-dev libopenblas64-openmp-dev
+    - name: make
+      run: make
