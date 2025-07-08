@@ -12,7 +12,7 @@ RUN curl -X GET -L -o libarmadillo.tar.xz https://sourceforge.net/projects/arma/
     cd build && \
     cmake -D OPENBLAS_PROVIDES_LAPACK=true .. && \
     make -j 2 && \
-    make install 
+    make install
 
 WORKDIR /root
 
