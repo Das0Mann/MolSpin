@@ -167,7 +167,7 @@ namespace RunSection
 			// Perform the calculation
 			// Here it could be a problem of the right sign
 			this->Log() << "Ready to perform calculation." << std::endl;
-			arma::cx_vec result = solve(-1 * arma::conv_to<arma::cx_mat>::from(A), rho0vec);
+			arma::cx_vec result = -solve(arma::conv_to<arma::cx_mat>::from(A), rho0vec);
 			this->Log() << "Done with calculation." << std::endl;
 
 			// Convert the resulting density operator back to its Hilbert space representation
