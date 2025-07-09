@@ -10,10 +10,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    container: ghcr.io/das0mann/molspin:dockerenv
 
     steps:
     - uses: actions/checkout@v4
-    - name: dependencies
-      run: sudo apt update && sudo apt install liblapack-dev libblas-dev libboost-dev libarmadillo-dev libopenblas64-openmp-dev
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
     - name: make
-      run: make
+      run: make CC="ccache g++ -std=c++17" ARMADILLO="-larmadillo -lopenblas -fopenmp -DARMA_NO_DEBUG" -j 16
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Molspin Executable
+        path: molspin
