@@ -97,7 +97,7 @@ namespace SpinAPI
 			}
 			else if (str.compare("SemiclassicalField") == 0)
 			{
-				this-> type = InteractionType::SemiClassicalfield;
+				this-> type = InteractionType::SemiClassicalField;
 
 				double inamplitudevalue = 0.0; 
 				int inorientationsvalue = 0;
