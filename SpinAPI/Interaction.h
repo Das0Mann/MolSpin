@@ -31,6 +31,8 @@ namespace SpinAPI
 
 		arma::vec field;				// Field vector for one-spin interactions, i.e. "B" in "S1 * B". Example: Magnetic field in Zeeman interaction.
 		double dvalue, evalue;			// D and E value for zero-field splitting
+		double hfiamplitude;
+		int orientations;
 		std::vector<spin_ptr> group1;	// Spins to use for one-spin interaction and left-hand-side of two-spin interaction
 		std::vector<spin_ptr> group2;	// Spins to use on right-hand-side of coupling tensor in two-spin interaction
 		InteractionType type;			// Interaction type (one-spin / two-spin)
@@ -130,6 +132,8 @@ namespace SpinAPI
 		const arma::vec Field() const;
 		const double Dvalue() const;
 		const double Evalue() const;
+		const double Hfiamplitude() const;
+		const int Orientations() const;
 		bool HasFieldTimeDependence() const;
 		bool HasTensorTimeDependence() const;
 		bool HasTimeDependence() const;
