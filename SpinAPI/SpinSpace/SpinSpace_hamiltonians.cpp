@@ -224,6 +224,47 @@ namespace SpinAPI
 				}
 			}
 		}
+		else if (_interaction->Type() == InteractionType::SemiClassicalField)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spins1 = _interaction->Group1();
+
+			//  Grab amplitude and orientation parameters
+			const double   B0   = _interaction->Hfiamplitude();     // Tesla
+			const int   n    = _interaction->Orientations(); // averaging grid
+
+			// Build Sx, Sy, Sz for *each* electron in Group1
+			arma::cx_mat Sx, Sy, Sz;
+			for (auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			{
+				// Obtain the magnetic moment operators within the Hilbert space
+				if (_interaction->IgnoreTensors())
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+				}
+				else
+				{
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
+					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+				}
+
+				// Semi-classical average  (weight = ½ sinθ Δθ)
+				for (int k = 0; k < n; ++k)
+				{
+					double theta      = M_PI * (k + 0.5) / n;
+					double weight = 0.5 * std::sin(theta) * (M_PI / n);
+
+					// Local field components in the *molecule* frame
+					double Bx = B0 * std::sin(theta);
+					double Bz = B0 * std::cos(theta);
+
+					tmp += weight * (Bx * Sx + Bz * Sz);   // Sy-component = 0 by symmetry
+				}
+			}
+		}
 		else
 		{
 			// The interaction type was not recognized

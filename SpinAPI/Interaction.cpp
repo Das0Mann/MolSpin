@@ -95,6 +95,19 @@ namespace SpinAPI
 				this->dvalue = indvalue;
 				this->evalue = inevalue;
 			}
+			else if (str.compare("SemiclassicalField") == 0)
+			{
+				this-> type = InteractionType::SemiClassicalfield;
+
+				double inamplitudevalue = 0.0; 
+				int inorientationsvalue = 0;
+				this->Properties()->Get("hfiamplitude", inamplitudevalue);
+				this->Properties()->Get("orientations", inorientationsvalue);
+
+				this->hfiamplitude = inamplitudevalue;
+				this->orientations = inorientationsvalue;
+			}
+
 		}
 
 		// If we have a valid interaction type, read the other parameters
@@ -367,7 +380,7 @@ namespace SpinAPI
 		}
 	}
 
-	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue),
+	Interaction::Interaction(const Interaction &_interaction) : properties(_interaction.properties), couplingTensor(_interaction.couplingTensor), field(_interaction.field), dvalue(_interaction.dvalue), evalue(_interaction.evalue), hfiamplitude(_interaction.hfiamplitude), orientations(_interaction.orientations),
 																group1(_interaction.group1), group2(_interaction.group2), type(_interaction.type), fieldType(_interaction.fieldType),
 																prefactor(_interaction.prefactor), addCommonPrefactor(_interaction.addCommonPrefactor), ignoreTensors(_interaction.ignoreTensors), isValid(_interaction.isValid),
 																trjHasTime(_interaction.trjHasTime), trjHasField(_interaction.trjHasField), trjHasTensor(_interaction.trjHasTensor), trjHasPrefactor(_interaction.trjHasPrefactor),
@@ -395,6 +408,8 @@ namespace SpinAPI
 		this->field = _interaction.field;
 		this->dvalue = _interaction.dvalue;
 		this->evalue = _interaction.evalue;
+		this->hfiamplitude = _interaction.hfiamplitude;
+		this->orientations = _interaction.orientations;
 		this->type = _interaction.type;
 		this->fieldType = _interaction.fieldType;
 		this->prefactor = _interaction.prefactor;
@@ -482,6 +497,18 @@ namespace SpinAPI
 	const double Interaction::Evalue() const
 	{
 		return this->evalue;
+	}
+
+	// Returns the HFI amplitude for SCI
+	const double Interaction::Hfiamplitude() const
+	{
+		return this->hfiamplitude;
+	}
+
+	// Returns the orientations for SCOI
+	const int Interaction::Orientations() const
+	{
+		return this->orientations;
 	}
 
 	// Returns the prefactor value
