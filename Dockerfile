@@ -1,4 +1,4 @@
-FROM debian:10
+FROM debian:10 AS build-env
 
 RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
     apt update && \
@@ -12,7 +12,18 @@ RUN curl -X GET -L -o libarmadillo.tar.xz https://sourceforge.net/projects/arma/
     cd build && \
     cmake -D OPENBLAS_PROVIDES_LAPACK=true .. && \
     make -j 2 && \
-    make install
+    make install 
 
 WORKDIR /root
 
+FROM build-env 
+
+COPY . .
+
+RUN make -j 16
+
+RUN cp molspin /usr/bin
+
+RUN rm -rf root/*
+
+ENTRYPOINT ["molspin"]
