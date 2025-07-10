@@ -178,6 +178,7 @@ namespace SpinAPI
 					this->properties->Get("maxfreq", this->tdMaxFreq);
 					this->properties->Get("components", this->tdComponents);
 					this->properties->Get("printfield", this->tdPrintField);
+					this->properties->Get("randomorientations", this->tdRandOrients);
 
 					// define all the distributions for broadband noise and fill out vectors
 					std::normal_distribution<double> amp_dist(0.0, 1.0);
