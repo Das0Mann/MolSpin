@@ -10,10 +10,40 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    container: ghcr.io/das0mann/molspin:dockerenv
 
     steps:
     - uses: actions/checkout@v4
-    - name: dependencies
-      run: sudo apt update && sudo apt install liblapack-dev libblas-dev libboost-dev libarmadillo-dev libopenblas64-openmp-dev
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
     - name: make
-      run: make
+      run: make CC="ccache g++ -std=c++17" ARMADILLO="-larmadillo -lopenblas -fopenmp -DARMA_NO_DEBUG" -j 16
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Molspin Executable
+        path: molspin
+
+
+  deploy:
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    steps:
+      - name: Download Artifact
+        shell: bash
+        run: |
+          curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            $(curl -L \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+              ${{ github.api_url }}/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | \
+              python3 -c "import sys, json; print(json.load(sys.stdin)['artifacts'][0]['archive_download_url'])") \
+            -o molspin-artifact.zip
+      - name: Unzip Artifact
+        run: unzip -o molspin-artifact.zip
+      - name: Copy Executable 
+        run: cp molspin /data/lxd/viking_programs/molspin/molspin
