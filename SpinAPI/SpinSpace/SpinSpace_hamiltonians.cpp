@@ -418,12 +418,12 @@ namespace SpinAPI
 			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
 			auto spins1 = _interaction->Group1();
 			auto spins2 = _interaction->Group2();
-			arma::cx_mat S1x;
-			arma::cx_mat S1y;
-			arma::cx_mat S1z;
-			arma::cx_mat S2x;
-			arma::cx_mat S2y;
-			arma::cx_mat S2z;
+			arma::sp_cx_mat S1x;
+			arma::sp_cx_mat S1y;
+			arma::sp_cx_mat S1z;
+			arma::sp_cx_mat S2x;
+			arma::sp_cx_mat S2y;
+			arma::sp_cx_mat S2z;
 
 			// Fill the matrix with the sum of all the interactions
 			for (auto i = spins1.cbegin(); i != spins1.cend(); i++)
@@ -433,21 +433,23 @@ namespace SpinAPI
 					// Obtain the magnetic moment operators within the Hilbert space
 					if (_interaction->IgnoreTensors())
 					{
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), S1x);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), S1y);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), S1z);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sx()), (*j), S2x);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sy()), (*j), S2y);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Sz()), (*j), S2z);
+
+						this->CreateOperator((*i)->Sx(), (*i), S1x);
+						this->CreateOperator((*i)->Sy(), (*i), S1y);
+						this->CreateOperator((*i)->Sz(), (*i), S1z);
+						this->CreateOperator((*j)->Sx(), (*j), S2x);
+						this->CreateOperator((*j)->Sy(), (*j), S2y);
+						this->CreateOperator((*j)->Sz(), (*j), S2z);
 					}
 					else
 					{
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), S1x);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), S1y);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), S1z);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tx()), (*j), S2x);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Ty()), (*j), S2y);
-						this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*j)->Tz()), (*j), S2z);
+
+						this->CreateOperator((*i)->Tx(), (*i), S1x);
+						this->CreateOperator((*i)->Ty(), (*i), S1y);
+						this->CreateOperator((*i)->Tz(), (*i), S1z);
+						this->CreateOperator((*j)->Tx(), (*j), S2x);
+						this->CreateOperator((*j)->Ty(), (*j), S2y);
+						this->CreateOperator((*j)->Tz(), (*j), S2z);
 					}
 
 					// TODO: This is not correct when the user uses a non isotropic exchange which he will not when being smart.
@@ -479,26 +481,26 @@ namespace SpinAPI
 		else if (_interaction->Type() == InteractionType::Zfs)
 		{
 			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
-			auto spins1 = _interaction->Group1();
-			arma::cx_mat Sx;
-			arma::cx_mat Sy;
-			arma::cx_mat Sz;
+			auto spinlist = _interaction->Group1();
+			// Build Sx, Sy, Sz for *each* electron in Group1
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
 
-			// Fill the matrix with the sum of all the interactions
-			for (auto i = spins1.cbegin(); i != spins1.cend(); i++)
+			// Fill the matrix with the sum of all the interactions (i.e. between spin magnetic moment and fields)
+			for (auto i = spinlist.cbegin(); i != spinlist.cend(); i++)
 			{
-				// Obtain the magnetic moment operators within the Hilbert space
 				if (_interaction->IgnoreTensors())
 				{
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+					this->CreateOperator((*i)->Sx(), (*i), Sx);
+					this->CreateOperator((*i)->Sy(), (*i), Sy);
+					this->CreateOperator((*i)->Sz(), (*i), Sz);
 				}
 				else
 				{
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
-					this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+					this->CreateOperator((*i)->Tx(), (*i), Sx);
+					this->CreateOperator((*i)->Ty(), (*i), Sy);
+					this->CreateOperator((*i)->Tz(), (*i), Sz);
 				}
 
 				// Get D and E value
@@ -513,6 +515,50 @@ namespace SpinAPI
 				{
 					// Calculate Zfs interaction
 					tmp = D * (Sz * Sz - ((1.00 / 3.00) * (*i)->S() * ((*i)->S() + 1))) + E * (Sx * Sx - Sy * Sy);
+				}
+			}
+		}
+		else if (_interaction->Type() == InteractionType::SemiClassicalField)
+		{
+			// Obtain lists of interacting spins, coupling tensor, and define matrices to hold the magnetic moment operators
+			auto spinlist = _interaction->Group1();
+
+			//  Grab amplitude and orientation parameters
+			const double   B0   = _interaction->Hfiamplitude();     // Tesla
+			const int   n    = _interaction->Orientations(); // averaging grid
+
+			// Build Sx, Sy, Sz for *each* electron in Group1
+			arma::sp_cx_mat Sx;
+			arma::sp_cx_mat Sy;
+			arma::sp_cx_mat Sz;
+
+			// Fill the matrix with the sum of all the interactions (i.e. between spin magnetic moment and fields)
+			for (auto i = spinlist.cbegin(); i != spinlist.cend(); i++)
+			{
+				if (_interaction->IgnoreTensors())
+				{
+					this->CreateOperator((*i)->Sx(), (*i), Sx);
+					this->CreateOperator((*i)->Sy(), (*i), Sy);
+					this->CreateOperator((*i)->Sz(), (*i), Sz);
+				}
+				else
+				{
+					this->CreateOperator((*i)->Tx(), (*i), Sx);
+					this->CreateOperator((*i)->Ty(), (*i), Sy);
+					this->CreateOperator((*i)->Tz(), (*i), Sz);
+				}
+
+				// Semi-classical average  (weight = ½ sinθ Δθ)
+				for (int k = 0; k < n; ++k)
+				{
+					double theta      = M_PI * (k + 0.5) / n;
+					double weight = 0.5 * std::sin(theta) * (M_PI / n);
+
+					// Local field components in the *molecule* frame
+					double Bx = B0 * std::sin(theta);
+					double Bz = B0 * std::cos(theta);
+
+					tmp += weight * (Bx * Sx + Bz * Sz);   // Sy-component = 0 by symmetry
 				}
 			}
 		}
