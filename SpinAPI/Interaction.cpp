@@ -95,7 +95,7 @@ namespace SpinAPI
 				this->dvalue = indvalue;
 				this->evalue = inevalue;
 			}
-			else if (str.compare("SemiclassicalField") == 0)
+			else if (str.compare("semiclassicalfield") == 0)
 			{
 				this-> type = InteractionType::SemiClassicalField;
 
