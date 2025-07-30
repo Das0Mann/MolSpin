@@ -33,6 +33,18 @@ namespace RunSection
 		}
 	};
 
+	struct TrajectoryData
+		{
+			std::string subsystem;
+			std::vector<std::complex<double>> StateTrace;
+
+			TrajectoryData(std::string name)
+				:subsystem(name)
+			{
+				StateTrace = {};
+			}
+		};
+
 	class TaskMultiRadicalPairSSTimeEvo : public BasicTask
 	{
 	private:
@@ -46,6 +58,7 @@ namespace RunSection
 		// Private method that gathers and outputs the results from a given time-integrated density operator
 		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &, std::vector<std::complex<double>>& traj);
 		
+		std::vector<double> EvaluateYield(const std::vector<std::pair<double,std::vector<TrajectoryData>>>& trajectory, const SpinAPI::system_ptr&SpinSpace, const std::vector<std::pair<std::string, std::vector<std::string>>>& SubSystemSpins, const std::vector<SubSystemTransition>& SubSystemsTransitions);
 		void StateYield(double, double&, const std::vector<std::complex<double>>&, std::vector<double>& ); //Method that calculates the yeild for a given state
 		void StateYield(double, double&, int, int, arma::cx_mat&, arma::cx_vec&); //rate, yield (to be retunred), spinsystem, projection operator, state density vec
 		double simpson_integration(std::vector<double> x_list, std::vector<double> y_list);

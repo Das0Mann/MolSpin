@@ -47,10 +47,10 @@ namespace RunSection
 		// If this is the first step, write first part of header to the data file
 		bool YieldOnly = false;
 		if (this->Properties()->Get("yieldonly", YieldOnly) || this->Properties()->Get("yield only", YieldOnly))
-			YieldOnly = true;
+			YieldOnly = YieldOnly;
 		bool SilentMode = false;
 		if (this->Properties()->Get("silentmode", SilentMode) || this->Properties()->Get("silent mode", SilentMode))
-			SilentMode = true;
+			SilentMode = SilentMode;
 		if (this->RunSettings()->CurrentStep() == 1)
 		{
 			this->WriteHeader(this->Data());
@@ -298,23 +298,12 @@ namespace RunSection
 
 		//modify this so it's the same that I've got in my code, using the vectors and superspace rather than matracies;
 
-		struct TrajectoryData
-		{
-			std::string subsystem;
-			std::vector<std::complex<double>> StateTrace;
-
-			TrajectoryData(std::string name)
-				:subsystem(name)
-			{
-				StateTrace = {};
-			}
-		};
-
 		std::vector<std::pair<double, std::vector<TrajectoryData>>> trajectory;
 		if(!YieldOnly)
 		{
 			// Write results for initial state as well (i.e. at time 0)
 			this->Data() << this->RunSettings()->CurrentStep() << " 0 ";
+			this->WriteStandardOutput(this->Data());
 			trajectory.push_back({0.0, {}});
 			for (auto i = SubSystemSpins.cbegin(); i != SubSystemSpins.cend(); i++)
 			{
@@ -415,6 +404,7 @@ namespace RunSection
 
 		double MinTimeStep = 0;
 		double MaxTimeStep = 0;
+		int flush = 0;
 		if(!this->Properties()->Get("minimumtimestep", MinTimeStep) and !this->Properties()->Get("minimum timestep", MinTimeStep))
 		{
 			MinTimeStep = InitialTimestep * 1e-3;
@@ -423,8 +413,18 @@ namespace RunSection
 		{
 			MaxTimeStep = InitialTimestep * 1e4;
 		}
-		if(!this->Properties())
+		if(!this->Properties()->Get("Flush", flush) && !this->Properties()->Get("flush", flush))
+		{
+			flush = 0;
+		}
+		//if(!this->Properties())
+		std::vector<double> RollingYield;
+		for (unsigned int i = 0; i < SpinSpace->first->States().size(); i++)
+		{
+			RollingYield.push_back(0.0);
+		}
 
+		this->Log() << "Starting time evolution with timestep: " << this->timestep << ", total time: " << this->totaltime << ", minimum timestep: " << MinTimeStep << ", maximum timestep: " << MaxTimeStep << std::endl;
 		while(Currenttime <= this->totaltime)
 		{
 		//for (unsigned int n = 1; n <= steps; n++)
@@ -434,7 +434,7 @@ namespace RunSection
 			Currenttime += this->timestep;
 			if(!SilentMode)
 			{
-				this->Data() << this->RunSettings()->CurrentStep() << " ";
+				//this->Data() << this->RunSettings()->CurrentStep() << " ";
 				this->Data() << Currenttime << " ";
 				this->WriteStandardOutput(this->Data());
 			}
@@ -448,6 +448,7 @@ namespace RunSection
 				//rho0 = ConvertEigenToArmadillo(rho0Eigen).col(0);
 				this->timestep = RungeKutta45Armadillo(L,rho0,rho0,this->timestep,ComputeRhoDot,{1e-7,1e-6},MinTimeStep, MaxTimeStep);
 			}
+
 
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
@@ -469,6 +470,26 @@ namespace RunSection
 
 				// Move on to next spin space
 				nextDimension += SpinSpace->second->SpaceDimensions();
+			}
+
+			if(flush != 0)
+			{
+				if(n % flush == 0) //clears the trajectory vector and evaluates the yields
+				{
+					auto yield = EvaluateYield(trajectory, SpinSpace->first, SubSystemSpins, SubSystemsTransitions);
+					//grab last trajectory entry
+					auto last = trajectory.back();
+					trajectory.clear();
+					trajectory.push_back(last);
+					this->Log() << "Flushing trajectory vector, current time: " << Currenttime << ", yields: ";
+					for(unsigned int i = 0; i < yield.size(); i++)
+					{
+						RollingYield[i] += yield[i];
+						this->Log() << RollingYield[i] << " ";
+					}
+					this->Log() << std::endl;
+					n=0;
+				}
 			}
 
 			// Terminate the line in the data file after iteration through all spin systems
@@ -496,7 +517,6 @@ namespace RunSection
 				{
 					time.push_back(e->first);
 				}
-
 				for(auto a = e->second.begin(); a != e->second.end(); a++)
 				{
 					if(a->subsystem != SubSystemSpins[i].first)
@@ -537,17 +557,86 @@ namespace RunSection
 					state_data.push_back(a[index]);
 				}
 				StateYield(rate, yield, state_data, time);
-				std::cout << yield << std::endl;
 				yields[index] += yield;
 			}
 		}
-		for(auto y : yields)
+		for (unsigned int i = 0; i < yields.size(); i++)
 		{
-			this->Data() << y << " ";
+			RollingYield[i] += yields[i];
 		}
-		this->Data() << "\n" << std::endl;
+		this->Log() << "Total Yield: ";
+		for(auto y : RollingYield)
+		{
+			this->Log() << std::setprecision(8) << y << " ";
+		}
+		this->Log() << "\n" << std::endl;
 
 		return true;
+	}
+
+	std::vector<double> TaskMultiRadicalPairSSTimeEvo::EvaluateYield(const std::vector<std::pair<double,std::vector<TrajectoryData>>>& trajectory, const SpinAPI::system_ptr&SpinSpace, const std::vector<std::pair<std::string, std::vector<std::string>>>& SubSystemSpins, const std::vector<SubSystemTransition>& SubSystemsTransitions)
+	{
+		std::vector<double> yields;
+		std::vector<double> time;
+		for(unsigned int i = 0; i < SpinSpace->States().size(); i++)
+		{
+			yields.push_back(0.0);
+		}
+
+		for(unsigned int i = 0; i < SubSystemSpins.size(); i++)
+		{
+			std::vector<std::vector<std::complex<double>>> data;
+			for(auto e = trajectory.begin(); e != trajectory.end(); e++)
+			{
+				if(i == 0)
+				{
+					time.push_back(e->first);
+				}
+				for(auto a = e->second.begin(); a != e->second.end(); a++)
+				{
+					if(a->subsystem != SubSystemSpins[i].first)
+					{
+						continue;
+					}
+
+					data.push_back(a->StateTrace);
+					break;
+				}
+			}
+
+			for(auto e = SubSystemsTransitions.begin(); e != SubSystemsTransitions.end(); e++)
+			{
+				if(e->type != 0)
+				{
+					continue;
+				}
+				if(e->source != SubSystemSpins[i].first)
+				{
+					continue;
+				}
+				int index = 0;
+				for(auto s : SpinSpace->States())
+				{
+					if(e->transition->SourceState() != s)
+					{
+						index++;
+						continue;
+					}
+					break;
+				}
+				double rate = e->transition->Rate();
+				double yield = 0;
+				std::vector<std::complex<double>> state_data;
+				for(auto a : data)
+				{
+					state_data.push_back(a[index]);
+				}
+				StateYield(rate, yield, state_data, time);
+				yields[index] += yield;
+			}
+		}
+
+		return yields;
 	}
 
 	// Gathers and outputs the results from a given time-integrated density operator
@@ -575,13 +664,13 @@ namespace RunSection
 
 	void TaskMultiRadicalPairSSTimeEvo::StateYield(double _rate, double& _yeild, const std::vector<std::complex<double>>& _traj, std::vector<double>& _time)
 	{
-		//auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
+		auto f = [](double frac, double t, double kr) {return frac * std::exp(-kr * t); };
 		std::vector<double> ylist;
 		for(unsigned int i = 0; i < _traj.size(); i++)
 		{
-			//ylist.push_back(f(_traj[i].real(), _time[i], _rate));
+			ylist.push_back(f(_traj[i].real(), _time[i], _rate));
 			//ylist.push_back(_rate * _traj[i].real());
-			ylist.push_back(_traj[i].real());
+			//ylist.push_back(_traj[i].real());
 
 		}
 		_yeild = _rate * simpson_integration(_time, ylist);

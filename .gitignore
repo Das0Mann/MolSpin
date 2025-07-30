@@ -25,6 +25,7 @@ Vendor/
 *.csv
 rp*.msd
 CISS*.msd
+FWW*
 *.zip
 msd-files/
 *.out
