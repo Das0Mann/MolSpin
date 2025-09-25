@@ -1472,7 +1472,7 @@ bool test_function_evaluation()
 	void *v3 = (void *)&d3;
 
 	arma::cx_double val = TestFunc->operator()({v1, v2, v3});
-	std::cout << val << std::endl;
+	// std::cout << val << std::endl;
 	isCorrect &= (std::abs(val.real() - val1.real()) < tolerance);
 	val = TestFunc->operator()({v3, v1, v2});
 	isCorrect &= (std::abs(val.real() - val2.real()) < tolerance);

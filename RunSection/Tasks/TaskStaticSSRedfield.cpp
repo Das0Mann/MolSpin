@@ -910,7 +910,7 @@ namespace RunSection
 															*ptr_SpecDens[m] += SpecDens;
 														}
 
-														std::cout << *ptr_SpecDens[m] << std::endl;
+														// std::cout << *ptr_SpecDens[m] << std::endl;
 
 														// -----------------------------------------------------------------
 														// CONSTRUCTING R MATRIX
@@ -2109,11 +2109,11 @@ namespace RunSection
 
 				int nn = domega.n_rows;
 
-				std::cout << domega << std::endl;
+				// std::cout << domega << std::endl;
 
-				std::cout << "Elements of domega: " << nn << std::endl;
-				std::cout << "Elements of R.n_col: " << R.n_cols << std::endl;
-				std::cout << "Elements of R.n_row: " << R.n_rows << std::endl;
+				// std::cout << "Elements of domega: " << nn << std::endl;
+				// std::cout << "Elements of R.n_col: " << R.n_cols << std::endl;
+				// std::cout << "Elements of R.n_row: " << R.n_rows << std::endl;
 
 				int ra = 0;
 				int rb = 0;
@@ -2142,14 +2142,14 @@ namespace RunSection
 								}
 								else
 								{
-									std::cout << "domega(ra,rb): " << domega(ra, rb) << std::endl;
-									std::cout << "domega(rc,rd): " << domega(rc, rd) << std::endl;
+									// std::cout << "domega(ra,rb): " << domega(ra, rb) << std::endl;
+									// std::cout << "domega(rc,rd): " << domega(rc, rd) << std::endl;
 								}
 							}
 						}
 					}
 				}
-				std::cout << "counter: " << counter << std::endl;
+				// std::cout << "counter: " << counter << std::endl;
 			}
 
 			// Adding R tensor to whole hamiltonian
