@@ -128,7 +128,7 @@ namespace RunSection
 			{
 				if (i->second->RelaxationOperator((*t), R))
 				{
-					L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) -= R;
+					L.submat(nextDimension, nextDimension, nextDimension + i->second->SpaceDimensions() - 1, nextDimension + i->second->SpaceDimensions() - 1) += R;
 					this->Log() << "Added relaxation operator \"" << (*t)->Name() << "\" to the Liouvillian.\n";
 				}
 			}
