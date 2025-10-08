@@ -32,7 +32,7 @@ PLEASE CITE THE FOLLOWING PAPER WHEN USING MOLSPIN.
 				<a href="https://doi.org/10.1002/jcc.27120" target="_blank">
 					<b>Modeling spin relaxation in complex radical systems using MolSpin</b>
 				</a><br />
-				Luca Gerhards, Claus Nielsen, Daniel R. Kattnig, R. J. Hore,  Ilia A. Solov'yov, <i>Journal of Computational Chemistry </i> <b>1</b>, (2023)
+				Luca Gerhards, Claus Nielsen, Daniel R. Kattnig, P. J. Hore,  Ilia A. Solov'yov, <i>Journal of Computational Chemistry </i> <b>1</b>, (2023)
 			</p>
 		</td>
 	</tr>
@@ -56,7 +56,7 @@ PLEASE CITE THE FOLLOWING PAPER WHEN USING MOLSPIN.
 
 LICENCE:
 
-Developed by Quantum Biology and Computational Physics Group (copyright 2025).
+Developed by Claus Nielsen and Luca Gerhards at the Quantum Biology and Computational Physics Group (copyright 2025).
 
 MolSpin runs under the BSD 3-Clause License with an additional requirement for acknowledgment of specific publications.
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
