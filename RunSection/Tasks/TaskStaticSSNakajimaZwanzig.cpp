@@ -69,19 +69,102 @@ namespace RunSection
 			space.UseSuperoperatorSpace(false);
 			space.SetReactionOperatorType(this->reactionOperators);
 
-			// Get the initial state
-			for (auto j = initial_states.cbegin(); j < initial_states.cend(); j++)
+			std::vector<double> weights;
+			weights = (*i)->Weights();
+
+			// Normalize the weights
+			double sum_weights = std::accumulate(weights.begin(), weights.end(), 0.0);
+			if (sum_weights > 0)
 			{
-				arma::cx_mat tmp_rho0;
-				if (!space.GetState(*j, tmp_rho0))
+				for (double &weight : weights)
 				{
-					this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-					continue;
+					weight /= sum_weights;
 				}
-				if (j == initial_states.cbegin())
-					rho0 = tmp_rho0;
-				else
-					rho0 += tmp_rho0;
+			}
+
+			// Get the initial state
+			if (weights.size() > 1)
+			{
+				this->Log() << "Using weighted density matrix for initial state. Be sure that the sum of weights equals to 1." << std::endl;
+				// Get the initial state
+				int counter = 0;
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				{
+					arma::cx_mat tmp_rho0;
+					if (!space.GetState(*j, tmp_rho0))
+					{
+						this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+						continue;
+					}
+
+					if (j == initial_states.cbegin())
+					{
+						this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[0] << "\"." << std::endl;
+						rho0 = weights[0] * tmp_rho0;
+						counter += 1;
+					}
+					else
+					{
+						this->Log() << "State: \"" << (*j)->Name() << "\", Weight:\"" << weights[counter] << "\"." << std::endl;
+						rho0 += weights[counter] * tmp_rho0;
+						counter += 1;
+					}
+				}
+			}
+			else
+			// Get the initial state without weights
+			{
+				for (auto j = initial_states.cbegin(); j != initial_states.cend(); j++)
+				{
+					arma::cx_mat tmp_rho0;
+
+					// Get the initial state in thermal equilibrium
+					if ((*j) == nullptr) // "Thermal initial state"
+					{
+						this->Log() << "Initial state = thermal " << std::endl;
+
+						// Get the thermalhamiltonianlist
+						std::vector<std::string> thermalhamiltonian_list = (*i)->ThermalHamiltonianList();
+						
+						this->Log() << "ThermalHamiltonianList = [";
+						for (size_t j = 0; j < thermalhamiltonian_list.size(); j++)
+						{
+							this->Log() << thermalhamiltonian_list[j];
+							if (j < thermalhamiltonian_list.size() - 1)
+								this->Log() << ", ";  // Add a comma between elements
+						}
+						this->Log() << "]" << std::endl;
+						
+						// Get temperature
+						double temperature = (*i)->Temperature();
+						this->Log() << "Temperature = " << temperature << "K" << std::endl;
+
+						// Get the initial state with thermal equilibrium
+						if (!space.GetThermalState(space, temperature, thermalhamiltonian_list, tmp_rho0))
+						{
+							this->Log() << "Failed to obtain projection matrix onto thermal state, initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+							continue;
+						}
+					}
+					else // Get the initial state without thermal equilibrium
+					{
+						if (!space.GetState(*j, tmp_rho0))
+						{
+							this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\", initial state of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
+							continue;
+						}
+					}
+
+					// Obtain the initial density matrix
+					if (j == initial_states.cbegin())
+					{
+						rho0 = tmp_rho0;
+					}
+					else
+					{
+						rho0 += tmp_rho0;
+					}
+				}
 			}
 
 			rho0 /= arma::trace(rho0); // The density operator should have a trace of 1
