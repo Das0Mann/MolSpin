@@ -1,4 +1,4 @@
-FROM debian:10 AS build-env
+FROM debian:13 AS build-env
 
 RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
     apt update && \
