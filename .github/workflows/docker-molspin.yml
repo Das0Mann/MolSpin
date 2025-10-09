@@ -1,10 +1,14 @@
 #
-name: Create and publish a Docker image
+name: Create and publish molspin docker container
 
 # Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
   release:
     types: [published]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
