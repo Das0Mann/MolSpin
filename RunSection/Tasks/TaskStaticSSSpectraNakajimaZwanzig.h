@@ -34,6 +34,9 @@ namespace RunSection
 		bool ConstructSpecDensGeneralSpectra(const std::vector<double> &_ampl_list, const std::vector<double> &_tau_c_list, const arma::cx_mat &_omega, arma::cx_mat &_specdens);
 		bool ConstructSpecDensSpecificSpectra(const std::complex<double> &_ampl, const std::complex<double> &_tau_c, const arma::cx_mat &_omega, arma::cx_mat &_specdens);
 
+		bool ProjectAndPrintOutputLine(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, arma::cx_mat &_rotationmtx, double &_printedtime, double _timestep, unsigned int &_n, bool &_cidsp, std::ostream &_data_stream, std::ostream &_log_stream);
+		bool ProjectAndPrintOutputLineInf(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, arma::cx_mat &_rotationmtx, double &_printedtime, double _timestep, bool &_cidsp, std::ostream &_datastream, std::ostream &_logstream);
+
 	protected:
 		bool RunLocal() override;
 		bool Validate() override;

@@ -751,6 +751,10 @@ namespace SpinAPI
 			{
 				std::cout << "LongPulse";
 			}
+			else if ((*i)->Type() == PulseType::MWPulse)
+			{
+				std::cout << "MWPulse";
+			}
 			else if ((*i)->Type() == PulseType::LongPulseStaticField)
 			{
 				std::cout << "LongPulseStaticField";

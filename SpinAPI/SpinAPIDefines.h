@@ -93,6 +93,7 @@ namespace SpinAPI
 		InstantPulse,
 		LongPulse,
 		LongPulseStaticField,
+		MWPulse,
 		ShapedPulse,
 	};
 
