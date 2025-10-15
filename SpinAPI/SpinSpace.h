@@ -255,15 +255,18 @@ namespace SpinAPI
 		// Same relaxation operators, but when unitary transformation of projection operators is required
 		bool RelaxationOperatorFrameChange(const operator_ptr &_operator, arma::cx_mat _rotationmatrix, arma::cx_mat &_out) const;
 		bool RelaxationOperatorFrameChange(const operator_ptr &_operator, arma::cx_mat _rotationmatrix, arma::sp_cx_mat &_out) const;
+		bool RelaxationOperatorFrameChange(const operator_ptr &_operator, arma::sp_cx_mat _rotationmatrix, arma::sp_cx_mat &_out) const;
 
 		// ------------------------------------------------
 		// Pulse operators (SpinSpace_pulses.cpp)
 		// ------------------------------------------------
 		bool PulseOperator(const pulse_ptr &_pulse, arma::cx_mat &_out) const;
 		bool PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_out) const;
+		bool PulseOperator_mw(const pulse_ptr &_pulse, arma::sp_cx_mat &_out, arma::sp_cx_mat &_lrot, arma::sp_cx_mat &_lsz) const;
 		bool PulseOperator(const pulse_ptr &_pulse, arma::cx_mat &_left, arma::cx_mat &_right) const;
 		bool PulseOperator(const pulse_ptr &_pulse, arma::sp_cx_mat &_left, arma::sp_cx_mat &_right) const;
 		bool PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_out) const;
+		bool PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::sp_cx_mat _rotationmatrix, arma::sp_cx_mat &_out) const;
 		bool PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_left, arma::cx_mat &_right) const;
 		bool PulseOperatorOnStatevector(const pulse_ptr &_pulse, arma::cx_mat &_out) const;
 		bool PulseOperatorOnStatevector(const pulse_ptr &_pulse, arma::sp_cx_mat &_out) const;

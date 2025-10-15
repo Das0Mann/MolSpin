@@ -15,6 +15,7 @@
 #include "BasicTask.h"
 #include "SpinAPIDefines.h"
 #include "SpinSpace.h"
+#include "Utility.h"
 
 namespace RunSection
 {
@@ -29,6 +30,9 @@ namespace RunSection
 		SpinAPI::ReactionOperatorType reactionOperators;
 
 		void WriteHeader(std::ostream &); // Write header for the output file
+		static arma::cx_vec ComputeRhoDot(double t, arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaught);
+		bool ProjectAndPrintOutputLine(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, double &_printedtime, double _timestep, unsigned int &_n, bool &_cidsp, std::ostream &_data_stream, std::ostream &_log_stream);
+		bool ProjectAndPrintOutputLineInf(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, double &_printedtime, double _timestep, bool &_cidsp, std::ostream &_datastream, std::ostream &_logstream);
 
 	protected:
 		bool RunLocal() override;
@@ -37,7 +41,9 @@ namespace RunSection
 	public:
 		// Constructors / Destructors
 		TaskStaticSSSpectra(const MSDParser::ObjectParser &, const RunSection &); // Normal constructor
-		~TaskStaticSSSpectra();													// Destructor
+		~TaskStaticSSSpectra();	                                                  // Destructor
+		
+		bool GetEigenvectors_H0(SpinAPI::SpinSpace &_space, arma::vec &_eigen_val, arma::sp_cx_mat &_eigen_vec_sp) const;												
 	};
 
 }

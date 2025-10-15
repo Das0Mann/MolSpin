@@ -84,6 +84,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if ((prefactorList.n_elem * 3) != spinlist.size())
+            {
+                std::cerr << "Mismatch: prefactorList size (" << prefactorList.n_elem * 3 << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")."
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Mismatch: ignoreTensorsList size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Mismatch: addCommonPrefactorList size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -111,7 +132,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -121,14 +149,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -221,6 +242,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -248,7 +290,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -258,14 +307,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -283,7 +325,160 @@ namespace SpinAPI
         return true;
     }
 
-    bool SpinSpace::PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_out) const // Instant Pulse in SS
+    // Sparse version - still too slow like this
+    bool SpinSpace::PulseOperator_mw(const pulse_ptr &_pulse, arma::sp_cx_mat &_out, arma::sp_cx_mat &_lrot, arma::sp_cx_mat &_lsz) const // Instant Pulse in HS
+    {
+        // Check whether we want a superspace result
+        if (!this->useSuperspace)
+        {
+            std::cout << "Failed to create a rotation pulse in SS." << std::endl;
+            return false;
+        }
+
+        // Make sure the pulse is valid
+        if (_pulse == nullptr)
+            return false;
+
+        // Create temporary matrix to hold the result
+        arma::sp_cx_mat sp_tmp;
+        arma::cx_mat tmp = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+        if (_pulse->Type() == PulseType::MWPulse)
+        {
+            arma::cx_mat Sx;
+            arma::cx_mat Sy;
+            arma::cx_mat Sz;
+
+            arma::vec field;
+            field = _pulse->Field();
+
+            double frequency;
+            frequency = _pulse->Frequency();
+
+            double timestep;
+            timestep = _pulse->Timestep();
+
+            arma::vec prefactorList;
+            std::vector<bool> ignoreTensorsList;
+            std::vector<bool> addCommonPrefactorList;
+            prefactorList = _pulse->PrefactorList();
+            ignoreTensorsList = _pulse->IgnoreTensorsList();
+            addCommonPrefactorList = _pulse->AddCommonPrefactorList();
+
+            auto spinlist = _pulse->Group();
+
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
+
+            arma::cx_mat tmp_sz = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+            arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+            int n = 0;
+            for (auto i = spinlist.cbegin(); i < spinlist.cend(); i++)
+            {
+                if (!ignoreTensorsList.empty())
+                {
+                    if (ignoreTensorsList[n])
+                    {
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+                    }
+                    else
+                    {
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+                    }
+                }
+                else
+                {
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+                }
+
+                if (!prefactorList.is_empty())
+                {
+
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) * std::cos(frequency * timestep) + prefactorList(3 * n + 1) * Sy * field(1) * std::sin(frequency * timestep) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) * std::cos(frequency * timestep) + Sy * field(1) * std::sin(frequency * timestep) + Sz * field(2);
+                }
+
+                tmp_sz += Sz;
+
+                if (!addCommonPrefactorList.empty())
+                {
+                    if (addCommonPrefactorList[n])
+                    {
+                        tmp_part *= 8.79410005e+1;
+                    }
+                }
+
+                tmp += tmp_part;
+
+                n++;
+            }
+
+            sp_tmp = arma::conv_to<arma::sp_cx_mat>::from(tmp);
+            arma::sp_cx_mat sp_tmp_sz = arma::conv_to<arma::sp_cx_mat>::from(tmp_sz);
+
+            {
+                arma::sp_cx_mat lhs;
+                arma::sp_cx_mat rhs;
+                this->SuperoperatorFromLeftOperator(sp_tmp, lhs);
+                this->SuperoperatorFromRightOperator(sp_tmp, rhs);
+                _out = lhs - rhs;
+                _out = (arma::cx_double(0.0, -1.0) * (_out)*timestep);
+            }
+
+            arma::sp_cx_mat _Sz;
+            {
+
+                arma::sp_cx_mat lsz;
+                arma::sp_cx_mat rsz;
+                this->SuperoperatorFromLeftOperator(sp_tmp_sz, lsz);
+                this->SuperoperatorFromRightOperator(sp_tmp_sz, rsz);
+                _Sz = arma::conv_to<arma::sp_cx_mat>::from(lsz - rsz);
+            }
+
+            _lsz = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from((arma::cx_double(0.0, -1.0) * frequency * sp_tmp_sz * timestep))));
+            _lrot = kron(_lsz, _lsz.t());
+
+            // _out = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from((arma::cx_double(0.0, 1.0) * frequency* Sz * timestep)))) * _out * arma::conv_to<arma::sp_cx_mat>::from(arma::expmat(arma::conv_to<arma::cx_mat>::from((arma::cx_double(0.0, -1.0) * frequency *  Sz * timestep))));
+        }
+        else
+        {
+            std::cout << "Not implemented yet. Sorry." << std::endl;
+        }
+
+        return true;
+    }
+
+    bool SpinSpace::PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::cx_mat _rotationmatrix, arma::cx_mat &_out) const // Pulse in SS
     {
         // Check whether we want a superspace result
         if (!this->useSuperspace)
@@ -342,7 +537,6 @@ namespace SpinAPI
         }
         else if (_pulse->Type() == PulseType::LongPulse || _pulse->Type() == PulseType::LongPulseStaticField)
         {
-
             arma::cx_mat Sx;
             arma::cx_mat Sy;
             arma::cx_mat Sz;
@@ -359,6 +553,28 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -386,7 +602,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -396,14 +619,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -414,6 +630,167 @@ namespace SpinAPI
             this->SuperoperatorFromLeftOperator(tmp, lhs);
             this->SuperoperatorFromRightOperator(tmp, rhs);
             _out = lhs - rhs;
+        }
+        else
+        {
+            std::cout << "Not implemented yet. Sorry." << std::endl;
+        }
+
+        return true;
+    }
+
+    bool SpinSpace::PulseOperatorFrameChange(const pulse_ptr &_pulse, arma::sp_cx_mat _rotationmatrix, arma::sp_cx_mat &_out) const // Instant Pulse in SS
+    {
+        // Check whether we want a superspace result
+        if (!this->useSuperspace)
+        {
+            std::cout << "Failed to create a rotation pulse in SS." << std::endl;
+            return false;
+        }
+
+        // Make sure the pulse is valid
+        if (_pulse == nullptr)
+            return false;
+
+        // Create temporary matrix to hold the result
+        arma::cx_mat tmp = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+        if (_pulse->Type() == PulseType::InstantPulse)
+        {
+            // Create the rotation angle
+            double angle = 0;
+            if (!this->CreateRotAngle(_pulse->Angle(), angle))
+            {
+                std::cout << "Failed to create a rotation angle for the pulse." << std::endl;
+            }
+
+            // Get rotation axis
+            auto rotvec = _pulse->Rotationaxis();
+
+            arma::cx_mat Sx;
+            arma::cx_mat Sy;
+            arma::cx_mat Sz;
+
+            auto spinlist = _pulse->Group();
+
+            for (auto i = spinlist.cbegin(); i < spinlist.cend(); i++)
+            {
+                this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+                this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+                this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+                tmp += Sx * rotvec[0] + Sy * rotvec[1] + Sz * rotvec[2];
+            }
+
+            tmp = _rotationmatrix.t() * tmp * _rotationmatrix;
+
+            // Create pulse operator in SS
+            arma::cx_mat lhs;
+            arma::cx_mat rhs;
+
+            this->SuperoperatorFromLeftOperator(tmp, lhs);
+            this->SuperoperatorFromRightOperator(tmp, rhs);
+            _out = arma::conv_to<arma::sp_cx_mat>::from(arma::expmat((arma::cx_double(0.0, -1.0) * angle * (lhs - rhs))));
+
+            // /////Alternative way/////
+            // lhs = arma::expmat((arma::cx_double(0.0, -1.0) * angle * tmp));
+            // rhs = arma::expmat((arma::cx_double(0.0, 1.0) * angle * tmp));
+            // _out = kron(lhs, rhs.st());
+        }
+        else if (_pulse->Type() == PulseType::LongPulse || _pulse->Type() == PulseType::LongPulseStaticField)
+        {
+
+            arma::cx_mat Sx;
+            arma::cx_mat Sy;
+            arma::cx_mat Sz;
+
+            arma::vec field;
+            field = _pulse->Field();
+
+            arma::vec prefactorList;
+            std::vector<bool> ignoreTensorsList;
+            std::vector<bool> addCommonPrefactorList;
+            prefactorList = _pulse->PrefactorList();
+            ignoreTensorsList = _pulse->IgnoreTensorsList();
+            addCommonPrefactorList = _pulse->AddCommonPrefactorList();
+
+            auto spinlist = _pulse->Group();
+
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
+            arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
+
+            int n = 0;
+            for (auto i = spinlist.cbegin(); i < spinlist.cend(); i++)
+            {
+                if (!ignoreTensorsList.empty())
+                {
+                    if (ignoreTensorsList[n])
+                    {
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+                    }
+                    else
+                    {
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tx()), (*i), Sx);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Ty()), (*i), Sy);
+                        this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Tz()), (*i), Sz);
+                    }
+                }
+                else
+                {
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sx()), (*i), Sx);
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sy()), (*i), Sy);
+                    this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
+                }
+
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
+
+                if (!addCommonPrefactorList.empty())
+                {
+                    if (addCommonPrefactorList[n])
+                    {
+                        tmp_part *= 8.79410005e+1;
+                    }
+                }
+
+                tmp += tmp_part;
+                n++;
+            }
+
+            tmp = _rotationmatrix.t() * tmp * _rotationmatrix;
+
+            arma::cx_mat lhs;
+            arma::cx_mat rhs;
+            this->SuperoperatorFromLeftOperator(tmp, lhs);
+            this->SuperoperatorFromRightOperator(tmp, rhs);
+            _out = arma::conv_to<arma::sp_cx_mat>::from(lhs - rhs);
         }
         else
         {
@@ -489,6 +866,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -516,7 +914,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -526,14 +931,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -616,6 +1014,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -643,7 +1062,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -653,14 +1079,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -742,6 +1161,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -769,7 +1209,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -779,14 +1226,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -867,6 +1307,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -894,7 +1355,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -904,14 +1372,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 
@@ -992,6 +1453,27 @@ namespace SpinAPI
 
             auto spinlist = _pulse->Group();
 
+            // Check if all input objects are in order
+            if (prefactorList.n_elem != (spinlist.size() * 3))
+            {
+                std::cerr << "Error: prefactorlist size (" << prefactorList.n_elem << ") mismatches the group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << "). "
+                          << "Please use the format nx1,ny1,nz1,nx2,ny2,nz2,nx3,ny3,nz3... for different nuclei n1,n2,n3..." << std::endl;
+                return false;
+            }
+
+            if (ignoreTensorsList.size() != spinlist.size())
+            {
+                std::cerr << "Error: ignoretensorslist size (" << ignoreTensorsList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            if (addCommonPrefactorList.size() != spinlist.size())
+            {
+                std::cerr << "Error: commonprefactorlist size (" << addCommonPrefactorList.size() << ") != group size (" << spinlist.size() << ") in pulse (" << _pulse->Name() << ")" << std::endl;
+                return false;
+            }
+
+            // Construct initial matrix
             arma::cx_mat tmp_part = arma::zeros<arma::cx_mat>(this->HilbertSpaceDimensions(), this->HilbertSpaceDimensions());
 
             int n = 0;
@@ -1019,7 +1501,14 @@ namespace SpinAPI
                     this->CreateOperator(arma::conv_to<arma::cx_mat>::from((*i)->Sz()), (*i), Sz);
                 }
 
-                tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                if (!prefactorList.is_empty())
+                {
+                    tmp_part = prefactorList(3 * n) * Sx * field(0) + prefactorList(3 * n + 1) * Sy * field(1) + prefactorList(3 * n + 2) * Sz * field(2);
+                }
+                else
+                {
+                    tmp_part = Sx * field(0) + Sy * field(1) + Sz * field(2);
+                }
 
                 if (!addCommonPrefactorList.empty())
                 {
@@ -1029,14 +1518,7 @@ namespace SpinAPI
                     }
                 }
 
-                if (!prefactorList.is_empty())
-                {
-                    tmp += prefactorList(n) * tmp_part;
-                }
-                else
-                {
-                    tmp += tmp_part;
-                }
+                tmp += tmp_part;
                 n++;
             }
 

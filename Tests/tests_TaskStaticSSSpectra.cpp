@@ -288,7 +288,7 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_instant_pulse()
 
 	// Create a task and get a pointer to it
 	std::string taskname = "testtask";
-	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse1 0.1];");
+	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse1 0.1];printtimeframe=freeevo;");
 	rs.Add(MSDParser::ObjectType::Task, taskParser);
 	auto task = rs.GetTask(taskname);
 
@@ -329,6 +329,10 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_instant_pulse()
 	std::istringstream stream1(result_string);
 	for (std::string s; std::getline(stream1, s, ' ');)
 		result_vec_string.push_back(s);
+
+	// for (const std::string& str : result_vec_string) {
+    //     std::cout << str << " ";
+    // }
 
 	for (auto i = 0; i < (int)result.size(); i++)
 	{
@@ -389,7 +393,7 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_longpulsestaticfield_p
 	spinsys->Add(transition1);
 
 	// Add an PulseObject with srttings to the SpinSystem
-	auto pulse1 = std::make_shared<SpinAPI::Pulse>("pulse2", "type=longpulsestaticfield;group=nucleus1,nucleus2;field=0.1 0.0 -0.1;pulsetime=58.7;prefactorlist=0.267522,0.267522;commonprefactorlist=false,false;ignoretensorslist=true,true;timestep=0.1;");
+	auto pulse1 = std::make_shared<SpinAPI::Pulse>("pulse2", "type=longpulsestaticfield;group=nucleus1,nucleus2;field=0.1 0.0 -0.1;pulsetime=58.7;prefactorlist=0.267522,0.267522,0.267522,0.267522,0.267522,0.267522;commonprefactorlist=false,false;ignoretensorslist=true,true;timestep=0.1;");
 	spinsys->Add(pulse1);
 	spinsys->ValidatePulses();
 
@@ -403,7 +407,7 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_longpulsestaticfield_p
 
 	// Create a task and get a pointer to it
 	std::string taskname = "testtask";
-	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse2 0.1];");
+	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse2 0.1];printtimeframe=freeevo;");
 	rs.Add(MSDParser::ObjectType::Task, taskParser);
 	auto task = rs.GetTask(taskname);
 
@@ -444,6 +448,10 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_longpulsestaticfield_p
 	std::istringstream stream1(result_string);
 	for (std::string s; std::getline(stream1, s, ' ');)
 		result_vec_string.push_back(s);
+
+	// for (const std::string& str : result_vec_string) {
+    //     std::cout << str << " ";
+    // }
 
 	for (auto i = 0; i < (int)result.size(); i++)
 	{
@@ -524,7 +532,7 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_longpulse_pulse()
 	spinsys->Add(transition1);
 
 	// Add a PulseObject with settings to the SpinSystem
-	auto pulse1 = std::make_shared<SpinAPI::Pulse>("pulse3", "type=longpulse;group=nucleus1,nucleus2;field=0.00005 0.00005 0.0;pulsetime=5.9;prefactorlist=0.267522,0.267522;commonprefactorlist=false,false;ignoretensorslist=true,true;timestep=0.1;frequency=0.0004224;");
+	auto pulse1 = std::make_shared<SpinAPI::Pulse>("pulse3", "type=longpulse;group=nucleus1,nucleus2;field=0.00005 0.00005 0.0;pulsetime=5.9;prefactorlist=0.267522,0.267522,0.267522,0.267522,0.267522,0.267522;commonprefactorlist=false,false;ignoretensorslist=true,true;timestep=0.1;frequency=0.0004224;");
 	spinsys->Add(pulse1);
 	spinsys->ValidatePulses();
 
@@ -538,7 +546,7 @@ bool test_task_staticssspectra_method_timeinf_cidsp_false_longpulse_pulse()
 
 	// Create a task and get a pointer to it
 	std::string taskname = "testtask";
-	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse3 0.1];");
+	MSDParser::ObjectParser taskParser(taskname, "type=staticss-spectra;method=timeinf;cidsp=false;spinlist=nucleus1,nucleus2;pulsesequence=[pulse3 0.1];printtimeframe=freeevo;");
 	rs.Add(MSDParser::ObjectType::Task, taskParser);
 	auto task = rs.GetTask(taskname);
 

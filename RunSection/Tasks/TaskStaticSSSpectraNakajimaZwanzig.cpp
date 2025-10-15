@@ -1,11 +1,12 @@
 /////////////////////////////////////////////////////////////////////////
-// TaskStaticSSSpectraNakajimaZwanzig implementation (RunSection module)  developed by Luca Gerhards.
+// TaskStaticSSSpectraNakajimaZwanzig implementation (RunSection module)  developed by Luca Gerhards and Irina Anisimova.
 //
 // Molecular Spin Dynamics Software - developed by Luca Gerhards.
 // (c) 2022 Quantum Biology and Computational Physics Group.
 // See LICENSE.txt for license information.
 /////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <iomanip>
 #include <omp.h>
 #include <memory>
 #include "TaskStaticSSSpectraNakajimaZwanzig.h"
@@ -1872,15 +1873,36 @@ namespace RunSection
 					space.UseSuperoperatorSpace(false);
 				}
 			}
-
 			// Adding R tensor to whole hamiltonian
 			A += R;
+
+			// Read the method from the input file
+			std::string Method;
+			if (!this->Properties()->Get("method", Method))
+			{
+				this->Log() << "Failed to obtain an input for a Method" << std::endl;
+			}
+
+			// Read CIDSP from the input file
+			bool CIDSP = false;
+			if (!this->Properties()->Get("cidsp", CIDSP))
+			{
+				this->Log() << "Failed to obtain an input for a CIDSP" << std::endl;
+			}
+
+			// Read printtimeframe from the input file
+			std::string Timewindow;
+			if (!this->Properties()->Get("printtimeframe", Timewindow))
+			{
+				this->Log() << "Failed to obtain an input for a printtimeframe, using full propagation evolution window by default" << std::endl;
+				Timewindow = "full";
+			}
+			this->Log() << "Timewindow for the prpagation printing: " << Timewindow << std::endl;
+
+			double Printedtime = 0;
 			
 			// Initialize a first step
 			arma::cx_vec rhovec = rho0vec;
-
-			// We have to implement the pulses here
-			///////////////////////////////////////////////////////
 
 			// Read a pulse sequence from the input
 			std::vector<std::tuple<std::string, double>> Pulsesequence;
@@ -1897,6 +1919,7 @@ namespace RunSection
 					// Save the parameters from the input as variables
 					std::string pulse_name = std::get<0>(seq);
 					double timerelaxation = std::get<1>(seq);
+					space.UseSuperoperatorSpace(true);
 
 					for (auto pulse = (*i)->pulses_cbegin(); pulse < (*i)->pulses_cend(); pulse++)
 					{
@@ -1926,6 +1949,12 @@ namespace RunSection
 									continue;
 								}
 
+								int firststep;
+								if (Printedtime == 0)
+									firststep = 0;
+								else
+									firststep = 1;
+
 								// Create array containing a propagator and the current state of each system
 								std::pair<arma::cx_mat, arma::cx_vec> G;
 								// Get the propagator and put it into the array together with the initial state
@@ -1933,13 +1962,22 @@ namespace RunSection
 								G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
 
 								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
-								for (unsigned int n = 1; n <= steps; n++)
+								for (unsigned int n = firststep; n <= steps; n++)
 								{
-									// Take a step, "first" is propagator and "second" is current state
-									rhovec = G.first * G.second;
+									if (!n == 0) // for the very first step just printing is done, no propagation
+									{
+										// Take a step, "first" is propagator and "second" is current state
+										rhovec = G.first * G.second;
 
-									// Get the new current state density vector
-									G.second = rhovec;
+										// Get the new current state density vector
+										G.second = rhovec;
+									}
+
+									if (Timewindow.compare("freeevo") != 0)
+									{
+										if (!this->ProjectAndPrintOutputLine(i, space, rhovec, eigen_vec, Printedtime, (*pulse)->Timestep(), n, CIDSP, this->Data(), this->Log()))
+											this->Log() << "Could not project the state vector and print the result into a file" << std::endl;
+									}
 								}
 							}
 							else if ((*pulse)->Type() == SpinAPI::PulseType::LongPulse)
@@ -1952,6 +1990,12 @@ namespace RunSection
 									continue;
 								}
 
+								int firststep;
+								if (Printedtime == 0)
+									firststep = 0;
+								else
+									firststep = 1;
+
 								// Create array containing a propagator and the current state of each system
 								std::pair<arma::cx_mat, arma::cx_vec> G;
 
@@ -1960,13 +2004,22 @@ namespace RunSection
 								G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
 
 								unsigned int steps = static_cast<unsigned int>(std::abs((*pulse)->Pulsetime() / (*pulse)->Timestep()));
-								for (unsigned int n = 1; n <= steps; n++)
+								for (unsigned int n = firststep; n <= steps; n++)
 								{
-									// Take a step, "first" is propagator and "second" is current state
-									rhovec = G.first * G.second;
+									if (!n == 0) // for the very first step just printing is done, no propagation
+									{
+										// Take a step, "first" is propagator and "second" is current state
+										rhovec = G.first * G.second;
 
-									// Get the new current state density vector
-									G.second = rhovec;
+										// Get the new current state density vector
+										G.second = rhovec;
+									}
+
+									if (Timewindow.compare("freeevo") != 0)
+									{
+										if (!this->ProjectAndPrintOutputLine(i, space, rhovec, eigen_vec, Printedtime, (*pulse)->Timestep(), n, CIDSP, this->Data(), this->Log()))
+											this->Log() << "Could not project the state vector and print the result into a file" << std::endl;
+									}
 								}
 							}
 							else
@@ -1974,43 +2027,50 @@ namespace RunSection
 								this->Log() << "Not implemented yet, sorry." << std::endl;
 							}
 
-							// Get the system relax during the time
-
-							// Create array containing a propagator and the current state of each system
-							std::pair<arma::cx_mat, arma::cx_vec> G;
-							arma::cx_mat A_sp = arma::expmat(A * (*pulse)->Timestep());
-							// Get the propagator and put it into the array together with the initial state
-							G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
-
-							unsigned int steps = static_cast<unsigned int>(std::abs(timerelaxation / (*pulse)->Timestep()));
-							for (unsigned int n = 1; n <= steps; n++)
+							// Update the printed time according to the printtimeframe key
+							if (Timewindow.compare("freeevo") != 0)
 							{
-								// Take a step, "first" is propagator and "second" is current state
-								rhovec = G.first * G.second;
+								Printedtime += (*pulse)->Pulsetime();
+							}
 
-								// Get the new current state density vector
-								G.second = rhovec;
+							// Get the system relax during the time
+							if (!timerelaxation == 0)
+							{
+								// Create array containing a propagator and the current state of each system
+								std::pair<arma::cx_mat, arma::cx_vec> G;
+								arma::cx_mat A_sp = arma::expmat(A * (*pulse)->Timestep());
+								// Get the propagator and put it into the array together with the initial state
+								G = std::pair<arma::cx_mat, arma::cx_vec>(A_sp, rhovec);
+
+								unsigned int steps = static_cast<unsigned int>(std::abs(timerelaxation / (*pulse)->Timestep()));
+								for (unsigned int n = 1; n <= steps; n++)  // n always starts with one here, because this part cannot be done without the pulse part on top
+								{
+									// Take a step, "first" is propagator and "second" is current state
+									rhovec = G.first * G.second;
+
+									// Get the new current state density vector
+									G.second = rhovec;
+
+									if (Timewindow.compare("freeevo") != 0)
+									{
+										if (!this->ProjectAndPrintOutputLine(i, space, rhovec, eigen_vec, Printedtime, (*pulse)->Timestep(), n, CIDSP, this->Data(), this->Log()))
+											this->Log() << "Could not project the state vector and print the result into a file" << std::endl;
+									}
+								}
+
+							}
+							// Update the printed time according to the printtimeframe key
+							if (Timewindow.compare("freeevo") != 0)
+							{
+								Printedtime += timerelaxation;
 							}
 						}
 					}
+					space.UseSuperoperatorSpace(false);
 				}
 			}
-
+		
 			//////////////////////////////////////////////////////
-
-			// Read the method from the input file
-			std::string Method;
-			if (!this->Properties()->Get("method", Method))
-			{
-				this->Log() << "Failed to obtain an input for a Method" << std::endl;
-			}
-
-			// Read CIDSP from the input file
-			bool CIDSP = false;
-			if (!this->Properties()->Get("cidsp", CIDSP))
-			{
-				this->Log() << "Failed to obtain an input for a CIDSP" << std::endl;
-			}
 
 			// Method Propagation to infinity
 			if (Method.compare("timeinf") == 0)
@@ -2024,253 +2084,82 @@ namespace RunSection
 
 				rhovec = result;
 
-				// Convert the resulting density operator back to its Hilbert space representation
-				if (!space.OperatorFromSuperspace(rhovec, rho0))
+				if (Timewindow.compare("pulse") != 0)
 				{
-					this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
-					continue;
+					if (!this->ProjectAndPrintOutputLineInf(i, space, rhovec, eigen_vec, Printedtime, this->timestep, CIDSP, this->Data(), this->Log()))
+						this->Log() << "Could not project the state vector and print the result into a file" << std::endl;
 				}
 
-				// Get nuclei of interest for CIDNP spectrum
-				arma::cx_mat Iprojx;
-				arma::cx_mat Iprojy;
-				arma::cx_mat Iprojz;
-
-				std::vector<std::string> spinList;
-				int m;
-
-				this->Log() << "CIDSP = " << CIDSP << std::endl;
-
-				// Save the current step
-				this->Data() << this->RunSettings()->CurrentStep() << " ";
-				// Save the current time
-				this->Data() << "inf" << " ";
-
-				this->WriteStandardOutput(this->Data());
-
-				if (this->Properties()->GetList("spinlist", spinList, ','))
-				{
-
-					for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
-					{
-						for (m = 0; m < (int)spinList.size(); m++)
-						{
-							if ((*l)->Name() == spinList[m])
-							{
-								if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
-								{
-									return false;
-								}
-
-								if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sy()), (*l), Iprojy))
-								{
-									return false;
-								}
-
-								if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Iprojz))
-								{
-									return false;
-								}
-
-								Iprojx = (eigen_vec.t() * Iprojx * eigen_vec);
-								Iprojy = (eigen_vec.t() * Iprojy * eigen_vec);
-								Iprojz = (eigen_vec.t() * Iprojz * eigen_vec);
-
-								arma::cx_mat P;
-
-								// There are two result modes - either write results per transition  if CIDSP is true or for each defined state if CIDSP is false
-
-								if (CIDSP == true)
-								{
-									// Loop through all defind transitions
-									auto transitions = (*i)->Transitions();
-									for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
-									{
-										// Make sure that there is a state object
-										if ((*j)->SourceState() == nullptr)
-											continue;
-
-										if (!space.GetState((*j)->SourceState(), P))
-										{
-											this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-											continue;
-										}
-
-										P = (eigen_vec.t() * P * eigen_vec);
-
-										// Return the yield for this transition
-										this->Data() << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << " ";
-										this->Data() << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
-										this->Data() << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
-									}
-								}
-								else if (CIDSP == false)
-								{
-									// Return the yield for this state - note that no reaction rates are included here.
-									this->Data() << std::real(arma::trace(Iprojx * rho0)) << " ";
-									this->Data() << std::real(arma::trace(Iprojy * rho0)) << " ";
-									this->Data() << std::real(arma::trace(Iprojz * rho0)) << " ";
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					this->Log() << "No nucleus was specified for projection" << std::endl;
-					continue;
-				}
 				this->Log() << "Done with calculation." << std::endl;
 			}
 			// Method TIME EVOLUTION
 			else if (Method.compare("timeevo") == 0)
 			{
 
-				// Perform the calculation
-				this->Log() << "Ready to perform calculation." << std::endl;
-
-				this->Log() << "Method = " << Method << std::endl;
-
-				// Read if the result should be integrated or not
-				bool integration = false;
-				if (!this->Properties()->Get("integration", integration))
+				if (!this->totaltime == 0)
 				{
-					this->Log() << "Failed to obtain an input for an Integtation." << std::endl;
-				}
+					// Perform the calculation
+					this->Log() << "Ready to perform calculation." << std::endl;
 
-				this->Log() << "Integration of the yield in time = " << integration << std::endl;
+					this->Log() << "Method = " << Method << std::endl;
 
-				// Create a holder vector for an averaged density
-				arma::cx_vec rhoavg;
-				rhoavg.zeros(size(rho0vec));
-
-				// Create array containing a propagator and the current state of each system
-				std::pair<arma::cx_mat, arma::cx_vec> G;
-				arma::cx_mat A_exp = arma::expmat(A * this->timestep);
-				// Get the propagator and put it into the array together with the initial state
-				G = std::pair<arma::cx_mat, arma::cx_vec>(A_exp, rhovec);
-
-				unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
-				for (unsigned int n = 1; n <= steps; n++)
-				{
-
-					// Take a step, "first" is propagator and "second" is current state
-					rhovec = G.first * G.second;
-
-					// Integrate the density vector over the current time interval
-					if (integration)
+					// Read if the result should be integrated or not
+					bool integration = false;
+					if (!this->Properties()->Get("integration", integration))
 					{
-						rhoavg += this->timestep * (G.second + rhovec) / 2;
+						this->Log() << "Failed to obtain an input for an Integtation." << std::endl;
 					}
 
-					// Get the new current state density vector
-					G.second = rhovec;
+					this->Log() << "Integration of the yield in time = " << integration << std::endl;
 
-					// Save the result if there were some changes (made so we can include TotalTime=0)
-					if (!rhoavg.is_zero(0))
+					// Create a holder vector for an averaged density
+					arma::cx_vec rhoavg;
+					rhoavg.zeros(size(rho0vec));
+
+					// Avoid printing double timesteps
+					int firststep;
+					if (Printedtime == 0)
+						firststep = 0;
+					else
+						firststep = 1;
+
+					// Create array containing a propagator and the current state of each system
+					std::pair<arma::cx_mat, arma::cx_vec> G;
+					arma::cx_mat A_exp = arma::expmat(A * this->timestep);
+					// Get the propagator and put it into the array together with the initial state
+					G = std::pair<arma::cx_mat, arma::cx_vec>(A_exp, rhovec);
+
+					unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
+					for (unsigned int n = firststep; n <= steps; n++)
 					{
-						rhovec = rhoavg;
-					}
-
-					// Convert the resulting density operator back to its Hilbert space representation
-					if ((!space.OperatorFromSuperspace(rhovec, rho0)) && (n == 1))
-					{
-						this->Log() << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
-						continue;
-					}
-
-					// Get nuclei of interest for CIDNP spectrum
-					arma::cx_mat Iprojx;
-					arma::cx_mat Iprojy;
-					arma::cx_mat Iprojz;
-
-					std::vector<std::string> spinList;
-					int m;
-
-					if (n == 1)
-						this->Log() << "CIDSP = " << CIDSP << std::endl;
-
-					// Save the current step
-					this->Data() << this->RunSettings()->CurrentStep() << " ";
-					// Save the current time
-					this->Data() << n * this->timestep << " ";
-					this->WriteStandardOutput(this->Data());
-
-					if (this->Properties()->GetList("spinlist", spinList, ','))
-					{
-
-						for (auto l = (*i)->spins_cbegin(); l != (*i)->spins_cend(); l++)
+						if (!n == 0)
 						{
-							for (m = 0; m < (int)spinList.size(); m++)
+							// Take a step, "first" is propagator and "second" is current state
+							rhovec = G.first * G.second;
+
+							// Integrate the density vector over the current time interval
+							if (integration)
 							{
-								if ((*l)->Name() == spinList[m])
-								{
-									if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
-									{
-										return false;
-									}
+								rhoavg += this->timestep * (G.second + rhovec) / 2;
+							}
 
-									if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sy()), (*l), Iprojy))
-									{
-										return false;
-									}
+							// Get the new current state density vector
+							G.second = rhovec;
 
-									if (!space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Iprojz))
-									{
-										return false;
-									}
-
-									Iprojx = (eigen_vec.t() * Iprojx * eigen_vec);
-									Iprojy = (eigen_vec.t() * Iprojy * eigen_vec);
-									Iprojz = (eigen_vec.t() * Iprojz * eigen_vec);
-
-									arma::cx_mat P;
-
-									// There are two result modes - either write results per transition  if CIDSP is true or for each defined state if CIDSP is false
-
-									if (CIDSP == true)
-									{
-										// Loop through all defind transitions
-										auto transitions = (*i)->Transitions();
-										for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
-										{
-											// Make sure that there is a state object
-											if ((*j)->SourceState() == nullptr)
-												continue;
-
-											if ((!space.GetState((*j)->SourceState(), P)) && (n == 1))
-											{
-												this->Log() << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*i)->Name() << "\"." << std::endl;
-												continue;
-											}
-
-											P = (eigen_vec.t() * P * eigen_vec);
-
-											// Return the yield for this transition
-											this->Data() << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << " ";
-											this->Data() << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
-											this->Data() << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
-										}
-									}
-									else if (CIDSP == false)
-									{
-										// Return the yield for this state - note that no reaction rates are included here.
-										this->Data() << std::real(arma::trace(Iprojx * rho0)) << " ";
-										this->Data() << std::real(arma::trace(Iprojy * rho0)) << " ";
-										this->Data() << std::real(arma::trace(Iprojz * rho0)) << " ";
-									}
-								}
+							// Save the result if there were some changes (made so we can include TotalTime=0)
+							if (!rhoavg.is_zero(0))
+							{
+								rhovec = rhoavg;
 							}
 						}
-					}
-					else
-					{
-						if (n == 1)
-							this->Log() << "No nucleus was specified for projection" << std::endl;
-						continue;
-					}
 
-					this->Data() << std::endl;
+						if (Timewindow.compare("pulse") != 0)
+						{
+							if (!this->ProjectAndPrintOutputLine(i, space, rhovec, eigen_vec, Printedtime, this->timestep, n, CIDSP, this->Data(), this->Log()))
+								this->Log() << "Could not project the state vector and print the result into a file" << std::endl;
+						}
+
+					}
 				}
 
 				this->Log() << "Done with calculation." << std::endl;
@@ -2458,6 +2347,214 @@ namespace RunSection
 		}
 
 		_specdens = arma::diagmat(arma::conv_to<arma::cx_mat>::from(spectral_entries));
+
+		return true;
+	}
+
+	bool TaskStaticSSSpectraNakajimaZwanzig::ProjectAndPrintOutputLine(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, arma::cx_mat &_rotationmtx, double &_printedtime, double _timestep, unsigned int &_n, bool &_cidsp, std::ostream &_datastream, std::ostream &_logstream)
+	{
+		arma::cx_mat rho0;
+
+		// Convert the resulting density operator back to its Hilbert space representation
+		if ((!_space.OperatorFromSuperspace(_rhovec, rho0)) && (_n == 0))
+		{
+			_logstream << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
+			return false;
+		}
+
+		// Get nuclei of interest for CIDNP spectrum
+		arma::cx_mat Iprojx;
+		arma::cx_mat Iprojy;
+		arma::cx_mat Iprojz;
+
+		std::vector<std::string> spinList;
+
+		if (_n == 0)
+			_logstream << "CIDSP = " << _cidsp << std::endl;
+
+		// Save the current step
+		_datastream << this->RunSettings()->CurrentStep() << " ";
+		// Save the current time
+		_datastream << std::setprecision(12) << _printedtime + (_n * _timestep) << " ";
+		this->WriteStandardOutput(_datastream);
+
+		if (this->Properties()->GetList("spinlist", spinList, ','))
+		{
+
+			for (auto l = (*_i)->spins_cbegin(); l != (*_i)->spins_cend(); l++)
+			{
+				for (int m = 0; m < (int)spinList.size(); m++)
+				{
+					if ((*l)->Name() == spinList[m])
+					{
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
+						{
+							return false;
+						}
+
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sy()), (*l), Iprojy))
+						{
+							return false;
+						}
+
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Iprojz))
+						{
+							return false;
+						}
+
+						Iprojx = (_rotationmtx.t() * Iprojx * _rotationmtx);
+						Iprojy = (_rotationmtx.t() * Iprojy * _rotationmtx);
+						Iprojz = (_rotationmtx.t() * Iprojz * _rotationmtx);
+
+						arma::cx_mat P;
+
+						// There are two result modes - either write results per transition  if CIDSP is true or for each defined state if CIDSP is false
+
+						if (_cidsp == true)
+						{
+							// Loop through all defind transitions
+							auto transitions = (*_i)->Transitions();
+							for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
+							{
+								// Make sure that there is a state object
+								if ((*j)->SourceState() == nullptr)
+									continue;
+
+								if ((!_space.GetState((*j)->SourceState(), P)) && (_n == 0))
+								{
+									_logstream << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*_i)->Name() << "\"." << std::endl;
+									continue;
+								}
+
+								P = (_rotationmtx.t() * P * _rotationmtx);
+
+								// Return the yield for this transition
+								_datastream << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << " ";
+								_datastream << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
+								_datastream << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
+							}
+						}
+						else if (_cidsp == false)
+						{
+							// Return the yield for this state - note that no reaction rates are included here.
+							_datastream << std::real(arma::trace(Iprojx * rho0)) << " ";
+							_datastream << std::real(arma::trace(Iprojy * rho0)) << " ";
+							_datastream << std::real(arma::trace(Iprojz * rho0)) << " ";
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			if (_n == 0)
+				_logstream << "No nucleus was specified for projection" << std::endl;
+			return false;
+		}
+
+		_datastream << std::endl;
+
+		return true;
+	}
+
+	bool TaskStaticSSSpectraNakajimaZwanzig::ProjectAndPrintOutputLineInf(auto &_i, SpinAPI::SpinSpace &_space, arma::cx_vec &_rhovec, arma::cx_mat &_rotationmtx, double &_printedtime, double _timestep, bool &_cidsp, std::ostream &_datastream, std::ostream &_logstream)
+	{
+		arma::cx_mat rho0;
+
+		// Convert the resulting density operator back to its Hilbert space representation
+		if ((!_space.OperatorFromSuperspace(_rhovec, rho0)))
+		{
+			_logstream << "Failed to convert resulting superspace-vector back to native Hilbert space." << std::endl;
+			return false;
+		}
+
+		// Get nuclei of interest for CIDNP spectrum
+		arma::cx_mat Iprojx;
+		arma::cx_mat Iprojy;
+		arma::cx_mat Iprojz;
+
+		std::vector<std::string> spinList;
+
+		_logstream << "CIDSP = " << _cidsp << std::endl;
+
+		// Save the current step
+		_datastream << this->RunSettings()->CurrentStep() << " ";
+		// Save the current time
+		_datastream << "inf" << " ";
+		this->WriteStandardOutput(_datastream);
+
+		if (this->Properties()->GetList("spinlist", spinList, ','))
+		{
+
+			for (auto l = (*_i)->spins_cbegin(); l != (*_i)->spins_cend(); l++)
+			{
+				for (int m = 0; m < (int)spinList.size(); m++)
+				{
+					if ((*l)->Name() == spinList[m])
+					{
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sx()), (*l), Iprojx))
+						{
+							return false;
+						}
+
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sy()), (*l), Iprojy))
+						{
+							return false;
+						}
+
+						if (!_space.CreateOperator(arma::conv_to<arma::cx_mat>::from((*l)->Sz()), (*l), Iprojz))
+						{
+							return false;
+						}
+
+						Iprojx = (_rotationmtx.t() * Iprojx * _rotationmtx);
+						Iprojy = (_rotationmtx.t() * Iprojy * _rotationmtx);
+						Iprojz = (_rotationmtx.t() * Iprojz * _rotationmtx);
+
+						arma::cx_mat P;
+
+						// There are two result modes - either write results per transition  if CIDSP is true or for each defined state if CIDSP is false
+
+						if (_cidsp == true)
+						{
+							// Loop through all defind transitions
+							auto transitions = (*_i)->Transitions();
+							for (auto j = transitions.cbegin(); j != transitions.cend(); j++)
+							{
+								// Make sure that there is a state object
+								if ((*j)->SourceState() == nullptr)
+									continue;
+
+								if ((!_space.GetState((*j)->SourceState(), P)))
+								{
+									_logstream << "Failed to obtain projection matrix onto state \"" << (*j)->Name() << "\" of SpinSystem \"" << (*_i)->Name() << "\"." << std::endl;
+									continue;
+								}
+
+								P = (_rotationmtx.t() * P * _rotationmtx);
+
+								// Return the yield for this transition
+								_datastream << std::real(arma::trace(Iprojx * (*j)->Rate() * P * rho0)) << " ";
+								_datastream << std::real(arma::trace(Iprojy * (*j)->Rate() * P * rho0)) << " ";
+								_datastream << std::real(arma::trace(Iprojz * (*j)->Rate() * P * rho0)) << " ";
+							}
+						}
+						else if (_cidsp == false)
+						{
+							// Return the yield for this state - note that no reaction rates are included here.
+							_datastream << std::real(arma::trace(Iprojx * rho0)) << " ";
+							_datastream << std::real(arma::trace(Iprojy * rho0)) << " ";
+							_datastream << std::real(arma::trace(Iprojz * rho0)) << " ";
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			_logstream << "No nucleus was specified for projection" << std::endl;
+			return false;
+		}
 
 		return true;
 	}
