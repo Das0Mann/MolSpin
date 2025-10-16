@@ -424,7 +424,7 @@ namespace RunSection
 							}
 							else
 							{
-								this->Log() << "Not implemented yet, sorry." << std::endl;
+								this->Log() << "Current pulse type is not implemented." << std::endl;
 							}
 
 							// Update the printed time according to the printtimeframe key

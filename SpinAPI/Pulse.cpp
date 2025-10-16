@@ -20,7 +20,7 @@ namespace SpinAPI
 	// -----------------------------------------------------
 	// The constructor sets up the pulse parameters, but
 	// the spin groups are read in the method ParseSpinGroups instead.
-	Pulse::Pulse(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), type(PulseType::Unspecified), group(), timestep(0.1), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.001), field({0, 0, 0}), frequency(0.0), addCommonPrefactorList(), ignoreTensorsList(), prefactorList()
+	Pulse::Pulse(std::string _name, std::string _contents) : properties(std::make_shared<MSDParser::ObjectParser>(_name, _contents)), type(PulseType::Unspecified), group(), timestep(0.1), rotationaxis({0, 0, 0}), angle(0.0), pulsetime(0.0), field({0, 0, 0}), frequency(0.0), addCommonPrefactorList(), ignoreTensorsList(), prefactorList()
 	{
 		// Filling required parameter
 		std::string str = "";
@@ -51,6 +51,12 @@ namespace SpinAPI
 				std::cout << "Warning: Failed to obtain input for angle." << std::endl;
 				std::cout << "Using vector: " << angle << std::endl;
 			}
+
+			// Get Pulse timestep
+			if (!this->properties->Get("timestep", timestep))
+			{
+				std::cout << "Warning: Failed to obtain input for pulse timestep. The timestep will be set to 0.1 ns." << std::endl;
+			}
 		}
 		else if (this->type == PulseType::LongPulse)
 		{
@@ -63,7 +69,7 @@ namespace SpinAPI
 			// Get Pulse timestep
 			if (!this->properties->Get("timestep", timestep))
 			{
-				std::cout << "Warning: Failed to obtain input for pulse timestep." << std::endl;
+				std::cout << "Warning: Failed to obtain input for pulse timestep. The timestep will be set to 0.1 ns." << std::endl;
 			}
 
 			// Get Pulse field
@@ -108,7 +114,7 @@ namespace SpinAPI
 			// Get Pulse timestep
 			if (!this->properties->Get("timestep", timestep))
 			{
-				std::cout << "Warning: Failed to obtain input for pulse timestep." << std::endl;
+				std::cout << "Warning: Failed to obtain input for pulse timestep. The timestep will be set to 0.1 ns." << std::endl;
 			}
 
 			// Get Pulse field
@@ -146,7 +152,7 @@ namespace SpinAPI
 			// Get Pulse timestep
 			if (!this->properties->Get("timestep", timestep))
 			{
-				std::cout << "Warning: Failed to obtain input for pulse timestep." << std::endl;
+				std::cout << "Warning: Failed to obtain input for pulse timestep. The timestep will be set to 0.1 ns." << std::endl;
 			}
 
 			// Get Pulse field
