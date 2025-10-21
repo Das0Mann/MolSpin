@@ -1876,28 +1876,47 @@ namespace RunSection
 			// Adding R tensor to whole hamiltonian
 			A += R;
 
+			// Read in input parameters 
+
 			// Read the method from the input file
 			std::string Method;
 			if (!this->Properties()->Get("method", Method))
 			{
-				this->Log() << "Failed to obtain an input for a Method" << std::endl;
+				this->Log() << "Failed to obtain an input for a Method. Please specify method = timeinf or method = timeevo." << std::endl;
 			}
+
+			// Read if the result should be integrated or not if method.
+			bool integration = false;
+			if (!this->Properties()->Get("integration", integration))
+			{
+				this->Log() << "Failed to obtain an input for an integtation. Plese use integration = true/false. Using integration = false by default. " << std::endl;
+			}
+			this->Log() << "Integration of the yield in time on a grid  = " << integration << std::endl;
+
+			// Read integrationwindow from the input file
+			std::string Integrationwindow;
+			if (!this->Properties()->Get("integrationtimeframe", Integrationwindow))
+			{
+				this->Log() << "Failed to obtain an input for a integrationtimeframe. Please choose integrationtimeframe =  pulse / freeevo / full. Using freeevo propagation evolution window by default" << std::endl;
+				Integrationwindow = "freeevo";
+			}
+			this->Log() << "Timewindow for the propagation integration: " << Integrationwindow << std::endl;
 
 			// Read CIDSP from the input file
 			bool CIDSP = false;
 			if (!this->Properties()->Get("cidsp", CIDSP))
 			{
-				this->Log() << "Failed to obtain an input for a CIDSP" << std::endl;
+				this->Log() << "Failed to obtain an input for a CIDSP. Plese use cidsp = true/false. Using cidsp = false by default. " << std::endl;
 			}
 
 			// Read printtimeframe from the input file
 			std::string Timewindow;
 			if (!this->Properties()->Get("printtimeframe", Timewindow))
 			{
-				this->Log() << "Failed to obtain an input for a printtimeframe, using full propagation evolution window by default" << std::endl;
+				this->Log() << "Failed to obtain an input for a printtimeframe. Please choose printtimeframe =  pulse / freeevo / full. Using full propagation evolution window by default" << std::endl;\
 				Timewindow = "full";
 			}
-			this->Log() << "Timewindow for the prpagation printing: " << Timewindow << std::endl;
+			this->Log() << "Timewindow for the propagation printing: " << Timewindow << std::endl;
 
 			double Printedtime = 0;
 			
@@ -1949,6 +1968,10 @@ namespace RunSection
 									continue;
 								}
 
+								// Create a holder vector for an averaged density
+								arma::cx_vec rhoavg;
+								rhoavg.zeros(size(rho0vec));
+
 								int firststep;
 								if (Printedtime == 0)
 									firststep = 0;
@@ -1969,8 +1992,20 @@ namespace RunSection
 										// Take a step, "first" is propagator and "second" is current state
 										rhovec = G.first * G.second;
 
+										// Integrate the result if needed
+										if ((integration) && (Integrationwindow.compare("freeevo") != 0))
+										{
+											rhoavg += (*pulse)->Timestep() * (G.second + rhovec) / 2;
+										}
+
 										// Get the new current state density vector
 										G.second = rhovec;
+
+										// Save the result if there were some changes
+										if (!rhoavg.is_zero(0))
+										{
+											rhovec = rhoavg;
+										}
 									}
 
 									if (Timewindow.compare("freeevo") != 0)
@@ -1989,6 +2024,10 @@ namespace RunSection
 									this->Log() << "Failed to create a pulse operator in SS." << std::endl;
 									continue;
 								}
+								
+								// Create a holder vector for an averaged density
+								arma::cx_vec rhoavg;
+								rhoavg.zeros(size(rho0vec));
 
 								int firststep;
 								if (Printedtime == 0)
@@ -2011,8 +2050,20 @@ namespace RunSection
 										// Take a step, "first" is propagator and "second" is current state
 										rhovec = G.first * G.second;
 
+										// Integrate the result if needed
+										if ((integration) && (Integrationwindow.compare("freeevo") != 0))
+										{
+											rhoavg += (*pulse)->Timestep() * (G.second + rhovec) / 2;
+										}
+
 										// Get the new current state density vector
 										G.second = rhovec;
+
+										// Save the result if there were some changes
+										if (!rhoavg.is_zero(0))
+										{
+											rhovec = rhoavg;
+										}
 									}
 
 									if (Timewindow.compare("freeevo") != 0)
@@ -2036,6 +2087,10 @@ namespace RunSection
 							// Get the system relax during the time
 							if (!timerelaxation == 0)
 							{
+								// Create a holder vector for an averaged density
+								arma::cx_vec rhoavg;
+								rhoavg.zeros(size(rho0vec));
+
 								// Create array containing a propagator and the current state of each system
 								std::pair<arma::cx_mat, arma::cx_vec> G;
 								arma::cx_mat A_sp = arma::expmat(A * (*pulse)->Timestep());
@@ -2048,8 +2103,20 @@ namespace RunSection
 									// Take a step, "first" is propagator and "second" is current state
 									rhovec = G.first * G.second;
 
+									// Integrate the result if needed
+									if ((integration) && (Integrationwindow.compare("freeevo") != 0))
+									{
+										rhoavg += (*pulse)->Timestep() * (G.second + rhovec) / 2;
+									}
+
 									// Get the new current state density vector
 									G.second = rhovec;
+
+									// Save the result if there were some changes
+									if (!rhoavg.is_zero(0))
+									{
+										rhovec = rhoavg;
+									}
 
 									if (Timewindow.compare("freeevo") != 0)
 									{
@@ -2080,6 +2147,13 @@ namespace RunSection
 
 				this->Log() << "Method = " << Method << std::endl;
 
+				// Print the warning to the user, what integration keyword is used
+				if (integration)
+				{
+					this->Log() << "Warning: steady state method (timeinf) is calculated as an inverse of the Liouvillian operator, instead of the integration on a grid."<<
+					"The integration of the pulse sequence timewindow could be added if integration = true and integrationtimeframe = pulse / full." << std::endl;
+				}
+
 				arma::cx_vec result = -solve(arma::conv_to<arma::cx_mat>::from(A), rhovec);
 
 				rhovec = result;
@@ -2102,15 +2176,6 @@ namespace RunSection
 					this->Log() << "Ready to perform calculation." << std::endl;
 
 					this->Log() << "Method = " << Method << std::endl;
-
-					// Read if the result should be integrated or not
-					bool integration = false;
-					if (!this->Properties()->Get("integration", integration))
-					{
-						this->Log() << "Failed to obtain an input for an Integtation." << std::endl;
-					}
-
-					this->Log() << "Integration of the yield in time = " << integration << std::endl;
 
 					// Create a holder vector for an averaged density
 					arma::cx_vec rhoavg;
@@ -2138,7 +2203,7 @@ namespace RunSection
 							rhovec = G.first * G.second;
 
 							// Integrate the density vector over the current time interval
-							if (integration)
+							if ((integration) && (Integrationwindow.compare("pulse") != 0))
 							{
 								rhoavg += this->timestep * (G.second + rhovec) / 2;
 							}
