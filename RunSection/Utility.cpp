@@ -275,6 +275,18 @@ namespace RunSection
         return NewStepSize;
     }
 
+    arma::cx_vec ThomasBlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size)
+    {
+        arma::cx_vec x = arma::cx_vec(arma::size(b), arma::fill::zeros);
+        return x;
+    }
+
+    arma::cx_vec BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size)
+    {
+        arma::cx_vec x = arma::cx_vec(arma::size(b), arma::fill::zeros);
+        return x;
+    }
+
     arma::cx_vec BiCGSTAB(arma::sp_cx_mat &A, arma::cx_vec &b, PreconditionerType preconditoner ,arma::sp_cx_mat K, double tol, int max_iter, int max_preconditoner_iter)
     {
 

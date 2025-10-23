@@ -31,6 +31,31 @@ namespace RunSection
     // double RungeKutta4AdaptiveTimeStepEigen(Matrix&, Matrix&, Matrix&, double, RungeKuttaFunc, std::pair<double, double>, double MinTimeStep = 1e-6);
     double RungeKutta45Armadillo(arma::sp_cx_mat &, arma::cx_vec &, arma::cx_vec &, double, RungeKuttaFuncArma, std::pair<double, double>, double MinTimeStep = 1e-6, double MaxTimeStep = 1e6, double time = 0);
 
+#pragma region BlockMatrix Inversion Solvers
+    //With these solvers there is the potential for a large amount of matrix fill-in during the solution process.
+    //Block thomas has less fill in for larger systems with a block tridiagonal structure, than a general block solver.
+    
+    /// The thomas algorithm for solving Ax = b where A is a block tridiagonal matrix
+    /// This algorithm assumes that A is made up of square blocks of size block_size x block_size
+    /// And will use a conventional solver on the blocks 
+    /// @param A The block tridiagonal matrix
+    /// @param b The right hand side vector
+    /// @param block_size The size of the blocks in the block tridiagonal matrix
+    /// @return The solution vector x
+    arma::cx_vec ThomasBlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size);
+
+    //if the matrix is not tridiaognal a traditional block solver can be used
+    /// A block solver for solving Ax = b where A is a block matrix
+    /// This algorithm assumes that A is made up of square blocks of size block_size x block
+    /// And will recursively call itself on the blocks getting the blocks down to a smaller size before using a conventional solver
+    /// @param A The block matrix
+    /// @param b The right hand side vector
+    /// @param block_size The size of the blocks in the block matrix
+    /// @return The solution vector x
+    arma::cx_vec BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size);
+
+#pragma endregion
+
     //SparseMatrixSolvers
     //Preconditioned BiCGSTAB solver
 
