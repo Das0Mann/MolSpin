@@ -930,6 +930,9 @@ namespace RunSection
 
     bool TaskMultiRadicalPairSSTimeEvo::CalcYieldOnly(arma::sp_cx_mat& L, arma::cx_vec& RhoNaught, arma::cx_vec& ReturnVec)
     {
+		//RhoNaught = BiCGSTAB(L, RhoNaught, PreconditionerType::None);
+		//return true;
+
 		arma::cx_mat DenseL = arma::conv_to<arma::cx_mat>::from(L);
 		bool solution = arma::solve(ReturnVec, DenseL, RhoNaught);
 		if(solution)

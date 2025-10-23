@@ -32,6 +32,8 @@ namespace RunSection
 		// Private method that gathers and outputs the results from a given time-integrated density operator
 		void GatherResults(const arma::cx_mat &, const SpinAPI::SpinSystem &, const SpinAPI::SpinSpace &);
 
+		static arma::cx_vec ComputeRhoDot(double t, arma::sp_cx_mat& L, arma::cx_vec& K, arma::cx_vec RhoNaught);
+
 	protected:
 		bool RunLocal() override;
 		bool Validate() override;

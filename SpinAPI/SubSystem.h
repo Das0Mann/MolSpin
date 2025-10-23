@@ -15,6 +15,10 @@
 #include "MSDParserfwd.h"
 #include "SpinAPIfwd.h"
 
+//need to do
+//function to create livioullan superoperator for a given SpinSpace made up of multiple SubSystems - not done
+//function to create initial state for a given SpinSpace made up of multiple SubSystems - not done
+
 namespace SpinAPI
 {
     class SubSystem

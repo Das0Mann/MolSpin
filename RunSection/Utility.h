@@ -17,20 +17,25 @@
 
 namespace RunSection
 {
-    // typedef Eigen::SparseMatrix<std::complex<double>, Eigen::RowMajor> Matrix;
-    // typedef Eigen::Triplet<std::complex<double>, int32_t> T;
-
-    // typedef Matrix(*RungeKuttaFunc)(Matrix&, Matrix&, Matrix);
+    
     typedef arma::cx_vec (*RungeKuttaFuncArma)(double t, arma::sp_cx_mat &, arma::cx_vec &, arma::cx_vec);
+    
+    /// Runge-Kutta-Fehlberg method (4th and 5th order) with adaptive time step control
+    /// Inputs:
+    ///     L: Liouvillian superoperator (sparse complex matrix)
+    ///     rho0: Initial density matrix (complex vector)
+    ///     drhodt: Time derivative of the density matrix (complex vector)
+    ///     dumpstep: Initial Time step (double)
+    ///     func: Right hand side of the master equation (function pointer - see RungeKuttaFuncArma)
+    ///     tolerance: Pair of tolerances for adaptive step size control (pair of doubles)
+    /// Optional Inputs:
+    ///     MinTimeStep: Minimum allowed time step (double)
+    ///     MaxTimeStep: Maximum allowed time step (double)
+    ///     time: Current time (double)
 
-    // Matrix ConvertArmadilloToEigen(arma::sp_cx_mat& ArmaMat);
-    // Matrix ConvertAramdilloToEigen(arma::cx_vec& ArmaVec);
-    //
-    // arma::sp_cx_mat ConvertEigenToArmadillo(Matrix& EigenMat);
-    //
-    // double RungeKutta4AdaptiveTimeStepEigen(Matrix&, Matrix&, Matrix&, double, RungeKuttaFunc, std::pair<double, double>, double MinTimeStep = 1e-6);
     double RungeKutta45Armadillo(arma::sp_cx_mat &, arma::cx_vec &, arma::cx_vec &, double, RungeKuttaFuncArma, std::pair<double, double>, double MinTimeStep = 1e-6, double MaxTimeStep = 1e6, double time = 0);
 
+    //DONT USE THESE FUNCTIONS THEY ARE SLOW 
     //SparseMatrixSolvers
     //Preconditioned BiCGSTAB solver
 

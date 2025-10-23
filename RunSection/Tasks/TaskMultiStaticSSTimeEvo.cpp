@@ -13,6 +13,7 @@
 #include "Settings.h"
 #include "State.h"
 #include "ObjectParser.h"
+#include "Utility.h"
 
 namespace RunSection
 {
@@ -65,7 +66,7 @@ namespace RunSection
 		// Loop through the systems again to fill this matrix and vector
 		for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
 		{
-
+			//If SpinSpace is made up of multiple SubSystems, this get's handled seperately rejoining when evaluating the creation operators for linking SpinSpaces.
 			// Make sure we have an initial state
 			auto initial_states = i->first->InitialState();
 			arma::cx_mat rho0HS;
@@ -183,24 +184,33 @@ namespace RunSection
 		this->Data() << std::endl;
 
 		// We need the propagator
-		this->Log() << "Calculating the propagator..." << std::endl;
-		arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
+		//this->Log() << "Calculating the propagator..." << std::endl;
+		//arma::cx_mat P = arma::expmat(arma::conv_to<arma::cx_mat>::from(L) * this->timestep);
 
 		// Perform the calculation
 		this->Log() << "Ready to perform calculation." << std::endl;
-		unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
-		for (unsigned int n = 1; n <= steps; n++)
+		double CurrentTime = 0.0;
+		double InitialTimeStep = this->timestep;
+		double MinTimeStep, MaxTimeStep = 0.0;
+		if(!this->Properties()->Get("minimumtimestep", MinTimeStep) and !this->Properties()->Get("minimum timestep", MinTimeStep))
 		{
-			// Write first part of the data output
+			MinTimeStep = InitialTimeStep * 1e-3;
+		}
+		if(!this->Properties()->Get("maximumtimestep", MaxTimeStep) and !this->Properties()->Get("maximum timestep", MaxTimeStep))
+		{
+			MaxTimeStep = InitialTimeStep * 1e4;
+		}
+		
+		this->Log() << "Starting time evolution with timestep: " << this->timestep << ", total time: " << this->totaltime << ", minimum timestep: " << MinTimeStep << ", maximum timestep: " << MaxTimeStep << std::endl;
+		while (CurrentTime <= this->totaltime)
+		{
 			this->Data() << this->RunSettings()->CurrentStep() << " ";
-			this->Data() << (static_cast<double>(n) * this->timestep) << " ";
+			CurrentTime += this->timestep;
+			this->Data() << CurrentTime << " ";
 			this->WriteStandardOutput(this->Data());
-
-			// Propagate (use special scope to be able to dispose of the temporary vector asap)
-			{
-				arma::cx_vec tmp = P * rho0;
-				rho0 = tmp;
-			}
+			
+			// Propagate
+			this->timestep = RungeKutta45Armadillo(L, rho0, rho0, this->timestep, ComputeRhoDot, {1e-7,1e-6}, MinTimeStep, MaxTimeStep);
 
 			// Retrieve the resulting density matrix for each spin system and output the results
 			nextDimension = 0;
@@ -222,10 +232,47 @@ namespace RunSection
 				// Move on to next spin space
 				nextDimension += i->second->SpaceDimensions();
 			}
-
-			// Terminate the line in the data file after iteration through all spin systems
-			this->Data() << std::endl;
 		}
+
+		//Pre RK45 method
+		//unsigned int steps = static_cast<unsigned int>(std::abs(this->totaltime / this->timestep));
+		//for (unsigned int n = 1; n <= steps; n++)
+		//{
+		//	// Write first part of the data output
+		//	this->Data() << this->RunSettings()->CurrentStep() << " ";
+		//	this->Data() << (static_cast<double>(n) * this->timestep) << " ";
+		//	this->WriteStandardOutput(this->Data());
+//
+		//	// Propagate (use special scope to be able to dispose of the temporary vector asap)
+		//	{
+		//		arma::cx_vec tmp = P * rho0;
+		//		rho0 = tmp;
+		//	}
+//
+		//	// Retrieve the resulting density matrix for each spin system and output the results
+		//	nextDimension = 0;
+		//	for (auto i = spaces.cbegin(); i != spaces.cend(); i++)
+		//	{
+		//		// Get the superspace result vector and convert it back to the native Hilbert space
+		//		arma::cx_mat rho_result;
+		//		arma::cx_vec rho_result_vec;
+		//		rho_result_vec = rho0.rows(nextDimension, nextDimension + i->second->SpaceDimensions() - 1);
+		//		if (!i->second->OperatorFromSuperspace(rho_result_vec, rho_result))
+		//		{
+		//			this->Log() << "ERROR: Failed to convert resulting superspace-vector back to native Hilbert space for spin system \"" << i->first->Name() << "\"!" << std::endl;
+		//			return false;
+		//		}
+//
+		//		// Get the results
+		//		this->GatherResults(rho_result, *(i->first), *(i->second));
+//
+		//		// Move on to next spin space
+		//		nextDimension += i->second->SpaceDimensions();
+		//	}
+//
+		//	// Terminate the line in the data file after iteration through all spin systems
+		//	this->Data() << std::endl;
+		//}
 
 		this->Log() << "Done with calculation." << std::endl;
 
@@ -251,7 +298,16 @@ namespace RunSection
 		}
 	}
 
-	// Writes the header of the data file (but can also be passed to other streams)
+	//Right hand side of the master equation for use with Runge Kutta
+    arma::cx_vec TaskMultiStaticSSTimeEvo::ComputeRhoDot(double t, arma::sp_cx_mat &L, arma::cx_vec &K, arma::cx_vec RhoNaught)
+    {
+        arma::cx_vec ReturnVec(L.n_rows);
+		RhoNaught = RhoNaught + K;
+		ReturnVec = L * RhoNaught;
+		return ReturnVec;
+    }
+
+    // Writes the header of the data file (but can also be passed to other streams)
 	void TaskMultiStaticSSTimeEvo::WriteHeader(std::ostream &_stream)
 	{
 		_stream << "Step ";

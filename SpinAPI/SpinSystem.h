@@ -67,7 +67,7 @@ namespace SpinAPI
 		std::vector<operator_ptr> Operators() const;	   // Returns a copy of the collection of operators
 		std::vector<pulse_ptr> Pulses() const;			   // Returns a copy of the collection of pulses
 		std::vector<state_ptr> States() const;			   // Returns a copy of the collection of states
-		std::vector<subsystem_ptr> SubSystems();
+		std::vector<subsystem_ptr> SubSystems();		   // Returns a copy of the collection of subsystems
 
 		// Objects by name
 		// TODO: Return pointer-to-const
