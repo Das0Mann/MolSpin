@@ -232,6 +232,8 @@ namespace RunSection
 				// Move on to next spin space
 				nextDimension += i->second->SpaceDimensions();
 			}
+			// Terminate the line in the data file after iteration through all spin systems
+			this->Data() << std::endl;
 		}
 
 		//Pre RK45 method
@@ -273,8 +275,8 @@ namespace RunSection
 		//	// Terminate the line in the data file after iteration through all spin systems
 		//	this->Data() << std::endl;
 		//}
-
-		this->Log() << "Done with calculation." << std::endl;
+//
+		//this->Log() << "Done with calculation." << std::endl;
 
 		return true;
 	}
