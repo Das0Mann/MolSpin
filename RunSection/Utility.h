@@ -56,7 +56,7 @@ namespace RunSection
     arma::cx_vec BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size); //TODO: work on the error handling
 
     //Internal functions used by the block solvers
-    bool IsBlockTridiagonal(arma::sp_cx_mat &A);
+    bool IsBlockTridiagonal(arma::sp_cx_mat &A, int block_size);
     arma::cx_mat BlockMatrixInverse(arma::sp_cx_mat &A, int block_size);
     arma::cx_mat SchurComplementA(arma::cx_mat &A11_inv, arma::sp_cx_mat &A12, arma::sp_cx_mat &A21, arma::sp_cx_mat &A22, bool &invertible);
     arma::cx_mat SchurComplementB(arma::sp_cx_mat &A11, arma::sp_cx_mat &A12, arma::cx_mat &A21, arma::cx_mat &A22_inv, bool &invertible);
