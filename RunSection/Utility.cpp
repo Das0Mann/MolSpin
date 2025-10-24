@@ -281,18 +281,26 @@ namespace RunSection
         return x;
     }
 
-    arma::cx_vec BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size)
+    bool BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size, arma::cx_vec &x)
     {
+        bool inverted = false;
         if(IsBlockTridiagonal(A))
         {
-            return ThomasBlockSolver(A, b, block_size);
+            //return ThomasBlockSolver(A, b, block_size);
+            std::cout << "Block Thomas Solver not yet implemented, using Block Matrix Inverse instead." << std::endl;
         }
 
-        arma::cx_mat A_inv = BlockMatrixInverse(A, block_size);
-        return A_inv * b;
+        arma::cx_mat A_inv = BlockMatrixInverse(A, block_size, inverted);
+        if(!inverted)
+        {
+            x = arma::cx_vec(arma::size(b), arma::fill::zeros);
+            return false;
+        }
+        x = A_inv * b;
+        return true;
     }
 
-    arma::cx_mat BlockMatrixInverse(arma::sp_cx_mat &A, int block_size)
+    arma::cx_mat BlockMatrixInverse(arma::sp_cx_mat &A, int block_size, bool &Invertible)
     {
         //Matrix Partitions
         arma::sp_cx_mat A11, A12, A21, A22;
@@ -303,7 +311,7 @@ namespace RunSection
 
         if (A22.n_rows > block_size)
         {
-            BlockMatrixInverse(A22, block_size);
+            BlockMatrixInverse(A22, block_size, Invertible);
         }
 
         //Check if A11 and A22 are invertible
@@ -328,23 +336,23 @@ namespace RunSection
         bool SchurComplementA = A11_invertible && !A22_invertible;
         bool SchurComplementB = !A11_invertible && A22_invertible;
         bool BothComplements = A11_invertible && A22_invertible;
-        bool AbleToCompute = true;
+        Invertible = true;
 
         if(SchurComplementA)
         {
-            return SchurComplementA(A11_inv, A12, A21, A22, AbleToCompute);
+            return SchurComplementA(A11_inv, A12, A21, A22, Invertible);
         }
         else if(SchurComplementB)
         {
-            return SchurComplementB(A11, A12, A21, A22_inv, AbleToCompute);
+            return SchurComplementB(A11, A12, A21, A22_inv, Invertible);
         }
         else if(BothComplements)
         {
-            return BothSchurComponents(A11_inv, A12, A21, A22_inv, AbleToCompute);
+            return BothSchurComponents(A11_inv, A12, A21, A22_inv, Invertible);
         }
-        
-        if(!AbleToCompute)
+        else
         {
+            Invertible = false;
             return arma::cx_mat();
         }
 
@@ -372,7 +380,7 @@ namespace RunSection
         Inv.submat(A11_inv.n_rows, 0, Inv.n_rows -1, A11_inv.n_cols -1) = P21;
         Inv.submat(A11_inv.n_rows, A11_inv.n_cols, Inv.n_rows -1, Inv.n_cols -1) = P22;
 
-        bool Invertible = true;
+        Invertible = true;
         return Inv;
     }
 
