@@ -283,8 +283,178 @@ namespace RunSection
 
     arma::cx_vec BlockSolver(arma::sp_cx_mat &A, arma::cx_vec &b, int block_size)
     {
-        arma::cx_vec x = arma::cx_vec(arma::size(b), arma::fill::zeros);
-        return x;
+        if(IsBlockTridiagonal(A))
+        {
+            return ThomasBlockSolver(A, b, block_size);
+        }
+
+        arma::cx_mat A_inv = BlockMatrixInverse(A, block_size);
+        return A_inv * b;
+    }
+
+    arma::cx_mat BlockMatrixInverse(arma::sp_cx_mat &A, int block_size)
+    {
+        //Matrix Partitions
+        arma::sp_cx_mat A11, A12, A21, A22;
+        A11 = A.submat(0, 0, block_size -1, block_size -1);
+        A12 = A.submat(0, block_size, block_size -1, A.n_cols -1);
+        A21 = A.submat(block_size, 0, A.n_rows-1, block_size -1);
+        A22 = A.submat(block_size, block_size, A.n_rows -1, A.n_cols -1);
+
+        if (A22.n_rows > block_size)
+        {
+            BlockMatrixInverse(A22, block_size);
+        }
+
+        //Check if A11 and A22 are invertible
+        arma::cx_mat A11_inv, A22_inv; //The inverse of a sparse matrix is usually dense, so we use a dense matrix here
+        //Check invertibility wihtin a scope, that way if not invertable we don't keep the failed inverse
+        bool A11_invertible, A22_invertible;
+        bool SchurComplementA, SchurComplementB, BothComplements;
+        {
+            bool A11_invertible = arma::inv(A11_inv, arma::cx_mat(A11));
+            bool A22_invertible = arma::inv(A22_inv, arma::cx_mat(A22));
+
+            if(!A11_invertible)
+            {
+                A11_inv = arma::cx_mat(); 
+            }
+            if(!A22_invertible)
+            {
+                A22_inv = arma::cx_mat(); 
+            }
+        }
+
+        bool SchurComplementA = A11_invertible && !A22_invertible;
+        bool SchurComplementB = !A11_invertible && A22_invertible;
+        bool BothComplements = A11_invertible && A22_invertible;
+        bool AbleToCompute = true;
+
+        if(SchurComplementA)
+        {
+            return SchurComplementA(A11_inv, A12, A21, A22, AbleToCompute);
+        }
+        else if(SchurComplementB)
+        {
+            return SchurComplementB(A11, A12, A21, A22_inv, AbleToCompute);
+        }
+        else if(BothComplements)
+        {
+            return BothSchurComponents(A11_inv, A12, A21, A22_inv, AbleToCompute);
+        }
+        
+        if(!AbleToCompute)
+        {
+            return arma::cx_mat();
+        }
+
+    }
+
+    arma::cx_mat SchurComplementA(arma::cx_mat &A11_inv, arma::sp_cx_mat &A12, arma::sp_cx_mat &A21, arma::sp_cx_mat &A22, bool &Invertible)
+    {
+        arma::cx_mat S = A22 - A21 * A11_inv * A12;
+        arma::cx_mat S_inv;
+        bool S_invertible = arma::inv(S_inv, S);
+        if(!S_invertible)
+        {
+            Invertible = false;
+            return arma::cx_mat();
+        }
+        //Construct the inverse matrix using the Schur complement
+        arma::cx_mat P11 = A11_inv + A11_inv * A12 * S_inv * A21 * A11_inv;
+        arma::cx_mat P12 = -1 * A11_inv * A12 * S_inv;
+        arma::cx_mat P21 = -1 * S_inv * A21 * A11_inv;
+        arma::cx_mat P22 = S_inv;
+
+        arma::cx_mat Inv = arma::cx_mat(A11_inv.n_rows * 2, A11_inv.n_cols * 2);
+        Inv.submat(0, 0, A11_inv.n_rows -1, A11_inv.n_cols -1) = P11;
+        Inv.submat(0, A11_inv.n_cols, A11_inv.n_rows -1, Inv.n_cols -1) = P12;
+        Inv.submat(A11_inv.n_rows, 0, Inv.n_rows -1, A11_inv.n_cols -1) = P21;
+        Inv.submat(A11_inv.n_rows, A11_inv.n_cols, Inv.n_rows -1, Inv.n_cols -1) = P22;
+
+        bool Invertible = true;
+        return Inv;
+    }
+
+    arma::cx_mat SchurComplementB(arma::sp_cx_mat &A11, arma::sp_cx_mat &A12, arma::cx_mat &A21, arma::cx_mat &A22_inv, bool &Invertible)
+    {
+        arma::cx_mat S = A11 - A12 * A22_inv * A21;
+        arma::cx_mat S_inv;
+        bool S_invertible = arma::inv(S_inv, S);
+        if(!S_invertible)
+        {
+            Invertible = false;
+            return arma::cx_mat();
+        }
+        //Construct the inverse matrix using the Schur complement
+        arma::cx_mat P11 = S_inv;
+        arma::cx_mat P12 = -1 * S_inv * A12 * A22_inv;
+        arma::cx_mat P21 = -1 * A22_inv * A21 * S_inv;
+        arma::cx_mat P22 = A22_inv + A22_inv * A21 * S_inv * A12 * A22_inv;
+
+        arma::cx_mat Inv = arma::cx_mat(A11.n_rows * 2, A11.n_cols * 2);
+        Inv.submat(0, 0, A11.n_rows -1, A11.n_cols -1) = P11;
+        Inv.submat(0, A11.n_cols, A11.n_rows -1, Inv.n_cols -1) = P12;
+        Inv.submat(A11.n_rows, 0, Inv.n_rows -1, A11.n_cols -1) = P21;
+        Inv.submat(A11.n_rows, A11.n_cols, Inv.n_rows -1, Inv.n_cols -1) = P22;
+
+        bool Invertible = true;
+        return Inv;
+    }
+
+    arma::cx_mat BothSchurComponents(arma::cx_mat&A11, arma::cx_mat &A11_inv, arma::sp_cx_mat &A12, arma::sp_cx_mat &A21, arma::cx_mat &A22, arma::cx_mat &A22_inv, bool &Invertible)
+    {
+        arma::cx_mat S1 = A11 - A12 * A22_inv * A21;
+        arma::cx_mat S2 = A22 - A21 * A11_inv * A12;
+        arma::cx_mat S1_inv, S2_inv;
+        bool S1_invertible = arma::inv(S1_inv, S1);
+        bool S2_invertible = arma::inv(S2_inv, S2);
+        if(!S1_invertible || !S2_invertible)
+        {
+            Invertible = false;
+            return arma::cx_mat();
+        }
+        //Construct the inverse matrix using the Schur complement
+        arma::cx_mat P11 = S1_inv;
+        arma::cx_mat P12 = -1 * S1_inv * A12 * A22_inv;
+        arma::cx_mat P21 = -1 * S2_inv * A21 * A11_inv;
+        arma::cx_mat P22 = S2_inv;
+
+        arma::cx_mat Inv = arma::cx_mat(A11.n_rows * 2, A11.n_cols * 2);
+        Inv.submat(0, 0, A11.n_rows -1, A11.n_cols -1) = P11;
+        Inv.submat(0, A11.n_cols, A11.n_rows -1, Inv.n_cols -1) = P12;
+        Inv.submat(A11.n_rows, 0, Inv.n_rows -1, A11.n_cols -1) = P21;
+        Inv.submat(A11.n_rows, A11.n_cols, Inv.n_rows -1, Inv.n_cols -1) = P22;
+        
+        bool Invertible = true;
+        return Inv;
+    }
+
+    bool IsBlockTridiagonal(arma::sp_cx_mat &A, int block_size)
+    {
+        int n_blocks = A.n_rows / block_size;
+        if n_blocks == 2
+        {
+            return true;   
+        }
+
+        for (int row = 0; row < n_blocks; row++)
+        {
+            for (int col = 0; col < n_blocks; col++)
+            {
+                if(std::abs(row-col) > 1)
+                {
+                    arma::sp_cx_mat block = A.submat(row*block_size, col*block_size, (row+1)*block_size -1, (col+1)*block_size -1);
+                    arma::vec non_zero = arma::nonzeros(block); //should be very efficient for sparse matrices
+                    if(non_zero.n_elem > 0)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     arma::cx_vec BiCGSTAB(arma::sp_cx_mat &A, arma::cx_vec &b, PreconditionerType preconditoner ,arma::sp_cx_mat K, double tol, int max_iter, int max_preconditoner_iter)
